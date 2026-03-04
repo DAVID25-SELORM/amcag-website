@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photo Gallery | AMCAG</title>
+  <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/mobile.css">
@@ -48,27 +49,27 @@
   <section class="section bg-surface">
     <div class="container">
       <div class="grid grid-3 gap-4" id="gallery-grid">
-        <div class="card" style="padding: 0; overflow: hidden;">
-          <div style="height: 250px; background: var(--color-primary-95);"></div>
+        <div class="card" style="padding: 0; overflow: hidden; cursor: pointer;" onclick="window.open('/images/WhatsApp Image 2026-03-04 at 1.34.32 PM.jpeg', '_blank')">
+          <div style="height: 250px; background: var(--color-primary-95); background-image: url('/images/WhatsApp Image 2026-03-04 at 1.34.32 PM.jpeg'); background-size: cover; background-position: center;"></div>
           <div style="padding: var(--space-3);">
-            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Annual General Meeting 2025</h4>
-            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Accra • December 2025</p>
+            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">AMCAG Annual General Meeting 2026</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Greater Accra • March 2026</p>
           </div>
         </div>
 
-        <div class="card" style="padding: 0; overflow: hidden;">
-          <div style="height: 250px; background: var(--color-secondary-95);"></div>
+        <div class="card" style="padding: 0; overflow: hidden; cursor: pointer;" onclick="window.open('/images/WhatsApp Image 2026-03-04 at 1.34.53 PM.jpeg', '_blank')">
+          <div style="height: 250px; background: var(--color-secondary-95); background-image: url('/images/WhatsApp Image 2026-03-04 at 1.34.53 PM.jpeg'); background-size: cover; background-position: center;"></div>
           <div style="padding: var(--space-3);">
-            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Regional Training Workshop</h4>
-            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Kumasi • November 2025</p>
+            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Leadership Training Workshop</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Ashanti Region • March 2026</p>
           </div>
         </div>
 
-        <div class="card" style="padding: 0; overflow: hidden;">
-          <div style="height: 250px; background: var(--color-success-bg);"></div>
+        <div class="card" style="padding: 0; overflow: hidden; cursor: pointer;" onclick="window.open('/images/WhatsApp Image 2026-03-04 at 1.34.55 PM (2).jpeg', '_blank')">
+          <div style="height: 250px; background: var(--color-success-bg); background-image: url('/images/WhatsApp Image 2026-03-04 at 1.34.55 PM (2).jpeg'); background-size: cover; background-position: center;"></div>
           <div style="padding: var(--space-3);">
-            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Certificate Presentation</h4>
-            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Takoradi • October 2025</p>
+            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Certificate Awards Ceremony</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Western Region • March 2026</p>
           </div>
         </div>
       </div>
@@ -87,43 +88,133 @@
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script>
-    // Sample gallery data
+    // AMCAG Gallery - Real event photos
     const sampleGallery = [
       {
-        title: 'Annual General Meeting 2026',
-        location: 'Greater Accra',
-        imageUrl: 'https://via.placeholder.com/600x400/1A73E8/ffffff?text=AGM+2026',
-        createdAt: new Date('2026-02-15')
+        title: 'AMCAG Annual General Meeting 2026',
+        location: 'Greater Accra Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.32 PM.jpeg',
+        createdAt: new Date('2026-03-04')
       },
       {
-        title: 'Regional Training Workshop',
+        title: 'Leadership Training Workshop',
         location: 'Ashanti Region',
-        imageUrl: 'https://via.placeholder.com/600x400/34A853/ffffff?text=Training+Workshop',
-        createdAt: new Date('2026-01-20')
-      },
-      {
-        title: 'Community Outreach Program',
-        location: 'Central Region',
-        imageUrl: 'https://via.placeholder.com/600x400/FBBC04/ffffff?text=Outreach+Program',
-        createdAt: new Date('2026-01-10')
-      },
-      {
-        title: 'Leadership Summit',
-        location: 'Greater Accra',
-        imageUrl: 'https://via.placeholder.com/600x400/EA4335/ffffff?text=Leadership+Summit',
-        createdAt: new Date('2025-12-05')
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.53 PM.jpeg',
+        createdAt: new Date('2026-03-04')
       },
       {
         title: 'Member Networking Event',
-        location: 'Eastern Region',
-        imageUrl: 'https://via.placeholder.com/600x400/1A73E8/ffffff?text=Networking+Event',
-        createdAt: new Date('2025-11-22')
+        location: 'Central Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.54 PM (1).jpeg',
+        createdAt: new Date('2026-03-04')
       },
       {
-        title: 'Awards Ceremony 2025',
+        title: 'Community Outreach Program',
+        location: 'Eastern Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.54 PM.jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Regional Conference 2026',
         location: 'Greater Accra',
-        imageUrl: 'https://via.placeholder.com/600x400/34A853/ffffff?text=Awards+2025',
-        createdAt: new Date('2025-11-15')
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.55 PM (1).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Certificate Awards Ceremony',
+        location: 'Western Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.55 PM (2).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Youth Members Gathering',
+        location: 'Volta Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.55 PM.jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Executive Committee Meeting',
+        location: 'Greater Accra',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.56 PM (1).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Regional Coordinators Summit',
+        location: 'Ashanti Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.56 PM (2).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Member Orientation Program',
+        location: 'Northern Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.56 PM (3).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Fundraising Gala Dinner',
+        location: 'Greater Accra',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.56 PM.jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Skills Development Workshop',
+        location: 'Brong Ahafo',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.57 PM (1).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Women in Leadership Forum',
+        location: 'Greater Accra',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.57 PM.jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'District Leaders Meeting',
+        location: 'Central Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.58 PM (1).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Annual Sports & Recreation Day',
+        location: 'Ashanti Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.58 PM (2).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Medical Outreach Program',
+        location: 'Upper East',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.58 PM (3).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Members Appreciation Event',
+        location: 'Western Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.58 PM.jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Quarterly Business Review',
+        location: 'Greater Accra',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.59 PM (1).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Educational Scholarship Awards',
+        location: 'Eastern Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.59 PM (2).jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'Strategic Planning Retreat',
+        location: 'Central Region',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 1.34.59 PM.jpeg',
+        createdAt: new Date('2026-03-04')
+      },
+      {
+        title: 'AMCAG Foundation Launch',
+        location: 'Greater Accra',
+        imageUrl: '/images/WhatsApp Image 2026-03-04 at 9.19.00 AM.jpeg',
+        createdAt: new Date('2026-03-04')
       }
     ];
 

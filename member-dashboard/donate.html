@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Make a Donation | AMCAG Member Portal</title>
+  <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/mobile.css">
@@ -302,18 +303,37 @@
     }
 
     async function loadCampaigns() {
+      const container = document.getElementById('campaignsList');
+      
       try {
         const db = firebase.firestore();
-        const snapshot = await db.collection('donation_campaigns')
-          .where('status', '==', 'active')
-          .orderBy('createdAt', 'desc')
-          .get();
+        let snapshot;
+        
+        // Try with orderBy first
+        try {
+          snapshot = await db.collection('donation_campaigns')
+            .where('status', '==', 'active')
+            .orderBy('createdAt', 'desc')
+            .get();
+        } catch (indexError) {
+          // If index doesn't exist, try without orderBy
+          console.warn('Index not found, loading without order:', indexError);
+          snapshot = await db.collection('donation_campaigns')
+            .where('status', '==', 'active')
+            .get();
+        }
 
         const select = document.getElementById('campaignSelect');
-        const container = document.getElementById('campaignsList');
 
         if (snapshot.empty) {
-          container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-secondary);">No active campaigns</div>';
+          container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-secondary);">
+              <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+              <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">No Active Campaigns</h3>
+              <p>There are currently no active fundraising campaigns.</p>
+              <p style="margin-top: 0.5rem;">You can still make a general donation using the form below.</p>
+            </div>
+          `;
           return;
         }
 
@@ -351,6 +371,14 @@
         }).join('');
       } catch (error) {
         console.error('Error loading campaigns:', error);
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-secondary);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+            <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">No Active Campaigns</h3>
+            <p>Unable to load campaigns at this time.</p>
+            <p style="margin-top: 0.5rem;">You can still make a general donation using the form below.</p>
+          </div>
+        `;
       }
     }
 
