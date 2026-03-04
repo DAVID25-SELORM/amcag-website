@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Approval | AMCAG National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/member-approval.html" class="dashboard-nav-item active">
+          <span>✅</span> Member Approval
+        </a>
+        <a href="/national/regions.html" class="dashboard-nav-item">
+          <span>🗺️</span> Regions
+        </a>
+        <a href="/national/payments.html" class="dashboard-nav-item">
+          <span>💰</span> Payments
+        </a>
+        <a href="/national/certificates.html" class="dashboard-nav-item">
+          <span>📜</span> Certificates
+        </a>
+        <a href="/national/events.html" class="dashboard-nav-item">
+          <span>📅</span> Events
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+        <a href="/national/leadership.html" class="dashboard-nav-item">
+          <span>⚙️</span> Leadership
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Member Approval</h1>
+          <p class="dashboard-subtitle">Review and approve pending member registrations</p>
+        </div>
+        <div>
+          <button class="btn btn-outline" onclick="loadPendingMembers()">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <div class="grid grid-3 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="pendingCount">0</div>
+          <div class="stat-label">Pending Approval</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="approvedToday">0</div>
+          <div class="stat-label">Approved Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="rejectedToday">0</div>
+          <div class="stat-label">Rejected Today</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">Pending Registrations</h3>
+          <div class="flex gap-2">
+            <input type="text" id="searchInput" class="form-input" placeholder="Search by name or email..." style="width: 250px;">
+            <select id="regionFilter" class="form-input" style="width: auto;">
+              <option value="">All Regions</option>
+              <option value="Greater Accra">Greater Accra</option>
+              <option value="Ashanti">Ashanti</option>
+              <option value="Central">Central</option>
+              <option value="Eastern">Eastern</option>
+              <option value="Northern">Northern</option>
+              <option value="Upper East">Upper East</option>
+              <option value="Upper West">Upper West</option>
+              <option value="Volta">Volta</option>
+              <option value="Western">Western</option>
+              <option value="Western North">Western North</option>
+              <option value="Bono">Bono</option>
+              <option value="Bono East">Bono East</option>
+              <option value="Ahafo">Ahafo</option>
+              <option value="Savannah">Savannah</option>
+              <option value="North East">North East</option>
+              <option value="Oti">Oti</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">
+                  <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                </th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Region</th>
+                <th>Registered</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pendingTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 3rem;">
+                  <div style="display: inline-block;">
+                    <div style="margin-bottom: 1rem; font-size: 2rem;">⏳</div>
+                    <div>Loading pending registrations...</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex gap-2 mt-4" id="bulkActions" style="display: none;">
+          <button class="btn btn-success" onclick="bulkApprove()">✅ Approve Selected</button>
+          <button class="btn btn-error" onclick="bulkReject()">❌ Reject Selected</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Member Details Modal -->
+  <div id="memberModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <div style="padding: 2rem;">
+        <h3 class="mb-4">Member Details</h3>
+        
+        <div class="grid grid-2 gap-3 mb-4">
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Full Name</label>
+            <div class="mb-2" id="modalName" style="font-weight: 600;">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Email</label>
+            <div class="mb-2" id="modalEmail">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Phone</label>
+            <div class="mb-2" id="modalPhone">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Region</label>
+            <div class="mb-2" id="modalRegion">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Registration Date</label>
+            <div class="mb-2" id="modalRegDate">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Email Verified</label>
+            <div class="mb-2" id="modalEmailVerified">-</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Member ID</label>
+          <input type="text" id="memberIdInput" class="form-input" placeholder="e.g., AMCAG-2026-001" readonly>
+          <span class="form-help">Auto-generated on approval</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes (Optional)</label>
+          <textarea id="approvalNotes" class="form-input" rows="3" placeholder="Add any notes about this approval..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-success" onclick="approveSingleMember()">✅ Approve</button>
+          <button class="btn btn-error" onclick="rejectSingleMember()">❌ Reject</button>
+          <button class="btn btn-outline" onclick="closeMemberModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    let pendingMembers = [];
+    let filteredMembers = [];
+    let selectedMemberUid = null;
+    let approveMemberFunction = null;
+    let rejectMemberFunction = null;
+
+    // Initialize Cloud Functions
+    firebase.auth().onAuthStateChanged(user => {
+      if (user && !approveMemberFunction) {
+        const functions = firebase.functions();
+        approveMemberFunction = functions.httpsCallable('approveMember');
+        rejectMemberFunction = functions.httpsCallable('rejectMember');
+      }
+    });
+
+    // Load pending members
+    async function loadPendingMembers() {
+      try {
+        UIModule.showLoader('Loading pending members...');
+        
+        const db = firebase.firestore();
+        const snapshot = await db.collection('users')
+          .where('status', '==', 'pending')
+          .orderBy('registrationDate', 'desc')
+          .get();
+
+        pendingMembers = snapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data()
+        }));
+
+        filteredMembers = [...pendingMembers];
+        
+        // Update stats
+        document.getElementById('pendingCount').textContent = pendingMembers.length;
+        
+        // Get today's approvals/rejections
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const approvedSnapshot = await db.collection('audit_logs')
+          .where('action', '==', 'member_approved')
+          .where('timestamp', '>=', today)
+          .get();
+        document.getElementById('approvedToday').textContent = approvedSnapshot.size;
+        
+        const rejectedSnapshot = await db.collection('audit_logs')
+          .where('action', '==', 'member_rejected')
+          .where('timestamp', '>=', today)
+          .get();
+        document.getElementById('rejectedToday').textContent = rejectedSnapshot.size;
+
+        renderTable();
+        UIModule.hideLoader();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading pending members:', error);
+        UIModule.showAlert('Error loading pending members: ' + error.message, 'error');
+      }
+    }
+
+    // Render table
+    function renderTable() {
+      const tbody = document.getElementById('pendingTableBody');
+      
+      if (filteredMembers.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+              ${pendingMembers.length === 0 ? '🎉 No pending approvals! All registrations processed.' : 'No members match your filter criteria.'}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filteredMembers.map(member => `
+        <tr>
+          <td>
+            <input type="checkbox" class="member-checkbox" data-uid="${member.uid}" onchange="updateBulkActions()">
+          </td>
+          <td style="font-weight: 600;">${member.fullName || 'N/A'}</td>
+          <td>${member.email || 'N/A'}</td>
+          <td>${member.phone || 'N/A'}</td>
+          <td><span class="badge badge-secondary">${member.region || 'N/A'}</span></td>
+          <td>${member.registrationDate ? new Date(member.registrationDate.toDate()).toLocaleDateString() : 'N/A'}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick='viewMemberDetails(${JSON.stringify(member).replace(/'/g, "\\'")})'>
+              Review
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Filter functions
+    document.getElementById('searchInput')?.addEventListener('input', applyFilters);
+    document.getElementById('regionFilter')?.addEventListener('change', applyFilters);
+
+    function applyFilters() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const regionFilter = document.getElementById('regionFilter').value;
+
+      filteredMembers = pendingMembers.filter(member => {
+        const matchesSearch = 
+          (member.fullName || '').toLowerCase().includes(searchTerm) ||
+          (member.email || '').toLowerCase().includes(searchTerm) ||
+          (member.phone || '').includes(searchTerm);
+
+        const matchesRegion = !regionFilter || member.region === regionFilter;
+
+        return matchesSearch && matchesRegion;
+      });
+
+      renderTable();
+    }
+
+    // Select all checkbox
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('selectAll').checked;
+      document.querySelectorAll('.member-checkbox').forEach(cb => {
+        cb.checked = selectAll;
+      });
+      updateBulkActions();
+    }
+
+    function updateBulkActions() {
+      const checkedCount = document.querySelectorAll('.member-checkbox:checked').length;
+      document.getElementById('bulkActions').style.display = checkedCount > 0 ? 'flex' : 'none';
+    }
+
+    // View member details
+    function viewMemberDetails(member) {
+      selectedMemberUid = member.uid;
+      
+      document.getElementById('modalName').textContent = member.fullName || 'N/A';
+      document.getElementById('modalEmail').textContent = member.email || 'N/A';
+      document.getElementById('modalPhone').textContent = member.phone || 'N/A';
+      document.getElementById('modalRegion').textContent = member.region || 'N/A';
+      document.getElementById('modalRegDate').textContent = member.registrationDate ? 
+        new Date(member.registrationDate.toDate()).toLocaleString() : 'N/A';
+      document.getElementById('modalEmailVerified').innerHTML = member.emailVerified ? 
+        '<span class="badge badge-success">✅ Verified</span>' : 
+        '<span class="badge badge-warning">⏳ Pending</span>';
+      
+      // Auto-generate member ID
+      const year = new Date().getFullYear();
+      const nextNumber = String(pendingMembers.length + 1).padStart(4, '0');
+      document.getElementById('memberIdInput').value = `AMCAG-${year}-${nextNumber}`;
+      
+      document.getElementById('memberModal').style.display = 'flex';
+    }
+
+    function closeMemberModal() {
+      document.getElementById('memberModal').style.display = 'none';
+      selectedMemberUid = null;
+      document.getElementById('approvalNotes').value = '';
+    }
+
+    // Approve single member
+    async function approveSingleMember() {
+      if (!selectedMemberUid) return;
+
+      const memberId = document.getElementById('memberIdInput').value;
+      const notes = document.getElementById('approvalNotes').value;
+
+      if (!memberId) {
+        UIModule.showAlert('Member ID is required', 'error');
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Approving member...');
+
+        const result = await approveMemberFunction({
+          memberUid: selectedMemberUid,
+          memberId: memberId,
+          notes: notes
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert('✅ Member approved successfully!', 'success');
+          closeMemberModal();
+          loadPendingMembers();
+        } else {
+          UIModule.showAlert('Failed to approve member: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error approving member:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Reject single member
+    async function rejectSingleMember() {
+      if (!selectedMemberUid) return;
+
+      const notes = document.getElementById('approvalNotes').value || 'No reason provided';
+
+      if (!confirm('Are you sure you want to reject this member registration?')) {
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Rejecting member...');
+
+        const result = await rejectMemberFunction({
+          memberUid: selectedMemberUid,
+          reason: notes
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert('Member registration rejected.', 'success');
+          closeMemberModal();
+          loadPendingMembers();
+        } else {
+          UIModule.showAlert('Failed to reject member: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error rejecting member:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Bulk approve
+    async function bulkApprove() {
+      const selectedUids = Array.from(document.querySelectorAll('.member-checkbox:checked'))
+        .map(cb => cb.dataset.uid);
+
+      if (selectedUids.length === 0) return;
+
+      if (!confirm(`Approve ${selectedUids.length} member(s)?`)) return;
+
+      try {
+        UIModule.showLoader(`Approving ${selectedUids.length} members...`);
+
+        let successCount = 0;
+        const year = new Date().getFullYear();
+
+        for (let i = 0; i < selectedUids.length; i++) {
+          const uid = selectedUids[i];
+          const nextNumber = String(pendingMembers.length + i + 1).padStart(4, '0');
+          const memberId = `AMCAG-${year}-${nextNumber}`;
+
+          try {
+            const result = await approveMemberFunction({
+              memberUid: uid,
+              memberId: memberId,
+              notes: 'Bulk approval'
+            });
+
+            if (result.data.success) successCount++;
+          } catch (error) {
+            console.error('Error approving member:', uid, error);
+          }
+        }
+
+        UIModule.hideLoader();
+        UIModule.showAlert(`✅ Successfully approved ${successCount} out of ${selectedUids.length} members`, 'success');
+        loadPendingMembers();
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Bulk approval error:', error);
+        UIModule.showAlert('Error during bulk approval: ' + error.message, 'error');
+      }
+    }
+
+    // Bulk reject
+    async function bulkReject() {
+      const selectedUids = Array.from(document.querySelectorAll('.member-checkbox:checked'))
+        .map(cb => cb.dataset.uid);
+
+      if (selectedUids.length === 0) return;
+
+      const reason = prompt(`Enter reason for rejecting ${selectedUids.length} member(s):`);
+      if (!reason) return;
+
+      try {
+        UIModule.showLoader(`Rejecting ${selectedUids.length} members...`);
+
+        let successCount = 0;
+
+        for (const uid of selectedUids) {
+          try {
+            const result = await rejectMemberFunction({
+              memberUid: uid,
+              reason: reason
+            });
+
+            if (result.data.success) successCount++;
+          } catch (error) {
+            console.error('Error rejecting member:', uid, error);
+          }
+        }
+
+        UIModule.hideLoader();
+        UIModule.showAlert(`Rejected ${successCount} out of ${selectedUids.length} members`, 'success');
+        loadPendingMembers();
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Bulk rejection error:', error);
+        UIModule.showAlert('Error during bulk rejection: ' + error.message, 'error');
+      }
+    }
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    // Initialize
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      // Check if user is national executive
+      const db = firebase.firestore();
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      
+      if (!userDoc.exists) {
+        window.location.href = '/member-dashboard.html';
+        return;
+      }
+
+      const userData = userDoc.data();
+
+      if (userData.role !== 'national_executive' && userData.role !== 'super_admin') {
+        UIModule.showAlert('Access denied. National Executive role required.', 'error');
+        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+        return;
+      }
+
+      loadPendingMembers();
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{
+  "rules": {
+    "regional-chats": {
+      "$region": {
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('region').val() === $region || root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive')",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('region').val() === $region || root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive')",
+        "messages": {
+          "$messageId": {
+            ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'text', 'timestamp'])",
+            "senderId": {
+              ".validate": "newData.val() === auth.uid"
+            },
+            "readBy": {
+              "$uid": {
+                ".write": "auth != null && $uid === auth.uid"
+              }
+            }
+          }
+        }
+      }
+    },
+    "regional-announcements": {
+      "$region": {
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('region').val() === $region || root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive')",
+        "posts": {
+          "$postId": {
+            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive' || root.child('users').child(auth.uid).child('role').val() === 'regional_executive')",
+            ".validate": "newData.hasChildren(['authorId', 'authorName', 'authorRole', 'text', 'timestamp'])",
+            "authorId": {
+              ".validate": "newData.val() === auth.uid"
+            },
+            "readBy": {
+              "$uid": {
+                ".write": "auth != null && $uid === auth.uid"
+              }
+            }
+          }
+        }
+      }
+    },
+    "national-chat": {
+      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive' || root.child('users').child(auth.uid).child('role').val() === 'regional_executive')",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive' || root.child('users').child(auth.uid).child('role').val() === 'regional_executive')",
+      "messages": {
+        "$messageId": {
+          ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'text', 'timestamp'])",
+          "senderId": {
+            ".validate": "newData.val() === auth.uid"
+          },
+          "readBy": {
+            "$uid": {
+              ".write": "auth != null && $uid === auth.uid"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Videos | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <ul class="navbar-menu">
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><a href="/about.html" class="navbar-link">About</a></li>
+        <li><a href="/leadership.html" class="navbar-link">Leadership</a></li>
+        <li><a href="/events.html" class="navbar-link">Events</a></li>
+        <li><a href="/news.html" class="navbar-link">News</a></li>
+        <li><a href="/gallery.html" class="navbar-link">Gallery</a></li>
+        <li><a href="/regions.html" class="navbar-link">Regions</a></li>
+        <li><a href="/contact.html" class="navbar-link">Contact</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="/membership.html" class="navbar-cta">Member Portal</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="hero" style="padding: var(--space-10) 0 var(--space-8);">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">Video Gallery</h1>
+        <p class="hero-subtitle">Watch highlights from our events and training programs</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="grid grid-2 gap-6" id="videos-grid">
+        <div class="card">
+          <div style="position: relative; padding-bottom: 56.25%; background: var(--color-primary-95); border-radius: var(--radius-lg); margin-bottom: var(--space-3);">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: white; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">▶️</div>
+          </div>
+          <h3 class="card-title mb-2">2025 AGM Highlights</h3>
+          <p class="card-body mb-2">Key moments from our Annual General Meeting including keynote speeches and awards ceremony.</p>
+          <span style="color: var(--text-tertiary); font-size: var(--text-sm);">Duration: 15:32</span>
+        </div>
+
+        <div class="card">
+          <div style="position: relative; padding-bottom: 56.25%; background: var(--color-secondary-95); border-radius: var(--radius-lg); margin-bottom: var(--space-3);">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: white; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">▶️</div>
+          </div>
+          <h3 class="card-title mb-2">Professional Development Workshop</h3>
+          <p class="card-body mb-2">Training session on pharmaceutical best practices and customer service excellence.</p>
+          <span style="color: var(--text-tertiary); font-size: var(--text-sm);">Duration: 22:18</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script>
+    async function loadVideos() {
+      const videosContainer = document.getElementById('videos-grid');
+      
+      try {
+        const db = firebase.firestore();
+        let snapshot;
+        
+        try {
+          snapshot = await db.collection('videos')
+            .orderBy('createdAt', 'desc')
+            .limit(12)
+            .get();
+        } catch (queryError) {
+          console.warn('Videos query failed, trying without orderBy:', queryError);
+          snapshot = await db.collection('videos').limit(12).get();
+        }
+        
+        if (snapshot.empty) {
+          videosContainer.innerHTML = `
+            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-8);">
+              <p style="color: var(--text-secondary);">No videos available yet. Check back soon!</p>
+            </div>
+          `;
+          return;
+        }
+        
+        videosContainer.innerHTML = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const thumbnailUrl = data.thumbnailUrl || data.videoUrl || '';
+          const duration = data.duration || '';
+          const title = data.title || 'Untitled Video';
+          const description = data.description || '';
+          
+          return `
+            <div class="card" style="padding: 0; overflow: hidden;">
+              <div style="position: relative; height: 200px; background: var(--color-primary-95); background-image: url('${thumbnailUrl}'); background-size: cover; background-position: center;">
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3);">
+                  <div style="width: 60px; height: 60px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="window.open('${data.videoUrl || '#'}', '_blank')">
+                    <span style="font-size: var(--text-2xl); margin-left: 4px;">▶</span>
+                  </div>
+                </div>
+              </div>
+              <div style="padding: var(--space-3);">
+                <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-2);">${title}</h4>
+                <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-2);">${description.substring(0, 80)}...</p>
+                ${duration ? `<span style="color: var(--text-tertiary); font-size: var(--text-sm);">Duration: ${duration}</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+      } catch (error) {
+        console.error('Error loading videos:', error);
+        videosContainer.innerHTML = `
+          <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-8);">
+            <p style="color: var(--text-secondary);">Unable to load videos. Please try again later.</p>
+          </div>
+        `;
+      }
+    }
+    
+    // Wait for Firebase App to be initialized before loading videos
+    function waitForFirebase() {
+      if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+        loadVideos();
+      } else {
+        setTimeout(waitForFirebase, 50);
+      }
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForFirebase);
+    } else {
+      waitForFirebase();
+    }
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+  
+  <!-- Theme Toggle -->
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    // Initialize theme
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      if (savedTheme === 'dark') {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) icon.textContent = '☀️';
+      }
+    })();
+  </script>
+</body>
+</html>

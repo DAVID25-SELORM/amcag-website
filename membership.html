@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Portal | AMCAG</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      
+      <button class="navbar-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <ul class="navbar-menu">
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><a href="/about.html" class="navbar-link">About</a></li>
+        <li><a href="/events.html" class="navbar-link">Events</a></li>
+        <li><a href="/contact.html" class="navbar-link">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== MAIN CONTENT START ===== -->
+  <section class="section bg-surface" style="min-height: 80vh;">
+    <div class="container">
+      <div class="grid grid-2" style="align-items: center; gap: var(--space-8); max-width: 1000px; margin: 0 auto;">
+        <!-- Left Side - Info -->
+        <div>
+          <h1 style="font-family: var(--font-display); font-size: var(--text-4xl); font-weight: var(--font-bold); margin-bottom: var(--space-3);">
+            Member Portal
+          </h1>
+          <p style="color: var(--text-secondary); font-size: var(--text-lg); margin-bottom: var(--space-6);">
+            Access your dashboard, manage your profile, view certificates, and stay connected with AMCAG.
+          </p>
+          
+          <div class="flex-col gap-3">
+            <div class="flex gap-3">
+              <div style="color: var(--color-primary-40); font-size: var(--text-2xl);">✓</div>
+              <div>
+                <h4 style="font-weight: var(--font-semibold); margin-bottom: 4px;">Professional Dashboard</h4>
+                <p style="color: var(--text-secondary); font-size: var(--text-sm);">Access personalized member dashboard</p>
+              </div>
+            </div>
+            
+            <div class="flex gap-3">
+              <div style="color: var(--color-primary-40); font-size: var(--text-2xl);">✓</div>
+              <div>
+                <h4 style="font-weight: var(--font-semibold); margin-bottom: 4px;">Manage Dues & Payments</h4>
+                <p style="color: var(--text-secondary); font-size: var(--text-sm);">Track and pay membership dues</p>
+              </div>
+            </div>
+            
+            <div class="flex gap-3">
+              <div style="color: var(--color-primary-40); font-size: var(--text-2xl);">✓</div>
+              <div>
+                <h4 style="font-weight: var(--font-semibold); margin-bottom: 4px;">Digital Certificates</h4>
+                <p style="color: var(--text-secondary); font-size: var(--text-sm);">Access and download your certificates</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Right Side - Auth Forms -->
+        <div class="card" style="padding: var(--space-6);">
+          <!-- Sign In Form -->
+          <div id="sign-in-form">
+            <h2 style="font-family: var(--font-display); font-size: var(--text-3xl); font-weight: var(--font-bold); margin-bottom: var(--space-4);">
+              Sign In
+            </h2>
+            
+            <form id="login-form">
+              <div class="form-group">
+                <label class="form-label required">Email</label>
+                <input type="email" class="form-input" id="login-email" required placeholder="your@email.com">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Password</label>
+                <input type="password" class="form-input" id="login-password" required placeholder="••••••••">
+              </div>
+              
+              <div class="form-group">
+                <a href="#" onclick="showForgotPassword(); return false;" style="color: var(--color-primary-40); font-size: var(--text-sm);">
+                  Forgot password?
+                </a>
+              </div>
+              
+              <button type="submit" class="btn btn-primary btn-block btn-lg">Sign In</button>
+            </form>
+            
+            <div style="text-align: center; margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--color-neutral-90);">
+              <p style="color: var(--text-secondary);">
+                Don't have an account? 
+                <a href="#" onclick="toggleForms(); return false;" style="color: var(--color-primary-40); font-weight: var(--font-medium);">
+                  Register
+                </a>
+              </p>
+            </div>
+          </div>
+          
+          <!-- Registration Form -->
+          <div id="register-form" class="hidden">
+            <h2 style="font-family: var(--font-display); font-size: var(--text-3xl); font-weight: var(--font-bold); margin-bottom: var(--space-4);">
+              Register
+            </h2>
+            
+            <form id="registration-form">
+              <div class="form-group">
+                <label class="form-label required">Full Name</label>
+                <input type="text" class="form-input" id="register-name" required placeholder="John Doe" minlength="3">
+                <span class="form-help">Enter your first and last name</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Email</label>
+                <input type="email" class="form-input" id="register-email" required placeholder="your@email.com">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Phone</label>
+                <input type="tel" class="form-input" id="register-phone" required placeholder="+233 24 123 4567" pattern="^\+233\s?\d{2}\s?\d{3}\s?\d{4}$" title="Enter a valid Ghana phone number (e.g., +233 24 123 4567)">
+                <span class="form-help">Format: +233 XX XXX XXXX</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Gender</label>
+                <select class="form-select" id="register-gender" required>
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Date of Birth</label>
+                <input type="date" class="form-input" id="register-dob" required>
+                <span class="form-help">Must be at least 18 years old</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Marital Status</label>
+                <select class="form-select" id="register-marital-status" required>
+                  <option value="">Select Marital Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Address</label>
+                <textarea class="form-input" id="register-address" required placeholder="Enter your residential address" rows="3" minlength="10"></textarea>
+                <span class="form-help">Full residential address</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Employment Status</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: var(--color-surface-container); border-radius: 8px;">
+                  <input type="checkbox" id="register-currently-employed" style="width: 20px; height: 20px; cursor: pointer;" checked>
+                  <label for="register-currently-employed" style="cursor: pointer; margin: 0; font-weight: var(--font-medium);">I am currently employed</label>
+                </div>
+                <span class="form-help">Uncheck if you are not currently working</span>
+              </div>
+              
+              <div class="form-group" id="workplace-group">
+                <label class="form-label required">Current Place of Work</label>
+                <input type="text" class="form-input" id="register-workplace" placeholder="e.g., ABC Pharmacy, XYZ Hospital" minlength="3">
+                <span class="form-help">Name of your current employer or pharmacy</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Next of Kin Name</label>
+                <input type="text" class="form-input" id="register-next-of-kin-name" required placeholder="Full name of next of kin" minlength="3">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Next of Kin Contact</label>
+                <input type="tel" class="form-input" id="register-next-of-kin-contact" required placeholder="+233 24 123 4567" pattern="^\+233\s?\d{2}\s?\d{3}\s?\d{4}$" title="Enter a valid Ghana phone number (e.g., +233 24 123 4567)">
+                <span class="form-help">Phone number of next of kin</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Region</label>
+                <select class="form-select" id="register-region" required>
+                  <option value="">Select Region</option>
+                  <option value="Greater Accra">Greater Accra</option>
+                  <option value="Ashanti">Ashanti</option>
+                  <option value="Central">Central</option>
+                  <option value="Eastern">Eastern</option>
+                  <option value="Northern">Northern</option>
+                  <option value="Upper East">Upper East</option>
+                  <option value="Upper West">Upper West</option>
+                  <option value="Volta">Volta</option>
+                  <option value="Western">Western</option>
+                  <option value="Western North">Western North</option>
+                  <option value="Bono">Bono</option>
+                  <option value="Bono East">Bono East</option>
+                  <option value="Ahafo">Ahafo</option>
+                  <option value="Oti">Oti</option>
+                  <option value="Savannah">Savannah</option>
+                  <option value="North East">North East</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Profile Picture</label>
+                <input type="file" class="form-input" id="register-photo" accept="image/*">
+                <span class="form-help">Upload your profile photo (recommended for better engagement)</span>
+                <div id="photo-preview" style="margin-top: 0.5rem; display: none;">
+                  <img id="preview-image" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid var(--border-color);">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Pharmacy Council PIN</label>
+                <input type="text" class="form-input" id="register-pharmacy-pin" placeholder="e.g., PC/12345/2024">
+                <span class="form-help">Optional - For licensed pharmacists only</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">MCA School Attended</label>
+                <select class="form-select" id="register-mca-school">
+                  <option value="">Select School (Optional)</option>
+                  <option value="Pharmatrust Professional College">Pharmatrust Professional College</option>
+                  <option value="Avenue Chemist MCA Training Center">Avenue Chemist MCA Training Center</option>
+                  <option value="Phersons College">Phersons College</option>
+                  <option value="Encephal College Of Health Technology">Encephal College Of Health Technology</option>
+                  <option value="Tobinco MCA Training School">Tobinco MCA Training School</option>
+                  <option value="Other">Other (Specify below)</option>
+                </select>
+              </div>
+              
+              <div class="form-group" id="other-mca-school-group" style="display: none;">
+                <label class="form-label">Specify Other MCA School</label>
+                <input type="text" class="form-input" id="register-mca-school-other" placeholder="Enter school name">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Password</label>
+                <input type="password" class="form-input" id="register-password" required placeholder="••••••••" minlength="8">
+                <span class="form-help">Minimum 8 characters with at least one uppercase, lowercase, and number</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Confirm Password</label>
+                <input type="password" class="form-input" id="register-confirm-password" required placeholder="••••••••">
+              </div>
+              
+              <button type="submit" class="btn btn-primary btn-block btn-lg">Register</button>
+            </form>
+            
+            <div style="text-align: center; margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--color-neutral-90);">
+              <p style="color: var(--text-secondary);">
+                Already have an account? 
+                <a href="#" onclick="toggleForms(); return false;" style="color: var(--color-primary-40); font-weight: var(--font-medium);">
+                  Sign In
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== MAIN CONTENT END ===== -->
+
+  <!-- ===== FOOTER START ===== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>&copy; 2026 AMCAG. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+  <!-- ===== FOOTER END ===== -->
+
+  <!-- Firebase & Modules -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/ui.js"></script>
+  
+  <script>
+    // Prevent any router interference on login page
+    window.SKIP_ROUTER = true;
+    
+    // Wait for Firebase to load with timeout
+    function waitForFirebase(callback, timeout = 5000) {
+      const startTime = Date.now();
+      const checkInterval = setInterval(() => {
+        if (window.firebase && window.FirebaseModule && window.FirebaseModule.firestore) {
+          // Also check if firestore instance is available
+          try {
+            const db = window.FirebaseModule.firestore();
+            if (db) {
+              clearInterval(checkInterval);
+              callback(true);
+              return;
+            }
+          } catch (e) {
+            // Not ready yet
+          }
+        }
+        
+        if (Date.now() - startTime > timeout) {
+          clearInterval(checkInterval);
+          callback(false);
+        }
+      }, 100);
+    }
+    
+    // Check Firebase loaded after page load
+    window.addEventListener('load', function() {
+      waitForFirebase(function(loaded) {
+        if (!loaded) {
+          // Firebase didn't load - show error
+          const isEdge = /Edg/.test(navigator.userAgent);
+          let message = 'Firebase failed to load. ';
+          
+          if (isEdge) {
+            message += 'Microsoft Edge tracking prevention is blocking Firebase. Please follow these steps:\n\n';
+            message += '1. Click the lock icon (or eye icon) in the address bar\n';
+            message += '2. Turn OFF "Tracking prevention for this site"\n';
+            message += '3. Refresh the page\n\n';
+            message += 'OR use Chrome/Firefox browser instead.';
+          } else {
+            message += 'Please check your browser\'s privacy settings and disable any tracking prevention or ad blockers, then refresh the page.';
+          }
+          
+          UIModule.showAlert(message, 'error');
+        }
+      });
+    });
+    
+    // Clean up redirect parameter from URL if on membership page
+    if (window.location.search.includes('redirect=%2Fmembership')) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('redirect');
+      window.history.replaceState({}, document.title, url.pathname);
+    }
+    
+    // Simple auth module for login page only
+    const SimpleAuth = {
+      signIn: async function(email, password) {
+        try {
+          if (!window.FirebaseModule || !window.FirebaseModule.auth()) {
+            throw new Error('Firebase not initialized');
+          }
+          
+          const auth = window.FirebaseModule.auth();
+          const userCredential = await auth.signInWithEmailAndPassword(email, password);
+          return { success: true, user: userCredential.user };
+        } catch (error) {
+          return { 
+            success: false, 
+            error: window.FirebaseModule?.handleFirebaseError(error) || error.message 
+          };
+        }
+      },
+      
+      signUp: async function(email, password, profileData) {
+        try {
+          if (!window.FirebaseModule) {
+            throw new Error('Firebase not initialized');
+          }
+          
+          const auth = window.FirebaseModule.auth();
+          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+          const user = userCredential.user;
+          
+          const userData = {
+            uid: user.uid,
+            email: email,
+            role: 'member',
+            fullName: profileData.fullName,
+            phone: profileData.phone || '',
+            region: profileData.region || '',
+            registrationDate: window.FirebaseModule.timestamp.now(),
+            status: 'pending',
+            createdAt: window.FirebaseModule.timestamp.now(),
+            updatedAt: window.FirebaseModule.timestamp.now()
+          };
+          
+          // Create user profile in users collection
+          await window.FirebaseModule.collections.users()
+            .doc(user.uid)
+            .set(userData);
+          
+          // Create member record in members collection (for regional dashboards)
+          await window.FirebaseModule.collections.members()
+            .doc(user.uid)
+            .set({
+              ...userData,
+              memberId: null, // Will be assigned after approval
+              membershipType: 'regular',
+              joiningDate: null, // Set when approved
+              approvalStatus: 'pending_approval'
+            });
+          
+          // Send email verification
+          await user.sendEmailVerification();
+          
+          return { success: true, user };
+        } catch (error) {
+          return { 
+            success: false, 
+            error: window.FirebaseModule?.handleFirebaseError(error) || error.message 
+          };
+        }
+      },
+      
+      resetPassword: async function(email) {
+        try {
+          const auth = window.FirebaseModule.auth();
+          await auth.sendPasswordResetEmail(email);
+          return { success: true };
+        } catch (error) {
+          return { 
+            success: false, 
+            error: window.FirebaseModule?.handleFirebaseError(error) || error.message 
+          };
+        }
+      }
+    };
+    
+    // Toggle between sign in and register forms
+    function toggleForms() {
+      document.getElementById('sign-in-form').classList.toggle('hidden');
+      document.getElementById('register-form').classList.toggle('hidden');
+    }
+    
+    // Show forgot password modal
+    function showForgotPassword() {
+      const email = prompt('Enter your email address:');
+      if (email) {
+        UIModule.showLoader('Sending reset email...');
+        SimpleAuth.resetPassword(email).then(result => {
+          UIModule.hideLoader();
+          if (result.success) {
+            UIModule.showAlert('Password reset email sent! Check your inbox.', 'success');
+          } else {
+            UIModule.showAlert(result.error, 'error');
+          }
+        });
+      }
+    }
+    
+    // Handle login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      
+      console.log('[Login] ==========================================================');
+      console.log('[Login] LOGIN ATTEMPT STARTED');
+      console.log('[Login] Email:', email);
+      console.log('[Login] ==========================================================');
+      
+      // Check if Firebase is initialized
+      if (!window.firebase || !window.FirebaseModule || !window.FirebaseModule.firestore()) {
+        console.error('[Login] ❌ Firebase not ready!');
+        UIModule.showAlert('Firebase is not ready. Please refresh the page.', 'error');
+        return;
+      }
+      
+      console.log('[Login] ✅ Firebase is ready');
+      UIModule.showLoader('Signing in...');
+      
+      const result = await SimpleAuth.signIn(email, password);
+      console.log('[Login] Sign in result:', result);
+      
+      // Handle email not verified
+      if (result.emailNotVerified) {
+        console.log('[Login] ⚠️ Email not verified');
+        UIModule.hideLoader();
+        
+        // Show option to resend verification email
+        const resend = confirm('Your email address is not verified yet. Would you like us to resend the verification email?');
+        if (resend && result.user) {
+          try {
+            await result.user.sendEmailVerification();
+            UIModule.showAlert('Verification email sent! Please check your inbox and click the verification link.', 'success');
+          } catch (error) {
+            console.error('Resend verification error:', error);
+            UIModule.showAlert('Failed to resend verification email. Please try again later.', 'error');
+          }
+        } else {
+          UIModule.showAlert(result.error, 'warning');
+        }
+        
+        // Sign out the user
+        await window.FirebaseModule.auth().signOut();
+        return;
+      }
+      
+      if (result.success) {
+        console.log('[Login] ✅ Firebase Auth successful, UID:', result.user.uid);
+        
+        // Immediately get user data to determine role-based redirect
+        try {
+          const db = window.FirebaseModule.firestore();
+          console.log('[Login] Fetching user document:', result.user.uid);
+          
+          const userDoc = await db.collection('users').doc(result.user.uid).get();
+          console.log('[Login] User document fetched, exists:', userDoc.exists);
+          
+          if (!userDoc.exists) {
+            console.error('[Login] User document does not exist!');
+            UIModule.hideLoader();
+            UIModule.showAlert('User profile not found. Please contact support.', 'error');
+            return;
+          }
+          
+          const userData = userDoc.data();
+          const role = userData.role;
+          const status = userData.status;
+          console.log('[Login] ========================================');
+          console.log('[Login] USER PROFILE LOADED');
+          console.log('[Login] Role:', role);
+          console.log('[Login] Status:', status);
+          console.log('[Login] Full Name:', userData.fullName);
+          console.log('[Login] Region:', userData.region);
+          console.log('[Login] ========================================');
+          
+          // Check if account is approved
+          if (status !== 'approved' && status !== 'active') {
+            console.error('[Login] ❌ Account not approved! Status:', status);
+            UIModule.hideLoader();
+            UIModule.showAlert('Your account is pending approval. Please wait for an administrator to approve your registration.', 'warning');
+            await window.FirebaseModule.auth().signOut();
+            console.log('[Login] Signed out due to pending approval');
+            return;
+          }
+          
+          console.log('[Login] ✅ Account is approved');
+          
+          // Store profile in sessionStorage so dashboard can read it immediately
+          sessionStorage.setItem('userProfile', JSON.stringify(userData));
+          sessionStorage.setItem('userUid', result.user.uid);
+          console.log('[Login] ✅ Profile cached to sessionStorage');
+          
+          console.log('[Login] Preparing redirect...');
+          UIModule.hideLoader();
+          
+          // Small delay to ensure session storage is written
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Redirect based on role
+          if (role === 'super_admin' || role === 'national_executive') {
+            console.log('[Login] 🚀 REDIRECTING → /national/dashboard.html');
+            window.location.href = '/national/dashboard.html';
+          } else if (role === 'regional_executive') {
+            console.log('[Login] 🚀 REDIRECTING → /region-dashboard/index.html');
+            window.location.href = '/region-dashboard/index.html';
+          } else {
+            console.log('[Login] 🚀 REDIRECTING → /member-dashboard.html');
+            window.location.href = '/member-dashboard.html';
+          }
+        } catch (error) {
+          console.error('[Login] ========================================');
+          console.error('[Login] ❌ ERROR OCCURRED');
+          console.error('[Login] Error message:', error.message);
+          console.error('[Login] Error code:', error.code);
+          console.error('[Login] Full error:', error);
+          console.error('[Login] ========================================');
+          UIModule.hideLoader();
+          UIModule.showAlert('Error loading profile: ' + error.message, 'error');
+        }
+      } else {
+        console.error('[Login] ========================================');
+        console.error('[Login] ❌ SIGN IN FAILED');
+        console.error('[Login] Error:', result.error);
+        console.error('[Login] ========================================');
+        UIModule.hideLoader();
+        UIModule.showAlert(result.error, 'error');
+      }
+    });
+    
+    // Handle registration
+    document.getElementById('registration-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById('register-name').value.trim();
+      const email = document.getElementById('register-email').value.trim();
+      const phone = document.getElementById('register-phone').value.trim();
+      const gender = document.getElementById('register-gender').value;
+      const dob = document.getElementById('register-dob').value;
+      const maritalStatus = document.getElementById('register-marital-status').value;
+      const address = document.getElementById('register-address').value.trim();
+      const isEmployed = document.getElementById('register-currently-employed').checked;
+      const workplace = document.getElementById('register-workplace').value.trim();
+      const nextOfKinName = document.getElementById('register-next-of-kin-name').value.trim();
+      const nextOfKinContact = document.getElementById('register-next-of-kin-contact').value.trim();
+      const region = document.getElementById('register-region').value;
+      const pharmacyPin = document.getElementById('register-pharmacy-pin').value.trim();
+      const mcaSchool = document.getElementById('register-mca-school').value;
+      const mcaSchoolOther = document.getElementById('register-mca-school-other').value.trim();
+      const profilePictureFile = document.getElementById('register-photo').files[0];
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+      
+      // Validate full name (at least first and last name)
+      const nameParts = name.split(' ').filter(part => part.length > 0);
+      if (nameParts.length < 2) {
+        UIModule.showAlert('Please enter your full name (first and last name)', 'error');
+        return;
+      }
+      
+      // Validate phone number format (Ghana)
+      const phoneRegex = /^\+233\s?\d{2}\s?\d{3}\s?\d{4}$/;
+      if (!phoneRegex.test(phone)) {
+        UIModule.showAlert('Please enter a valid Ghana phone number (e.g., +233 24 123 4567)', 'error');
+        return;
+      }
+      
+      // Validate date of birth (must be at least 18 years old)
+      const dobDate = new Date(dob);
+      const today = new Date();
+      const age = today.getFullYear() - dobDate.getFullYear();
+      const monthDiff = today.getMonth() - dobDate.getMonth();
+      const isOver18 = age > 18 || (age === 18 && (monthDiff > 0 || (monthDiff === 0 && today.getDate() >= dobDate.getDate())));
+      
+      if (!isOver18) {
+        UIModule.showAlert('You must be at least 18 years old to register', 'error');
+        return;
+      }
+      
+      // Validate next of kin contact
+      if (!phoneRegex.test(nextOfKinContact)) {
+        UIModule.showAlert('Please enter a valid Ghana phone number for Next of Kin contact (e.g., +233 24 123 4567)', 'error');
+        return;
+      }
+      
+      // Validate workplace if employed
+      if (isEmployed && !workplace) {
+        UIModule.showAlert('Please enter your current place of work or uncheck "I am currently employed"', 'error');
+        return;
+      }
+      
+      // Validate profile picture (show reminder if not provided)
+      if (!profilePictureFile) {
+        const proceed = confirm('⚠️ REMINDER: You have not uploaded a profile picture. A profile picture is required for full account functionality and chat access. Do you want to continue anyway?');
+        if (!proceed) {
+          return;
+        }
+      }
+      
+      // Validate profile picture file type
+      if (profilePictureFile) {
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(profilePictureFile.type)) {
+          UIModule.showAlert('Please upload a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
+          return;
+        }
+        
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (profilePictureFile.size > maxSize) {
+          UIModule.showAlert('Profile picture must be less than 5MB', 'error');
+          return;
+        }
+      }
+      
+      // Validate password complexity
+      if (password.length < 8) {
+        UIModule.showAlert('Password must be at least 8 characters long', 'error');
+        return;
+      }
+      
+      const hasUpperCase = /[A-Z]/.test(password);
+      const hasLowerCase = /[a-z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      
+      if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+        UIModule.showAlert('Password must contain at least one uppercase letter, one lowercase letter, and one number', 'error');
+        return;
+      }
+      
+      // Validate passwords match
+      if (password !== confirmPassword) {
+        UIModule.showAlert('Passwords do not match', 'error');
+        return;
+      }
+      
+      UIModule.showLoader('Creating account...');
+      
+      // Prepare profile data
+      const profileData = {
+        fullName: name,
+        phone: phone,
+        gender: gender,
+        dateOfBirth: dob,
+        maritalStatus: maritalStatus,
+        address: address,
+        employmentStatus: isEmployed ? 'Employed' : 'Not Employed',
+        currentWorkplace: isEmployed ? workplace : 'N/A',
+        nextOfKin: {
+          name: nextOfKinName,
+          contact: nextOfKinContact
+        },
+        region: region
+      };
+      
+      // Add optional pharmacy PIN if provided
+      if (pharmacyPin) {
+        profileData.pharmacyCouncilPin = pharmacyPin;
+      }
+      
+      // Add MCA school information
+      if (mcaSchool) {
+        if (mcaSchool === 'Other' && mcaSchoolOther) {
+          profileData.mcaSchool = mcaSchoolOther;
+        } else if (mcaSchool !== 'Other') {
+          profileData.mcaSchool = mcaSchool;
+        }
+      }
+      
+      const result = await SimpleAuth.signUp(email, password, profileData, profilePictureFile);
+      
+      UIModule.hideLoader();
+      
+      if (result.success) {
+        UIModule.showAlert('Registration successful! A verification email has been sent to your email address. Please verify your email and wait for admin approval before signing in.', 'success');
+        setTimeout(() => {
+          toggleForms();
+          // Clear form
+          document.getElementById('registration-form').reset();
+          // Reset MCA School Other field visibility
+          const mcaSchoolOtherGroup = document.getElementById('other-mca-school-group');
+          if (mcaSchoolOtherGroup) {
+            mcaSchoolOtherGroup.style.display = 'none';
+          }
+          // Reset workplace field visibility
+          const workplaceGroup = document.getElementById('workplace-group');
+          if (workplaceGroup) {
+            workplaceGroup.style.display = 'block';
+          }
+        }, 3000);
+      } else {
+        UIModule.showAlert(result.error, 'error');
+      }
+    });
+    
+    // Handle employment status checkbox
+    document.getElementById('register-currently-employed').addEventListener('change', function() {
+      const workplaceGroup = document.getElementById('workplace-group');
+      const workplaceInput = document.getElementById('register-workplace');
+      
+      if (this.checked) {
+        workplaceGroup.style.display = 'block';
+        workplaceInput.setAttribute('required', 'required');
+      } else {
+        workplaceGroup.style.display = 'none';
+        workplaceInput.removeAttribute('required');
+        workplaceInput.value = '';
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Command Center | AMCAG</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  
+  <style>
+    /* Security Command Center Styles */
+    .scc-container {
+      padding: var(--space-6);
+      background: var(--color-neutral-99);
+      min-height: 100vh;
+    }
+    
+    .scc-header {
+      background: linear-gradient(135deg, #dc3545 0%, #c92a2a 100%);
+      color: white;
+      padding: var(--space-6);
+      border-radius: var(--radius-xl);
+      margin-bottom: var(--space-6);
+      box-shadow: 0 10px 30px rgba(220, 53, 69, 0.3);
+    }
+    
+    .scc-header h1 {
+      font-size: var(--text-3xl);
+      margin: 0 0 var(--space-2) 0;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .scc-pulse {
+      width: 12px;
+      height: 12px;
+      background: #ff4444;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+    
+    .scc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    
+    .scc-stat-card {
+      background: white;
+      padding: var(--space-5);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      border-left: 4px solid var(--color-neutral-70);
+      transition: all 0.3s ease;
+    }
+    
+    .scc-stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .scc-stat-card.critical { border-left-color: #dc3545; }
+    .scc-stat-card.high { border-left-color: #fd7e14; }
+    .scc-stat-card.medium { border-left-color: #ffc107; }
+    .scc-stat-card.low { border-left-color: #28a745; }
+    
+    .scc-stat-value {
+      font-size: var(--text-4xl);
+      font-weight: var(--font-bold);
+      margin: var(--space-2) 0;
+    }
+    
+    .scc-stat-label {
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+    }
+    
+    .scc-section {
+      background: white;
+      padding: var(--space-6);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      margin-bottom: var(--space-6);
+    }
+    
+    .scc-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-4);
+      padding-bottom: var(--space-3);
+      border-bottom: 2px solid var(--color-neutral-95);
+    }
+    
+    .scc-section-title {
+      font-size: var(--text-xl);
+      font-weight: var(--font-semibold);
+      margin: 0;
+    }
+    
+    .scc-filters {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    
+    .scc-filter-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--color-neutral-80);
+      background: white;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .scc-filter-btn:hover {
+      background: var(--color-neutral-95);
+    }
+    
+    .scc-filter-btn.active {
+      background: var(--color-primary-40);
+      color: white;
+      border-color: var(--color-primary-40);
+    }
+    
+    .scc-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .scc-table th {
+      text-align: left;
+      padding: var(--space-3);
+      background: var(--color-neutral-98);
+      font-weight: var(--font-semibold);
+      font-size: var(--text-sm);
+      border-bottom: 2px solid var(--color-neutral-90);
+    }
+    
+    .scc-table td {
+      padding: var(--space-3);
+      border-bottom: 1px solid var(--color-neutral-95);
+    }
+    
+    .scc-table tbody tr {
+      transition: background 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .scc-table tbody tr:hover {
+      background: var(--color-neutral-99);
+    }
+    
+    .scc-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: var(--font-semibold);
+    }
+    
+    .scc-badge.critical {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .scc-badge.high {
+      background: #fd7e14;
+      color: white;
+    }
+    
+    .scc-badge.medium {
+      background: #ffc107;
+      color: #000;
+    }
+    
+    .scc-badge.low {
+      background: #28a745;
+      color: white;
+    }
+    
+    .scc-badge.open {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .scc-badge.ack {
+      background: #ffc107;
+      color: #000;
+    }
+    
+    .scc-badge.resolved {
+      background: #28a745;
+      color: white;
+    }
+    
+    .scc-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .scc-modal.active {
+      display: flex;
+    }
+    
+    .scc-modal-content {
+      background: white;
+      padding: var(--space-6);
+      border-radius: var(--radius-xl);
+      max-width: 800px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .scc-timeline {
+      position: relative;
+      padding-left: var(--space-6);
+    }
+    
+    .scc-timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--color-neutral-90);
+    }
+    
+    .scc-timeline-item {
+      position: relative;
+      margin-bottom: var(--space-4);
+    }
+    
+    .scc-timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -22px;
+      top: 8px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--color-primary-50);
+      border: 2px solid white;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: var(--space-8);
+      color: var(--text-secondary);
+    }
+    
+    .killswitch-btn {
+      background: #dc3545;
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-weight: var(--font-semibold);
+    }
+    
+    .killswitch-btn:hover {
+      background: #c92a2a;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar" style="background: linear-gradient(135deg, #dc3545 0%, #c92a2a 100%); position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>🛡️ Security Command Center</span>
+      </a>
+      <div class="navbar-actions">
+        <a href="/national/dashboard.html" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); text-decoration: none; margin-right: 8px;">← Back to Dashboard</a>
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="firebase.auth().signOut().then(() => window.location.href = '/index.html')">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="scc-container" style="margin-top: 70px;">
+    <!-- Header -->
+    <div class="scc-header">
+      <h1>
+        <span class="scc-pulse"></span>
+        Security Command Center
+      </h1>
+      <p style="margin: 0; opacity: 0.9;">Real-time security monitoring & threat detection</p>
+    </div>
+    
+    <!-- Overview Cards -->
+    <div class="scc-grid">
+      <div class="scc-stat-card critical">
+        <div class="scc-stat-label">OPEN ALERTS</div>
+        <div class="scc-stat-value" id="stat-open-alerts">-</div>
+        <div style="font-size: var(--text-xs); color: var(--text-tertiary);">Requires immediate action</div>
+      </div>
+      
+      <div class="scc-stat-card high">
+        <div class="scc-stat-label">CRITICAL EVENTS (24h)</div>
+        <div class="scc-stat-value" id="stat-critical-events">-</div>
+        <div style="font-size: var(--text-xs); color: var(--text-tertiary);">Last 24 hours</div>
+      </div>
+      
+      <div class="scc-stat-card medium">
+        <div class="scc-stat-label">HIGH-RISK ADMINS</div>
+        <div class="scc-stat-value" id="stat-high-risk-admins">-</div>
+        <div style="font-size: var(--text-xs); color: var(--text-tertiary);">Risk score above 50</div>
+      </div>
+      
+      <div class="scc-stat-card low">
+        <div class="scc-stat-label">FAILED REAUTH (1h)</div>
+        <div class="scc-stat-value" id="stat-failed-reauth">-</div>
+        <div style="font-size: var(--text-xs); color: var(--text-tertiary);">Last hour</div>
+      </div>
+    </div>
+    
+    <!-- Security Alerts -->
+    <div class="scc-section">
+      <div class="scc-section-header">
+        <h2 class="scc-section-title">🔔 Security Alerts</h2>
+        <div class="scc-filters">
+          <button class="scc-filter-btn active" data-filter="all">All</button>
+          <button class="scc-filter-btn" data-filter="OPEN">Open</button>
+          <button class="scc-filter-btn" data-filter="CRITICAL">Critical</button>
+          <button class="scc-filter-btn" data-filter="HIGH">High</button>
+        </div>
+      </div>
+      
+      <div id="alerts-container">
+        <div class="no-data">Loading alerts...</div>
+      </div>
+    </div>
+    
+    <!-- Live Event Stream -->
+    <div class="scc-section">
+      <div class="scc-section-header">
+        <h2 class="scc-section-title">📊 Live Event Stream</h2>
+        <div class="scc-filters">
+          <select id="time-filter" class="scc-filter-btn">
+            <option value="15">Last 15 minutes</option>
+            <option value="60" selected>Last 1 hour</option>
+            <option value="1440">Last 24 hours</option>
+            <option value="10080">Last 7 days</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="overflow-x: auto;">
+        <table class="scc-table" id="events-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Type</th>
+              <th>Actor</th>
+              <th>Target</th>
+              <th>Severity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="events-tbody">
+            <tr><td colspan="6" class="no-data">Loading events...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Admin Risk Leaderboard -->
+    <div class="scc-section">
+      <div class="scc-section-header">
+        <h2 class="scc-section-title">⚠️ Admin Risk Leaderboard</h2>
+      </div>
+      
+      <div style="overflow-x: auto;">
+        <table class="scc-table" id="risk-table">
+          <thead>
+            <tr>
+              <th>Admin</th>
+              <th>Risk Score</th>
+              <th>Resets (1h)</th>
+              <th>Role Changes (24h)</th>
+              <th>Last Seen</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="risk-tbody">
+            <tr><td colspan="6" class="no-data">Loading profiles...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Investigation Modal -->
+  <div class="scc-modal" id="investigation-modal">
+    <div class="scc-modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+        <h3 style="margin: 0;">🔍 Event Investigation</h3>
+        <button onclick="closeModal()" style="background: none; border: none; font-size: var(--text-2xl); cursor: pointer;">×</button>
+      </div>
+      
+      <div id="investigation-content"></div>
+    </div>
+  </div>
+  
+  <!-- Kill Switch Modal -->
+  <div class="scc-modal" id="killswitch-modal">
+    <div class="scc-modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+        <h3 style="margin: 0;">🛑 Security Control</h3>
+        <button onclick="closeKillswitchModal()" style="background: none; border: none; font-size: var(--text-2xl); cursor: pointer;">×</button>
+      </div>
+      
+      <div id="killswitch-content"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  
+  <script>
+    const { db } = FirebaseModule;
+    let currentUser = null;
+    
+    // Authentication check - super_admin only
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+      
+      currentUser = user;
+      
+      // Check super_admin access
+      if (!AuthModule.hasRole('super_admin')) {
+        alert('Access denied. Security Command Center is restricted to Super Admins only.');
+        window.location.href = '/member-dashboard.html';
+        return;
+      }
+      
+      // Load dashboard
+      loadSecurityDashboard();
+    });
+    
+    // Load Dashboard Data
+    async function loadSecurityDashboard() {
+      try {
+        await Promise.all([
+          loadOverviewStats(),
+          loadAlerts(),
+          loadEvents(),
+          loadRiskProfiles()
+        ]);
+        
+        setupRealTimeListeners();
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+      }
+    }
+    
+    // Load Overview Statistics
+    async function loadOverviewStats() {
+      try {
+        // Open Alerts
+        const openAlerts = await db.collection('security_alerts')
+          .where('status', '==', 'OPEN')
+          .get();
+        document.getElementById('stat-open-alerts').textContent = openAlerts.size;
+        
+        // Critical Events (24h)
+        const yesterday = Date.now() - (24 * 60 * 60 * 1000);
+        const criticalEvents = await db.collection('security_events')
+          .where('severity', '==', 'CRITICAL')
+          .where('createdAt', '>=', yesterday)
+          .get();
+        document.getElementById('stat-critical-events').textContent = criticalEvents.size;
+        
+        // High-Risk Admins
+        const highRiskAdmins = await db.collection('security_profiles')
+          .where('riskScore', '>=', 50)
+          .get();
+        document.getElementById('stat-high-risk-admins').textContent = highRiskAdmins.size;
+        
+        // Failed Reauth (1h)
+        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+        const failedReauth = await db.collection('security_events')
+          .where('type', '==', 'FAILED_REAUTH')
+          .where('createdAt', '>=', oneHourAgo)
+          .get();
+        document.getElementById('stat-failed-reauth').textContent = failedReauth.size;
+        
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+    
+    // Load Security Alerts
+    async function loadAlerts() {
+      try {
+        const alertsSnap = await db.collection('security_alerts')
+          .orderBy('createdAt', 'desc')
+          .limit(20)
+          .get();
+        
+        const container = document.getElementById('alerts-container');
+        
+        if (alertsSnap.empty) {
+          container.innerHTML = '<div class="no-data">No security alerts</div>';
+          return;
+        }
+        
+        let html = '<table class="scc-table"><thead><tr><th>Time</th><th>Title</th><th>Severity</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+        
+        alertsSnap.forEach(doc => {
+          const alert = doc.data();
+          const time = new Date(alert.createdAt).toLocaleString();
+          
+          html += `
+            <tr onclick="viewAlert('${doc.id}')">
+              <td>${time}</td>
+              <td>${alert.title}</td>
+              <td><span class="scc-badge ${alert.severity.toLowerCase()}">${alert.severity}</span></td>
+              <td><span class="scc-badge ${alert.status.toLowerCase()}">${alert.status}</span></td>
+              <td>
+                ${alert.status === 'OPEN' ? `<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); acknowledgeAlert('${doc.id}')">Acknowledge</button>` : ''}
+                ${alert.status === 'ACK' ? `<button class="btn btn-sm btn-success" onclick="event.stopPropagation(); resolveAlert('${doc.id}')">Resolve</button>` : ''}
+              </td>
+            </tr>
+          `;
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading alerts:', error);
+        document.getElementById('alerts-container').innerHTML = '<div class="no-data">Error loading alerts</div>';
+      }
+    }
+    
+    // Load Security Events
+    async function loadEvents() {
+      try {
+        const timeFilter = parseInt(document.getElementById('time-filter').value);
+        const cutoffTime = Date.now() - (timeFilter * 60 * 1000);
+        
+        const eventsSnap = await db.collection('security_events')
+          .where('createdAt', '>=', cutoffTime)
+          .orderBy('createdAt', 'desc')
+          .limit(50)
+          .get();
+        
+        const tbody = document.getElementById('events-tbody');
+        
+        if (eventsSnap.empty) {
+          tbody.innerHTML = '<tr><td colspan="6" class="no-data">No events in this time range</td></tr>';
+          return;
+        }
+        
+        let html = '';
+        
+        eventsSnap.forEach(doc => {
+          const event = doc.data();
+          const time = new Date(event.createdAt).toLocaleTimeString();
+          const status = event.success ? 'OK' : 'FAILED';
+          
+          html += `
+            <tr onclick="investigateEvent('${doc.id}')">
+              <td>${time}</td>
+              <td>${event.type.replace(/_/g, ' ')}</td>
+              <td>${event.actorEmail || event.actorUid}</td>
+              <td>${event.targetEmail || event.targetUid || '-'}</td>
+              <td><span class="scc-badge ${event.severity.toLowerCase()}">${event.severity}</span></td>
+              <td>${status}</td>
+            </tr>
+          `;
+        });
+        
+        tbody.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading events:', error);
+        document.getElementById('events-tbody').innerHTML = '<tr><td colspan="6" class="no-data">Error loading events</td></tr>';
+      }
+    }
+    
+    // Load Risk Profiles
+    async function loadRiskProfiles() {
+      try {
+        const profilesSnap = await db.collection('security_profiles')
+          .orderBy('riskScore', 'desc')
+          .limit(20)
+          .get();
+        
+        const tbody = document.getElementById('risk-tbody');
+        
+        if (profilesSnap.empty) {
+          tbody.innerHTML = '<tr><td colspan="6" class="no-data">No risk profiles</td></tr>';
+          return;
+        }
+        
+        let html = '';
+        
+        profilesSnap.forEach(doc => {
+          const profile = doc.data();
+          const lastSeen = new Date(profile.lastSeen).toLocaleString();
+          
+          // Get user email from uid
+          db.collection('users').doc(profile.uid).get().then(userDoc => {
+            const userData = userDoc.exists ? userDoc.data() : {};
+            const email = userData.email || profile.uid;
+            
+            const row = `
+              <tr>
+                <td>${email}</td>
+                <td><strong>${profile.riskScore}</strong></td>
+                <td>${profile.counters?.passwordResets_1h || 0}</td>
+                <td>${profile.counters?.roleChanges_24h || 0}</td>
+                <td>${lastSeen}</td>
+                <td>
+                  <button class="killswitch-btn btn-sm" onclick="showKillswitch('${profile.uid}', '${email}')">🛑 Block</button>
+                </td>
+              </tr>
+            `;
+            
+            // Update the row
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = row;
+            tbody.appendChild(tempDiv.firstElementChild);
+          });
+        });
+        
+        // Clear loading state
+        tbody.innerHTML = '';
+        
+      } catch (error) {
+        console.error('Error loading risk profiles:', error);
+        document.getElementById('risk-tbody').innerHTML = '<tr><td colspan="6" class="no-data">Error loading profiles</td></tr>';
+      }
+    }
+    
+    // Setup Real-Time Listeners
+    function setupRealTimeListeners() {
+      // Listen for new alerts
+      db.collection('security_alerts')
+        .where('status', '==', 'OPEN')
+        .onSnapshot(() => {
+          loadOverviewStats();
+          loadAlerts();
+        });
+      
+      // Listen for new events
+      db.collection('security_events')
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .onSnapshot(() => {
+          loadEvents();
+          loadOverviewStats();
+        });
+    }
+    
+    // Investigate Event
+    async function investigateEvent(eventId) {
+      try {
+        const eventDoc = await db.collection('security_events').doc(eventId).get();
+        if (!eventDoc.exists) return;
+        
+        const event = eventDoc.data();
+        const eventTime = new Date(event.createdAt);
+        
+        // Get related events (± 30 minutes)
+        const windowStart = event.createdAt - (30 * 60 * 1000);
+        const windowEnd = event.createdAt + (30 * 60 * 1000);
+        
+        const relatedEvents = await db.collection('security_events')
+          .where('actorUid', '==', event.actorUid)
+          .where('createdAt', '>=', windowStart)
+          .where('createdAt', '<=', windowEnd)
+          .orderBy('createdAt', 'asc')
+          .get();
+        
+        let html = `
+          <div style="margin-bottom: var(--space-4); padding: var(--space-4); background: var(--color-neutral-98); border-radius: var(--radius-md);">
+            <h4 style="margin-top: 0;">Event Details</h4>
+            <p><strong>Type:</strong> ${event.type.replace(/_/g, ' ')}</p>
+            <p><strong>Severity:</strong> <span class="scc-badge ${event.severity.toLowerCase()}">${event.severity}</span></p>
+            <p><strong>Time:</strong> ${eventTime.toLocaleString()}</p>
+            <p><strong>Actor:</strong> ${event.actorEmail || event.actorUid} (${event.actorRole})</p>
+            <p><strong>Target:</strong> ${event.targetEmail || event.targetUid || 'N/A'}</p>
+            <p><strong>Success:</strong> ${event.success ? 'Yes' : 'No'}</p>
+            <p><strong>IP Hash:</strong> <code>${event.ipHash || 'N/A'}</code></p>
+            <p><strong>User Agent Hash:</strong> <code>${event.userAgentHash || 'N/A'}</code></p>
+          </div>
+          
+          <h4>Related Events Timeline (±30 minutes)</h4>
+          <div class="scc-timeline">
+        `;
+        
+        relatedEvents.forEach(doc => {
+          const related = doc.data();
+          const relatedTime = new Date(related.createdAt);
+          html += `
+            <div class="scc-timeline-item">
+              <strong>${relatedTime.toLocaleTimeString()}</strong> - ${related.type.replace(/_/g, ' ')}
+              <br><span style="color: var(--text-secondary); font-size: var(--text-sm);">${related.success ? 'Success' : 'Failed'}</span>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+        
+        document.getElementById('investigation-content').innerHTML = html;
+        document.getElementById('investigation-modal').classList.add('active');
+        
+      } catch (error) {
+        console.error('Error investigating event:', error);
+        alert('Failed to load event details');
+      }
+    }
+    
+    // View Alert
+    async function viewAlert(alertId) {
+      investigateEvent(alertId);
+    }
+    
+    // Acknowledge Alert
+    async function acknowledgeAlert(alertId) {
+      try {
+        await db.collection('security_alerts').doc(alertId).update({
+          status: 'ACK',
+          'ack.by': currentUser.uid,
+          'ack.at': Date.now()
+        });
+        
+        loadAlerts();
+        loadOverviewStats();
+      } catch (error) {
+        console.error('Error acknowledging alert:', error);
+        alert('Failed to acknowledge alert');
+      }
+    }
+    
+    // Resolve Alert
+    async function resolveAlert(alertId) {
+      const note = prompt('Resolution note (optional):');
+      
+      try {
+        await db.collection('security_alerts').doc(alertId).update({
+          status: 'RESOLVED',
+          'resolution.by': currentUser.uid,
+          'resolution.at': Date.now(),
+          'resolution.note': note || null
+        });
+        
+        loadAlerts();
+        loadOverviewStats();
+      } catch (error) {
+        console.error('Error resolving alert:', error);
+        alert('Failed to resolve alert');
+      }
+    }
+    
+    // Show Killswitch Modal
+    function showKillswitch(adminUid, adminEmail) {
+      const html = `
+        <div style="margin-bottom: var(--space-4);">
+          <p><strong>Admin:</strong> ${adminEmail}</p>
+          <p><strong>UID:</strong> <code>${adminUid}</code></p>
+        </div>
+        
+        <label style="display: block; margin-bottom: var(--space-2);">
+          <strong>Reason for blocking:</strong>
+        </label>
+        <textarea id="block-reason" style="width: 100%; padding: var(--space-2); border: 1px solid var(--color-neutral-80); border-radius: var(--radius-md); margin-bottom: var(--space-3);" rows="3" placeholder="Describe the security concern..."></textarea>
+        
+        <label style="display: block; margin-bottom: var(--space-2);">
+          <strong>Block duration:</strong>
+        </label>
+        <select id="block-duration" style="width: 100%; padding: var(--space-2); border: 1px solid var(--color-neutral-80); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
+          <option value="3600000">1 hour</option>
+          <option value="21600000">6 hours</option>
+          <option value="86400000">24 hours</option>
+          <option value="604800000">7 days</option>
+          <option value="0">Indefinite (until manually removed)</option>
+        </select>
+        
+        <div style="display: flex; gap: var(--space-2);">
+          <button class="killswitch-btn" onclick="executeKillswitch('${adminUid}')">🛑 Block Sensitive Actions</button>
+          <button class="btn btn-outline" onclick="closeKillswitchModal()">Cancel</button>
+        </div>
+      `;
+      
+      document.getElementById('killswitch-content').innerHTML = html;
+      document.getElementById('killswitch-modal').classList.add('active');
+    }
+    
+    // Execute Killswitch
+    async function executeKillswitch(adminUid) {
+      const reason = document.getElementById('block-reason').value.trim();
+      const duration = parseInt(document.getElementById('block-duration').value);
+      
+      if (!reason) {
+        alert('Please provide a reason for blocking');
+        return;
+      }
+      
+      try {
+        const until = duration === 0 ? null : Date.now() + duration;
+        
+        await db.collection('security_controls').doc(adminUid).set({
+          blockSensitiveActions: true,
+          reason: reason,
+          until: until,
+          blockedBy: currentUser.uid,
+          blockedAt: Date.now()
+        });
+        
+        // Log security event
+        await db.collection('security_events').add({
+          type: 'ADMIN_BLOCKED',
+          severity: 'CRITICAL',
+          actorUid: currentUser.uid,
+          actorRole: currentUser.role,
+          actorEmail: currentUser.email,
+          targetUid: adminUid,
+          orgId: currentUser.orgId || 'none',
+          ipHash: '',
+          userAgentHash: '',
+          meta: { reason, duration: duration === 0 ? 'indefinite' : `${duration}ms` },
+          success: true,
+          createdAt: Date.now(),
+          _timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        alert('Admin blocked successfully. They will not be able to perform sensitive actions.');
+        closeKillswitchModal();
+        loadRiskProfiles();
+        
+      } catch (error) {
+        console.error('Error executing killswitch:', error);
+        alert('Failed to block admin: ' + error.message);
+      }
+    }
+    
+    // Close Modals
+    function closeModal() {
+      document.getElementById('investigation-modal').classList.remove('active');
+    }
+    
+    function closeKillswitchModal() {
+      document.getElementById('killswitch-modal').classList.remove('active');
+    }
+    
+    // Event Listeners
+    document.getElementById('time-filter').addEventListener('change', loadEvents);
+    
+    // Filter buttons
+    document.querySelectorAll('.scc-filter-btn[data-filter]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.scc-filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        // Implement filtering logic here
+      });
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

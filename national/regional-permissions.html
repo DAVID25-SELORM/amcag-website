@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regional Permissions | AMCAG National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/member-approval.html" class="dashboard-nav-item">
+          <span>✅</span> Member Approval
+        </a>
+        <a href="/national/regions.html" class="dashboard-nav-item active">
+          <span>🗺️</span> Regions
+        </a>
+        <a href="/national/payments.html" class="dashboard-nav-item">
+          <span>💰</span> Payments
+        </a>
+        <a href="/national/certificates.html" class="dashboard-nav-item">
+          <span>📜</span> Certificates
+        </a>
+        <a href="/national/events.html" class="dashboard-nav-item">
+          <span>📅</span> Events
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+        <a href="/national/leadership.html" class="dashboard-nav-item">
+          <span>⚙️</span> Leadership
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Regional Permissions</h1>
+          <p class="dashboard-subtitle">Control regional member approval permissions</p>
+        </div>
+      </div>
+
+      <div class="alert alert-info mb-4">
+        <h4 style="margin-bottom: 0.5rem;">ℹ️ About Regional Approval</h4>
+        <p>Enable regions to approve their own members locally. When enabled, designated regional executives can approve pending registrations for their region without national oversight.</p>
+      </div>
+
+      <div class="grid grid-3 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="enabledRegions">0</div>
+          <div class="stat-label">Regions with Approval Rights</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="disabledRegions">0</div>
+          <div class="stat-label">Regions without Rights</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalApprovers">0</div>
+          <div class="stat-label">Total Regional Approvers</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">All Regions</h3>
+          <div class="flex gap-2">
+            <button class="btn btn-success btn-sm" onclick="enableAllRegions()">✅ Enable All</button>
+            <button class="btn btn-error btn-sm" onclick="disableAllRegions()">❌ Disable All</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Region</th>
+                <th>Status</th>
+                <th>Enabled By</th>
+                <th>Date Modified</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="regionsTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 3rem;">
+                  <div>⏳ Loading regions...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Regional Executives Section -->
+      <div class="card mt-6">
+        <h3 class="card-title mb-4">Regional Executive Approvers</h3>
+        <p class="text-secondary mb-4">View and manage which regional executives can approve members. Regional presidents manage their team's permissions.</p>
+        
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Executive</th>
+                <th>Region</th>
+                <th>Position</th>
+                <th>Can Approve Members</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="executivesTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem;">
+                  <div>⏳ Loading executives...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    const ghanaRegions = [
+      'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Northern',
+      'Upper East', 'Upper West', 'Volta', 'Western', 'Western North',
+      'Bono', 'Bono East', 'Ahafo', 'Savannah', 'North East', 'Oti'
+    ];
+
+    let regionsData = [];
+    let executives = [];
+    let currentUser = null;
+    let toggleRegionalApprovalFunction = null;
+
+    console.log('=== REGIONAL PERMISSIONS PAGE SCRIPT LOADED ===');
+
+    // Wait for Firebase to be initialized before doing anything
+    function waitForFirebaseInit() {
+      return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+            console.log('✓ Firebase initialized');
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 50);
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          console.error('Firebase initialization timeout');
+          resolve();
+        }, 10000);
+      });
+    }
+
+    // Initialize everything after Firebase is ready
+    waitForFirebaseInit().then(() => {
+      console.log('Starting page initialization...');
+      
+      // Initialize Cloud Functions
+      firebase.auth().onAuthStateChanged(user => {
+        console.log('Cloud function auth state:', user ? user.email : 'no user');
+        if (user && !toggleRegionalApprovalFunction) {
+          console.log('Initializing toggle function...');
+          const functions = firebase.functions();
+          toggleRegionalApprovalFunction = functions.httpsCallable('toggleRegionalApproval');
+          console.log('Toggle function initialized');
+        }
+      });
+      
+      // Start auth check
+      initAuth();
+    });
+
+    // Load regions
+    async function loadRegions() {
+      const tbody = document.getElementById('regionsTableBody');
+      
+      try {
+        // Wait for Firebase to be initialized
+        if (!firebase || !firebase.apps || firebase.apps.length === 0) {
+          console.log('Firebase not ready, waiting...');
+          setTimeout(loadRegions, 500);
+          return;
+        }
+        
+        console.log('Loading regions...');
+        const db = firebase.firestore();
+        
+        // Initialize regions if they don't exist
+        for (const regionName of ghanaRegions) {
+          const regionDoc = await db.collection('regions').doc(regionName).get();
+          
+          if (!regionDoc.exists) {
+            console.log('Creating region:', regionName);
+            await db.collection('regions').doc(regionName).set({
+              name: regionName,
+              canApproveMembersLocally: false,
+              approvalEnabledBy: null,
+              approvalEnabledAt: null,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        }
+
+        // Load all regions
+        const snapshot = await db.collection('regions').get();
+        regionsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        console.log('Loaded regions:', regionsData.length);
+
+        // Update stats
+        const enabled = regionsData.filter(r => r.canApproveMembersLocally === true).length;
+        document.getElementById('enabledRegions').textContent = enabled;
+        document.getElementById('disabledRegions').textContent = regionsData.length - enabled;
+
+        renderRegionsTable();
+        console.log('Regions table rendered successfully');
+        
+      } catch (error) {
+        console.error('Error loading regions:', error);
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: red;">⚠️ Error: ${error.message}</td></tr>`;
+        UIModule.showAlert('Error loading regions: ' + error.message, 'error');
+      }
+    }
+
+    // Render regions table
+    function renderRegionsTable() {
+      const tbody = document.getElementById('regionsTableBody');
+      
+      if (regionsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No regions found</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = regionsData.map(region => {
+        const enabled = region.canApproveMembersLocally === true;
+        const statusBadge = enabled ? 
+          '<span class="badge badge-success">✅ Enabled</span>' : 
+          '<span class="badge badge-secondary">❌ Disabled</span>';
+        
+        const enabledByText = region.approvalEnabledBy ? 
+          (region.approvalEnabledByName || 'Admin') : 
+          '-';
+        
+        const dateText = region.approvalEnabledAt ? 
+          new Date(region.approvalEnabledAt.toDate()).toLocaleDateString() : 
+          '-';
+
+        return `
+          <tr>
+            <td style="font-weight: 600;">${region.name}</td>
+            <td>${statusBadge}</td>
+            <td>${enabledByText}</td>
+            <td>${dateText}</td>
+            <td>
+              <button class="btn btn-sm ${enabled ? 'btn-error' : 'btn-success'}" 
+                      onclick="toggleRegion('${region.name}', ${!enabled})">
+                ${enabled ? '❌ Disable' : '✅ Enable'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Toggle single region
+    async function toggleRegion(regionName, enable) {
+      const action = enable ? 'enable' : 'disable';
+      
+      if (!confirm(`${enable ? 'Enable' : 'Disable'} member approval for ${regionName}?`)) {
+        return;
+      }
+
+      try {
+        UIModule.showLoader(`${enable ? 'Enabling' : 'Disabling'} ${regionName}...`);
+
+        const result = await toggleRegionalApprovalFunction({
+          regionName: regionName,
+          enabled: enable
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert(`✅ ${regionName} ${enable ? 'enabled' : 'disabled'} successfully!`, 'success');
+          loadRegions();
+          loadExecutives();
+        } else {
+          UIModule.showAlert('Failed: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Enable all regions
+    async function enableAllRegions() {
+      if (!confirm('Enable member approval for ALL regions?')) return;
+
+      try {
+        UIModule.showLoader('Enabling all regions...');
+
+        for (const region of regionsData) {
+          if (!region.canApproveMembersLocally) {
+            await toggleRegionalApprovalFunction({
+              regionName: region.name,
+              enabled: true
+            });
+          }
+        }
+
+        UIModule.hideLoader();
+        UIModule.showAlert('✅ All regions enabled!', 'success');
+        loadRegions();
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Disable all regions
+    async function disableAllRegions() {
+      if (!confirm('Disable member approval for ALL regions? This will require national approval for all new members.')) return;
+
+      try {
+        UIModule.showLoader('Disabling all regions...');
+
+        for (const region of regionsData) {
+          if (region.canApproveMembersLocally) {
+            await toggleRegionalApprovalFunction({
+              regionName: region.name,
+              enabled: false
+            });
+          }
+        }
+
+        UIModule.hideLoader();
+        UIModule.showAlert('All regions disabled', 'success');
+        loadRegions();
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Load regional executives
+    async function loadExecutives() {
+      const tbody = document.getElementById('executivesTableBody');
+      
+      try {
+        // Wait for Firebase to be initialized
+        if (!firebase || !firebase.apps || firebase.apps.length === 0) {
+          console.log('Firebase not ready for executives, waiting...');
+          setTimeout(loadExecutives, 500);
+          return;
+        }
+        
+        console.log('Loading executives...');
+        const db = firebase.firestore();
+        const snapshot = await db.collection('users')
+          .where('role', '==', 'regional_executive')
+          .get();
+
+        executives = snapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data()
+        }));
+        
+        console.log('Loaded executives:', executives.length);
+
+        // Count total approvers
+        const approvers = executives.filter(e => e.canApproveMembership === true).length;
+        document.getElementById('totalApprovers').textContent = approvers;
+
+        renderExecutivesTable();
+        console.log('Executives table rendered successfully');
+
+      } catch (error) {
+        console.error('Error loading executives:', error);
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: red;">⚠️ Error: ${error.message}</td></tr>`;
+        UIModule.showAlert('Error loading executives: ' + error.message, 'error');
+      }
+    }
+
+    // Render executives table
+    function renderExecutivesTable() {
+      const tbody = document.getElementById('executivesTableBody');
+      
+      if (executives.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No regional executives found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = executives.map(exec => {
+        const canApprove = exec.canApproveMembership === true;
+        const badgeHTML = canApprove ?
+          '<span class="badge badge-success">✅ Yes</span>' :
+          '<span class="badge badge-secondary">❌ No</span>';
+
+        return `
+          <tr>
+            <td style="font-weight: 600;">${exec.fullName || exec.email}</td>
+            <td>${exec.region || 'N/A'}</td>
+            <td>${exec.position || 'Regional Executive'}</td>
+            <td>${badgeHTML}</td>
+            <td>
+              <span class="text-secondary" style="font-size: 0.85rem;">Managed by Regional President</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    // Initialize auth and load data
+    function initAuth() {
+      console.log('Initializing auth...');
+      
+      AuthModule.onAuthStateChanged(async (user) => {
+        console.log('Auth state changed, user:', user ? user.email : 'null');
+        
+        if (!user) {
+          window.location.href = '/membership.html';
+          return;
+        }
+
+        currentUser = user;
+        
+        console.log('User authenticated, loading data...');
+        
+        try {
+          const db = firebase.firestore();
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          
+          if (!userDoc.exists) {
+            console.log('User doc not found');
+            window.location.href = '/member-dashboard.html';
+            return;
+          }
+
+          const userData = userDoc.data();
+          console.log('User role:', userData.role);
+
+          // Check if user is national executive (President, Secretary, PRO) or super admin
+          if (userData.role !== 'national_executive' && userData.role !== 'super_admin') {
+            UIModule.showAlert('Access denied. National Executive role required.', 'error');
+            setTimeout(() => window.location.href = '/national/dashboard.html', 2000);
+            return;
+          }
+
+          console.log('Starting data load...');
+          loadRegions();
+          loadExecutives();
+        } catch (error) {
+          console.error('Error in auth flow:', error);
+          UIModule.showAlert('Error: ' + error.message, 'error');
+        }
+      });
+    }
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

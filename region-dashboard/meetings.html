@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regional Meetings | AMCAG Regional Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <style>
+    .meeting-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      margin-bottom: 1rem;
+    }
+    #jitsiContainer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 10000;
+      display: none;
+    }
+    #jitsiFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .close-meeting-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 10001;
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-secondary-40) 0%, var(--color-secondary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/region-dashboard/" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG Regional</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white;" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/region-dashboard/" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/region-dashboard/member-approval.html" class="dashboard-nav-item">
+          <span>👥</span> Member Approval
+        </a>
+        <a href="/region-dashboard/dues-overview.html" class="dashboard-nav-item">
+          <span>💰</span> Dues Overview
+        </a>
+        <a href="/region-dashboard/donations.html" class="dashboard-nav-item">
+          <span>🎁</span> Donations
+        </a>
+        <a href="/region-dashboard/meetings.html" class="dashboard-nav-item active">
+          <span>📹</span> Meetings
+        </a>
+        <a href="/region-dashboard/waiver-management.html" class="dashboard-nav-item">
+          <span>📝</span> Waiver Management
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Regional Meetings</h1>
+          <p class="dashboard-subtitle">Schedule and manage regional meetings</p>
+        </div>
+        <button class="btn btn-primary" onclick="showScheduleModal()">+ Schedule Meeting</button>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="grid grid-3 gap-4 mb-4">
+        <div class="card" style="text-align: center; cursor: pointer;" onclick="startInstantMeeting()">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎥</div>
+          <h4 style="margin-bottom: 0.5rem;">Start Instant Meeting</h4>
+          <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">Begin a meeting right now</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 2rem; color: var(--color-primary);" id="upcomingCount">0</div>
+          <p style="color: var(--text-secondary); margin: 0;">Upcoming Meetings</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 2rem; color: var(--color-success);" id="totalMeetings">0</div>
+          <p style="color: var(--text-secondary); margin: 0;">Total Meetings</p>
+        </div>
+      </div>
+
+      <!-- Meetings List -->
+      <div class="card">
+        <h3 class="card-title mb-4">All Meetings</h3>
+        <div id="meetingsList">
+          <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            Loading meetings...
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Schedule Meeting Modal -->
+  <div id="scheduleModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <h3 style="margin-bottom: 1.5rem;">Schedule New Meeting</h3>
+      
+      <form id="scheduleForm">
+        <div class="form-group">
+          <label class="form-label required">Meeting Title</label>
+          <input type="text" id="meetingTitle" class="form-input" required placeholder="e.g., Monthly Regional Meeting">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="meetingDescription" class="form-input" rows="3" placeholder="Meeting agenda and objectives..."></textarea>
+        </div>
+
+        <div class="grid grid-2 gap-4">
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" id="meetingDate" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Time</label>
+            <input type="time" id="meetingTime" class="form-input" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Duration (minutes)</label>
+          <select id="meetingDuration" class="form-input" required>
+            <option value="30">30 minutes</option>
+            <option value="60" selected>1 hour</option>
+            <option value="90">1.5 hours</option>
+            <option value="120">2 hours</option>
+            <option value="180">3 hours</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Visibility</label>
+          <select id="meetingVisibility" class="form-input" required>
+            <option value="regional">Regional Members Only</option>
+            <option value="executives">Regional Executives Only</option>
+            <option value="members">All AMCAG Members</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Schedule Meeting</button>
+          <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeScheduleModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Jitsi Meeting Container -->
+  <div id="jitsiContainer">
+    <button class="close-meeting-btn" onclick="leaveMeeting()">✕ End Meeting</button>
+    <iframe id="jitsiFrame" allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    let currentUser = null;
+    let userProfile = null;
+    let scheduleMeeting;
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    async function loadMeetings() {
+      try {
+        UIModule.showLoader('Loading meetings...');
+
+        const db = firebase.firestore();
+        const snapshot = await db.collection('meetings')
+          .where('region', '==', userProfile.region)
+          .orderBy('scheduledTime', 'desc')
+          .get();
+
+        const meetings = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          scheduledTime: doc.data().scheduledTime?.toDate()
+        }));
+
+        renderMeetings(meetings);
+        updateStats(meetings);
+
+        UIModule.hideLoader();
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading meetings:', error);
+        UIModule.showAlert('Error loading meetings: ' + error.message, 'error');
+      }
+    }
+
+    function renderMeetings(meetings) {
+      const container = document.getElementById('meetingsList');
+
+      if (meetings.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 3rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📹</div>
+            <h3>No meetings scheduled yet</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">Schedule your first regional meeting</p>
+            <button class="btn btn-primary" onclick="showScheduleModal()">Schedule Meeting</button>
+          </div>
+        `;
+        return;
+      }
+
+      const now = new Date();
+
+      container.innerHTML = meetings.map(meeting => {
+        const isLive = meeting.scheduledTime && 
+          now >= meeting.scheduledTime && 
+          now <= new Date(meeting.scheduledTime.getTime() + (meeting.duration || 60) * 60000);
+        
+        const isUpcoming = meeting.scheduledTime && now < meeting.scheduledTime;
+        const isPast = !isLive && !isUpcoming;
+
+        const statusClass = isLive ? 'live' : isUpcoming ? 'upcoming' : 'ended';
+        const statusText = isLive ? '🔴 LIVE' : isUpcoming ? 'UPCOMING' : 'ENDED';
+        const statusColor = isLive ? '#4caf50' : isUpcoming ? '#2196f3' : '#9e9e9e';
+
+        return `
+          <div class="meeting-card" style="border-left: 4px solid ${statusColor};">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <span style="background: ${statusColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${statusText}</span>
+                  ${meeting.recordingUrl ? '<span class="badge badge-success">📹 Recorded</span>' : ''}
+                </div>
+                <h4 style="margin: 0 0 0.5rem 0;">${meeting.title}</h4>
+                <p style="color: var(--text-secondary); margin: 0 0 0.5rem 0; font-size: 0.875rem;">${meeting.description || ''}</p>
+                <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                  <span>📅 ${formatDate(meeting.scheduledTime)}</span>
+                  <span>⏰ ${formatTime(meeting.scheduledTime)}</span>
+                  <span>⏱️ ${meeting.duration} mins</span>
+                  ${meeting.participants ? `<span>👥 ${meeting.participants} joined</span>` : ''}
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                ${isLive ? `<button class="btn btn-success" onclick="joinMeeting('${meeting.id}', '${meeting.title}')">Join Now</button>` : ''}
+                ${isUpcoming ? `<button class="btn btn-primary" onclick="joinMeeting('${meeting.id}', '${meeting.title}')">Join</button>` : ''}
+                ${isPast && meeting.recordingUrl ? `<button class="btn btn-outline" onclick="window.open('${meeting.recordingUrl}', '_blank')">Watch</button>` : ''}
+                ${isUpcoming ? `<button class="btn btn-outline btn-sm" onclick="deleteMeeting('${meeting.id}')">Delete</button>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateStats(meetings) {
+      const now = new Date();
+      const upcoming = meetings.filter(m => m.scheduledTime && now < m.scheduledTime).length;
+      
+      document.getElementById('upcomingCount').textContent = upcoming;
+      document.getElementById('totalMeetings').textContent = meetings.length;
+    }
+
+    function showScheduleModal() {
+      document.getElementById('scheduleModal').style.display = 'flex';
+      // Set minimum date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('meetingDate').min = today;
+    }
+
+    function closeScheduleModal() {
+      document.getElementById('scheduleModal').style.display = 'none';
+      document.getElementById('scheduleForm').reset();
+    }
+
+    async function startInstantMeeting() {
+      const title = prompt('Enter meeting title:', 'Instant Regional Meeting');
+      if (!title) return;
+
+      try {
+        UIModule.showLoader('Starting meeting...');
+
+        const meetingData = {
+          title,
+          description: 'Instant meeting',
+          scheduledTime: new Date(),
+          duration: 60,
+          type: 'regional',
+          region: userProfile.region,
+          visibility: 'regional'
+        };
+
+        const result = await scheduleMeeting(meetingData);
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          joinMeeting(result.data.meetingId, title);
+          loadMeetings();
+        }
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById('meetingTitle').value;
+      const description = document.getElementById('meetingDescription').value;
+      const date = document.getElementById('meetingDate').value;
+      const time = document.getElementById('meetingTime').value;
+      const duration = parseInt(document.getElementById('meetingDuration').value);
+      const visibility = document.getElementById('meetingVisibility').value;
+
+      const scheduledTime = new Date(`${date}T${time}`);
+
+      try {
+        UIModule.showLoader('Scheduling meeting...');
+
+        const meetingData = {
+          title,
+          description,
+          scheduledTime,
+          duration,
+          type: 'regional',
+          region: userProfile.region,
+          visibility
+        };
+
+        const result = await scheduleMeeting(meetingData);
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert('✅ Meeting scheduled successfully!', 'success');
+          closeScheduleModal();
+          loadMeetings();
+        }
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    });
+
+    let currentMeetingId = null;
+
+    function joinMeeting(meetingId, meetingTitle) {
+      const roomName = `amcag-${meetingId}`;
+      const displayName = userProfile.fullName || 'Regional Admin';
+      const userEmail = userProfile.email || '';
+      
+      const jitsiUrl = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.fileRecordingsEnabled=true&config.dropbox.appKey=YOUR_DROPBOX_KEY&userInfo.displayName=${encodeURIComponent(displayName)}&userInfo.email=${encodeURIComponent(userEmail)}`;
+
+      document.getElementById('jitsiFrame').src = jitsiUrl;
+      document.getElementById('jitsiContainer').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      
+      trackAttendance(meetingId, 'joined');
+    }
+
+    function leaveMeeting() {
+      if (currentMeetingId) {
+        trackAttendance(currentMeetingId, 'left');
+        currentMeetingId = null;
+      }
+      
+      document.getElementById('jitsiFrame').src = '';
+      document.getElementById('jitsiContainer').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    async function trackAttendance(meetingId, action) {
+      try {
+        const db = firebase.firestore();
+        await db.collection('meeting_attendance').add({
+          meetingId,
+          userId: currentUser.uid,
+          userName: userProfile.fullName,
+          userEmail: userProfile.email,
+          region: userProfile.region,
+          action,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        if (action === 'joined') {
+          currentMeetingId = meetingId;
+        }
+      } catch (error) {
+        console.error('Error tracking attendance:', error);
+      }
+    }
+
+    async function deleteMeeting(meetingId) {
+      if (!confirm('Delete this meeting? Participants will be notified.')) return;
+
+      try {
+        UIModule.showLoader('Deleting meeting...');
+
+        const db = firebase.firestore();
+        await db.collection('meetings').doc(meetingId).delete();
+
+        UIModule.hideLoader();
+        UIModule.showAlert('Meeting deleted', 'success');
+        loadMeetings();
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    function formatDate(date) {
+      if (!date) return 'N/A';
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }).format(date);
+    }
+
+    function formatTime(date) {
+      if (!date) return 'N/A';
+      return new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).format(date);
+    }
+
+    // Initialize
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      currentUser = user;
+
+      try {
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        userProfile = userDoc.data();
+
+        if (!userProfile.roles || !userProfile.roles.includes('regional_secretary')) {
+          window.location.href = '/member-dashboard.html';
+          return;
+        }
+
+        const functions = firebase.functions();
+        scheduleMeeting = functions.httpsCallable('scheduleMeeting');
+
+        loadMeetings();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadMeetings, 30000);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

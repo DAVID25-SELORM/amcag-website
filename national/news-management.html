@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Management | AMCAG National</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG National</span>
+      </a>
+      
+      <ul class="navbar-menu" style="margin-left: auto;">
+        <li><a href="/national/dashboard.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/national/news-management.html" class="navbar-link active">News</a></li>
+        <li><a href="/national/members.html" class="navbar-link">Members</a></li>
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== HEADER START ===== -->
+  <section class="section-sm" style="background: var(--gradient-primary); color: white; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -50%; right: -10%; width: 600px; height: 600px; background: rgba(255,255,255,0.1); border-radius: 50%; animation: float 20s ease-in-out infinite;"></div>
+    
+    <div class="container" style="position: relative; z-index: 1;">
+      <div class="flex-between">
+        <div class="animate-fade-in">
+          <h1 style="font-family: var(--font-display); font-size: var(--text-5xl); font-weight: var(--font-bold); margin-bottom: var(--space-2);">
+            News Management
+          </h1>
+          <p style="font-size: var(--text-xl); opacity: 0.95;">
+            Create and manage news articles & announcements (National & Regional)
+          </p>
+        </div>
+        <div>
+          <span style="padding: 12px 24px; background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border: var(--glass-border); border-radius: var(--radius-full); font-weight: var(--font-bold); box-shadow: var(--shadow-lg);">
+            📰 News Center
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== HEADER END ===== -->
+
+  <!-- ===== MAIN CONTENT START ===== -->
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="grid grid-2" style="gap: var(--space-6); align-items: start;">
+        
+        <!-- CREATE/EDIT NEWS FORM -->
+        <div class="card animate-fade-in delay-100">
+          <div class="card-header">
+            <h2 class="card-title" id="form-title">📝 Create News Article</h2>
+            <p class="card-subtitle">Publish news and announcements</p>
+          </div>
+          
+          <div class="card-body">
+            <form id="news-form">
+              <input type="hidden" id="news-id">
+              
+              <div class="form-group">
+                <label class="form-label required">Article Title</label>
+                <input type="text" class="form-input" id="news-title" placeholder="e.g., New Certification Program Launched" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Category</label>
+                <select class="form-select" id="news-category" required>
+                  <option value="announcement">📢 Announcement</option>
+                  <option value="event">📅 Event</option>
+                  <option value="partnership">🤝 Partnership</option>
+                  <option value="achievement">🏆 Achievement</option>
+                  <option value="training">📚 Training</option>
+                  <option value="update">🔔 Update</option>
+                  <option value="press">📰 Press Release</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Summary/Excerpt</label>
+                <textarea class="form-textarea" id="news-excerpt" rows="3" placeholder="Brief summary (200 characters max)..." maxlength="200" required></textarea>
+                <span class="form-help">This appears on the news listing page</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Full Content</label>
+                <textarea class="form-textarea" id="news-content" rows="10" placeholder="Full article content..." required></textarea>
+                <span class="form-help">Supports basic formatting (paragraphs automatically preserved)</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Featured Image URL</label>
+                <input type="url" class="form-input" id="news-image" placeholder="https://example.com/image.jpg">
+                <span class="form-help">Leave blank for default image</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Author Name</label>
+                <input type="text" class="form-input" id="news-author" placeholder="e.g., AMCAG Communications Team">
+              </div>
+              
+              <div class="form-group" id="region-field-group" style="display: none;">
+                <label class="form-label">Region</label>
+                <input type="text" class="form-input" id="news-region" readonly style="background: var(--color-neutral-95);">
+                <span class="form-help">Regional news is automatically tagged with your region</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" id="news-featured" style="margin-right: 8px;">
+                  Feature this article (appears first)
+                </label>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">
+                  <input type="checkbox" id="news-published" checked style="margin-right: 8px;">
+                  Publish immediately
+                </label>
+              </div>
+              
+              <div style="display: flex; gap: var(--space-2);">
+                <button type="submit" class="btn btn-primary" id="submit-btn" style="flex: 1;">
+                  Publish Article
+                </button>
+                <button type="button" class="btn btn-outline" onclick="resetForm()">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        
+        <!-- PUBLISHED NEWS LIST -->
+        <div class="card animate-fade-in delay-200">
+          <div class="card-header">
+            <h2 class="card-title">📰 Published Articles</h2>
+            <p class="card-subtitle">Manage existing news articles</p>
+          </div>
+          
+          <div class="card-body">
+            <div id="news-list">
+              <p style="text-align: center; color: var(--text-secondary); padding: var(--space-4);">
+                Loading articles...
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== MAIN CONTENT END ===== -->
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script>
+    // Authentication check - National Executives, Regional Executives, and Super Admins
+    window.AuthModule.requireAnyRole(['national_executive', 'regional_executive', 'super_admin']);
+    
+    let editingNewsId = null;
+    let userRegion = '';
+    let userRole = '';
+    
+    // Wait for Firebase initialization
+    function initializePageWhenReady() {
+      if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+        setTimeout(initializePageWhenReady, 100);
+        return;
+      }
+      
+      // Get user region and role
+      firebase.auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          userRegion = userData.region || '';
+          userRole = userData.role || '';
+          
+          // Show region field for regional executives
+          if (userRole === 'regional_executive' && userRegion) {
+            document.getElementById('region-field-group').style.display = 'block';
+            document.getElementById('news-region').value = userRegion;
+          }
+        }
+      }
+    });
+    
+    // Category icons and badges
+    const categoryConfig = {
+      'announcement': { icon: '📢', badge: 'badge-primary' },
+      'event': { icon: '📅', badge: 'badge-secondary' },
+      'partnership': { icon: '🤝', badge: 'badge-success' },
+      'achievement': { icon: '🏆', badge: 'badge-warning' },
+      'training': { icon: '📚', badge: 'badge-primary' },
+      'update': { icon: '🔔', badge: 'badge-secondary' },
+      'press': { icon: '📰', badge: 'badge-neutral' }
+    };
+    
+    // Form submission
+    document.getElementById('news-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const title = document.getElementById('news-title').value.trim();
+      const category = document.getElementById('news-category').value;
+      const excerpt = document.getElementById('news-excerpt').value.trim();
+      const content = document.getElementById('news-content').value.trim();
+      const image = document.getElementById('news-image').value.trim();
+      const author = document.getElementById('news-author').value.trim();
+      const featured = document.getElementById('news-featured').checked;
+      const published = document.getElementById('news-published').checked;
+      const newsId = document.getElementById('news-id').value;
+      const region = document.getElementById('news-region').value.trim();
+      
+      if (!title || !excerpt || !content) {
+        UIModule.showAlert('Please fill in all required fields', 'error');
+        return;
+      }
+      
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = newsId ? 'Updating...' : 'Publishing...';
+      
+      try {
+        const db = firebase.firestore();
+        const user = firebase.auth().currentUser;
+        
+        const newsData = {
+          title: title,
+          category: category,
+          excerpt: excerpt,
+          content: content,
+          image: image || `https://via.placeholder.com/600x400/${getRandomColor()}/ffffff?text=${encodeURIComponent(title.substring(0, 30))}`,
+          author: author || user.displayName || 'AMCAG Communications',
+          featured: featured,
+          published: published,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: user.uid
+        };
+        
+        // Add region if regional executive
+        if (region) {
+          newsData.region = region;
+        }
+        
+        if (newsId) {
+          // Update existing
+          await db.collection('news').doc(newsId).update(newsData);
+          UIModule.showAlert('Article updated successfully! ✅', 'success');
+        } else {
+          // Create new
+          newsData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          newsData.createdBy = user.uid;
+          newsData.publishDate = firebase.firestore.FieldValue.serverTimestamp();
+          
+          await db.collection('news').add(newsData);
+          UIModule.showAlert('Article published successfully! ✅', 'success');
+        }
+        
+        resetForm();
+        loadNews();
+        
+      } catch (error) {
+        console.error('Error saving news:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = newsId ? 'Update Article' : 'Publish Article';
+      }
+    });
+    
+    // Load news articles
+    async function loadNews() {
+      const container = document.getElementById('news-list');
+      
+      try {
+        const db = firebase.firestore();
+        const snapshot = await db.collection('news')
+          .orderBy('createdAt', 'desc')
+          .limit(50)
+          .get();
+        
+        if (snapshot.empty) {
+          container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: var(--space-4);">No articles yet. Create your first one!</p>';
+          return;
+        }
+        
+        const articles = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        container.innerHTML = articles.map(article => {
+          const config = categoryConfig[article.category] || categoryConfig['announcement'];
+          const date = article.createdAt ? new Date(article.createdAt.toDate()).toLocaleDateString() : 'Draft';
+          
+          return `
+            <div style="padding: var(--space-3); border: 1px solid var(--color-neutral-90); border-radius: var(--radius-lg); margin-bottom: var(--space-3); ${article.featured ? 'border-color: var(--color-primary-40); background: var(--color-primary-99);' : ''}">
+              <div style="display: flex; align-items: start; gap: var(--space-3);">
+                <div style="width: 50px; height: 50px; background: var(--color-primary-95); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: var(--text-2xl); flex-shrink: 0;">
+                  ${config.icon}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="margin-bottom: var(--space-1);">
+                    ${article.featured ? '<span class="badge badge-warning" style="margin-right: 8px;">⭐ Featured</span>' : ''}
+                    <span class="badge ${config.badge}">${article.category}</span>
+                    ${!article.published ? '<span class="badge badge-neutral" style="margin-left: 8px;">Draft</span>' : ''}
+                  </div>
+                  <h4 style="font-weight: var(--font-semibold); margin-bottom: 4px;">${article.title}</h4>
+                  <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">${article.excerpt}</p>
+                  <div style="font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: var(--space-2);">
+                    ${date} • ${article.author || 'AMCAG'}${article.region ? ` • ${article.region} Region` : ''}
+                  </div>
+                  <div style="display: flex; gap: var(--space-2);">
+                    <button onclick="editNews('${article.id}')" class="btn btn-sm btn-outline">✏️ Edit</button>
+                    <button onclick="deleteNews('${article.id}', '${article.title.replace(/'/g, "\\'")}' )" class="btn btn-sm btn-outline" style="color: var(--color-error);">🗑️ Delete</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+      } catch (error) {
+        console.error('Error loading news:', error);
+        container.innerHTML = '<p style="text-align: center; color: var(--color-error); padding: var(--space-4);">Error loading articles</p>';
+      }
+    }
+    
+    // Edit news
+    async function editNews(newsId) {
+      try {
+        const db = firebase.firestore();
+        const doc = await db.collection('news').doc(newsId).get();
+        
+        if (!doc.exists) {
+          UIModule.showAlert('Article not found', 'error');
+          return;
+        }
+        
+        const data = doc.data();
+        
+        document.getElementById('news-id').value = newsId;
+        document.getElementById('news-title').value = data.title || '';
+        document.getElementById('news-category').value = data.category || 'announcement';
+        document.getElementById('news-excerpt').value = data.excerpt || '';
+        document.getElementById('news-content').value = data.content || '';
+        document.getElementById('news-image').value = data.image || '';
+        document.getElementById('news-author').value = data.author || '';
+        document.getElementById('news-featured').checked = data.featured || false;
+        document.getElementById('news-published').checked = data.published !== false;
+        
+        // Show region if exists
+        if (data.region) {
+          document.getElementById('region-field-group').style.display = 'block';
+          document.getElementById('news-region').value = data.region;
+        }
+        
+        document.getElementById('form-title').textContent = '✏️ Edit News Article';
+        document.getElementById('submit-btn').textContent = 'Update Article';
+        
+        // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+      } catch (error) {
+        console.error('Error loading article:', error);
+        UIModule.showAlert('Error loading article: ' + error.message, 'error');
+      }
+    }
+    
+    // Delete news
+    async function deleteNews(newsId, title) {
+      if (!confirm(`Are you sure you want to delete:\n\n"${title}"\n\nThis action cannot be undone.`)) {
+        return;
+      }
+      
+      try {
+        const db = firebase.firestore();
+        await db.collection('news').doc(newsId).delete();
+        
+        UIModule.showAlert('Article deleted successfully', 'success');
+        loadNews();
+        
+      } catch (error) {
+        console.error('Error deleting news:', error);
+        UIModule.showAlert('Error deleting article: ' + error.message, 'error');
+      }
+    }
+    
+    // Reset form
+    function resetForm() {
+      document.getElementById('news-form').reset();
+      document.getElementById('news-id').value = '';
+      document.getElementById('form-title').textContent = '📝 Create News Article';
+      document.getElementById('submit-btn').textContent = 'Publish Article';
+      editingNewsId = null;
+    }
+    
+    // Get random color for placeholder images
+    function getRandomColor() {
+      const colors = ['1A73E8', '34A853', 'FBBC04', 'EA4335', '9334E6'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+    
+    // Theme Toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    function signOut() {
+      if (confirm('Are you sure you want to sign out?')) {
+        AuthModule.signOut();
+      }
+    }
+    
+    // Initialize theme
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      if (savedTheme === 'dark') {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) icon.textContent = '☀️';
+      }
+    })();
+    
+    // Load news on page load
+    window.addEventListener('load', loadNews);
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

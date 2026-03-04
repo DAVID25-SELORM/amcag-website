@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>National Dashboard | AMCAG</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG National</span>
+      </a>
+      
+      <ul class="navbar-menu" style="margin-left: auto;">
+        <li><a href="/national/dashboard.html" class="navbar-link active">Dashboard</a></li>
+        <li><a href="/national/members.html" class="navbar-link">Members</a></li>
+        <li><a href="/national/analytics.html" class="navbar-link">Analytics</a></li>
+        <li><a href="/national/security-command-center.html" class="navbar-link" style="color: #dc3545; font-weight: 600;">🛡️ Security</a></li>
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== DASHBOARD HEADER START ===== -->
+  <section class="section-sm" style="background: var(--gradient-primary); color: white; position: relative; overflow: hidden;">
+    <!-- Animated Background Shapes -->
+    <div style="position: absolute; top: -50%; right: -10%; width: 600px; height: 600px; background: rgba(255,255,255,0.1); border-radius: 50%; animation: float 20s ease-in-out infinite;"></div>
+    <div style="position: absolute; bottom: -30%; left: -5%; width: 400px; height: 400px; background: rgba(255,255,255,0.05); border-radius: 50%; animation: float 15s ease-in-out infinite reverse;"></div>
+    
+    <div class="container" style="position: relative; z-index: 1;">
+      <div class="flex-between">
+        <div class="animate-fade-in">
+          <h1 style="font-family: var(--font-display); font-size: var(--text-5xl); font-weight: var(--font-bold); margin-bottom: var(--space-2);">
+            National Dashboard
+          </h1>
+          <p style="font-size: var(--text-xl); opacity: 0.95; max-width: 600px;">
+            AMCAG National Oversight & Governance
+          </p>
+        </div>
+        <div>
+          <span style="padding: 12px 24px; background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); border: var(--glass-border); border-radius: var(--radius-full); font-weight: var(--font-bold); font-size: var(--text-base); box-shadow: var(--shadow-lg);">
+            🏛️ National Executive
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== DASHBOARD HEADER END ===== -->
+
+  <!-- ===== MAIN DASHBOARD START ===== -->
+  <section class="section bg-surface">
+    <div class="container">
+      <!-- National Statistics -->
+      <h2 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-semibold); margin-bottom: var(--space-4);">
+        National Overview
+      </h2>
+      
+      <div class="stats-grid mb-8">
+        <div class="stat-card animate-fade-in delay-100">
+          <div class="stat-icon">👥</div>
+          <div class="stat-value" id="total-members">15,243</div>
+          <div class="stat-label">Total Members</div>
+        </div>
+        
+        <div class="stat-card animate-fade-in delay-200">
+          <div class="stat-icon">🗺️</div>
+          <div class="stat-value" id="total-regions">16</div>
+          <div class="stat-label">Regional Chapters</div>
+        </div>
+        
+        <div class="stat-card animate-fade-in delay-300">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value">GHS <span id="total-revenue">2.1M</span></div>
+          <div class="stat-label">Total Revenue</div>
+        </div>
+        
+        <div class="stat-card animate-fade-in delay-400">
+          <div class="stat-icon">💼</div>
+          <div class="stat-value" id="total-employed">0</div>
+          <div class="stat-label">Employed Members</div>
+        </div>
+        
+        <div class="stat-card animate-fade-in delay-500">
+          <div class="stat-icon">🔍</div>
+          <div class="stat-value" id="total-unemployed">0</div>
+          <div class="stat-label">Not Employed</div>
+        </div>
+        
+        <div class="stat-card animate-fade-in delay-600">
+          <div class="stat-icon">📜</div>
+          <div class="stat-value" id="total-certificates">12,540</div>
+          <div class="stat-label">Certificates Issued</div>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="grid grid-2" style="gap: var(--space-6); align-items: start;">
+        <!-- Left Column -->
+        <div class="flex-col gap-4">
+          <!-- Quick Actions -->
+          <div class="card">
+            <h3 class="card-title">National Actions</h3>
+            <div class="grid grid-2 gap-2 mt-3">
+              <a href="/member-dashboard/regional-chat.html" class="btn btn-outline btn-sm">💬 Regional Chat</a>
+              <a href="/national/members.html" class="btn btn-outline btn-sm">👥 All Members</a>
+              <a href="/national/analytics.html" class="btn btn-outline btn-sm">📊 Analytics</a>
+              <a href="/national/donations-overview.html" class="btn btn-outline btn-sm">💰 Donations</a>
+              <a href="/national/campaigns.html" class="btn btn-outline btn-sm">📢 Campaigns</a>
+              <a href="/national/meetings.html" class="btn btn-outline btn-sm">📹 Meetings</a>
+              <a href="/national/media-upload.html" class="btn btn-outline btn-sm">📸 Upload Media</a>
+              <a href="/national/news-management.html" class="btn btn-outline btn-sm">📰 Manage News</a>
+              <a href="/region-dashboard/payment-approvals.html" class="btn btn-outline btn-sm">💳 Payment Approvals</a>
+              <a href="/national/security-command-center.html" class="btn btn-outline btn-sm">🔒 Security</a>
+            </div>
+          </div>
+          
+          <!-- Regional Performance -->
+          <div class="card">
+            <h3 class="card-title">Top Performing Regions</h3>
+            <div class="mt-3 flex-col gap-3">
+              <div>
+                <div class="flex-between mb-1">
+                  <span style="font-weight: var(--font-semibold);">Greater Accra</span>
+                  <span style="color: var(--text-secondary); font-size: var(--text-sm);">3,245 members</span>
+                </div>
+                <div style="height: 8px; background: var(--color-neutral-90); border-radius: 4px; overflow: hidden;">
+                  <div style="height: 100%; width: 95%; background: var(--color-primary-40);"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex-between mb-1">
+                  <span style="font-weight: var(--font-semibold);">Ashanti</span>
+                  <span style="color: var(--text-secondary); font-size: var(--text-sm);">2,867 members</span>
+                </div>
+                <div style="height: 8px; background: var(--color-neutral-90); border-radius: 4px; overflow: hidden;">
+                  <div style="height: 100%; width: 84%; background: var(--color-secondary-50);"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex-between mb-1">
+                  <span style="font-weight: var(--font-semibold);">Eastern</span>
+                  <span style="color: var(--text-secondary); font-size: var(--text-sm);">1,932 members</span>
+                </div>
+                <div style="height: 8px; background: var(--color-neutral-90); border-radius: 4px; overflow: hidden;">
+                  <div style="height: 100%; width: 72%; background: var(--color-success);"></div>
+                </div>
+              </div>
+            </div>
+            <a href="/national/regions.html" class="btn btn-outline btn-sm btn-block mt-3">View All Regions</a>
+          </div>
+          
+          <!-- Financial Summary -->
+          <div class="card">
+            <h3 class="card-title">Financial Overview (2026)</h3>
+            <div class="mt-3 flex-col gap-2">
+              <div class="flex-between">
+                <span style="color: var(--text-secondary);">Dues Collected</span>
+                <span style="font-weight: var(--font-bold); color: var(--color-success);">GHS 1,850,000</span>
+              </div>
+              <div class="flex-between">
+                <span style="color: var(--text-secondary);">Contributions</span>
+                <span style="font-weight: var(--font-bold); color: var(--color-secondary-50);">GHS 245,000</span>
+              </div>
+              <div class="flex-between">
+                <span style="color: var(--text-secondary);">Other Revenue</span>
+                <span style="font-weight: var(--font-bold);">GHS 105,000</span>
+              </div>
+              <div class="flex-between mt-2" style="padding-top: var(--space-2); border-top: 2px solid var(--color-neutral-90);">
+                <span style="font-weight: var(--font-bold); font-size: var(--text-lg);">Total</span>
+                <span style="font-weight: var(--font-bold); font-size: var(--text-lg); color: var(--color-primary-40);">GHS 2,200,000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div class="flex-col gap-4">
+          <!-- Pending Approvals -->
+          <div class="card" style="border-left: 4px solid var(--color-warning);">
+            <div class="flex-between mb-3">
+              <h3 class="card-title" style="margin: 0;">Pending Approvals</h3>
+              <span class="badge badge-warning">5</span>
+            </div>
+            <div class="flex-col gap-2">
+              <div style="padding: var(--space-2); background: var(--color-warning-bg); border-radius: var(--radius-md);">
+                <div style="font-weight: var(--font-semibold); margin-bottom: 4px; font-size: var(--text-sm);">
+                  Certificate Approvals
+                </div>
+                <div style="font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: var(--space-2);">
+                  3 certificates awaiting approval
+                </div>
+                <a href="/national/certificates.html" class="btn btn-sm btn-outline" style="width: 100%;">Review</a>
+              </div>
+              
+              <div style="padding: var(--space-2); background: var(--color-info-bg); border-radius: var(--radius-md);">
+                <div style="font-weight: var(--font-semibold); margin-bottom: 4px; font-size: var(--text-sm);">
+                  New Member Applications
+                </div>
+                <div style="font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: var(--space-2);">
+                  2 applications pending review
+                </div>
+                <a href="/national/members.html" class="btn btn-sm btn-outline" style="width: 100%;">Review</a>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Recent Activity -->
+          <div class="card">
+            <h3 class="card-title">Recent Activity</h3>
+            <div class="mt-3 flex-col gap-2">
+              <div style="padding: var(--space-2); border-left: 3px solid var(--color-primary-40); background: var(--color-primary-99);">
+                <div style="font-weight: var(--font-semibold); font-size: var(--text-sm); margin-bottom: 4px;">
+                  New Regional Event Created
+                </div>
+                <div style="font-size: var(--text-xs); color: var(--text-secondary);">
+                  Greater Accra • Workshop • 2 hours ago
+                </div>
+              </div>
+              
+              <div style="padding: var(--space-2); border-left: 3px solid var(--color-success); background: var(--color-success-bg);">
+                <div style="font-weight: var(--font-semibold); font-size: var(--text-sm); margin-bottom: 4px;">
+                  125 Members Paid Dues
+                </div>
+                <div style="font-size: var(--text-xs); color: var(--text-secondary);">
+                  Multiple Regions • Today
+                </div>
+              </div>
+              
+              <div style="padding: var(--space-2); border-left: 3px solid var(--color-secondary-50); background: var(--color-secondary-99);">
+                <div style="font-weight: var(--font-semibold); font-size: var(--text-sm); margin-bottom: 4px;">
+                  15 Certificates Issued
+                </div>
+                <div style="font-size: var(--text-xs); color: var(--text-secondary);">
+                  Ashanti Region • Yesterday
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Upcoming National Events -->
+          <div class="card">
+            <div class="flex-between mb-3">
+              <h3 class="card-title" style="margin: 0;">National Events</h3>
+              <a href="/national/events.html" class="btn btn-sm btn-primary">Add Event</a>
+            </div>
+            <div class="flex-col gap-2">
+              <div style="display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--color-primary-99); border-radius: var(--radius-md);">
+                <div style="background: var(--color-primary-40); color: white; padding: var(--space-2); border-radius: var(--radius-md); text-align: center; min-width: 60px;">
+                  <div style="font-size: var(--text-2xl); font-weight: var(--font-bold);">15</div>
+                  <div style="font-size: var(--text-xs);">MAR</div>
+                </div>
+                <div style="flex: 1;">
+                  <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">Annual General Meeting</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Accra International Conference Centre</div>
+                </div>
+              </div>
+              
+              <div style="display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--color-secondary-99); border-radius: var(--radius-md);">
+                <div style="background: var(--color-secondary-50); color: white; padding: var(--space-2); border-radius: var(--radius-md); text-align: center; min-width: 60px;">
+                  <div style="font-size: var(--text-2xl); font-weight: var(--font-bold);">10</div>
+                  <div style="font-size: var(--text-xs);">APR</div>
+                </div>
+                <div style="flex: 1;">
+                  <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">National Training Summit</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Kumasi Convention Centre</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- System Notifications -->
+          <div class="card" style="background: var(--color-info-bg);">
+            <h3 class="card-title">System Status</h3>
+            <div class="mt-3 flex-col gap-2">
+              <div class="flex gap-2">
+                <span style="color: var(--color-success); font-size: var(--text-xl);">●</span>
+                <div style="flex: 1;">
+                  <div style="font-weight: var(--font-semibold); font-size: var(--text-sm);">All Systems Operational</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-secondary);">Last updated: 5 minutes ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== MAIN DASHBOARD END ===== -->
+
+  <!-- Firebase & Modules -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+  
+  <script>
+    let dashboardLoaded = false;
+    let currentUser = null;
+    let userProfile = null;
+    
+    // Try to load profile from session storage first (set by login page)
+    const cachedProfile = sessionStorage.getItem('userProfile');
+    const cachedUid = sessionStorage.getItem('userUid');
+    
+    if (cachedProfile && cachedUid) {
+      try {
+        userProfile = JSON.parse(cachedProfile);
+        console.log('[NationalDashboard] ✅ Profile loaded from cache:', userProfile.fullName);
+      } catch (e) {
+        console.warn('[NationalDashboard] Failed to parse cached profile:', e);
+      }
+    }
+    
+    // Require national executive authentication
+    AuthModule.onAuthStateChanged(async (user) => {
+      console.log('[NationalDashboard] ========== AUTH STATE CHANGED ==========');
+      console.log('[NationalDashboard] User:', user?.uid);
+      console.log('[NationalDashboard] Dashboard loaded:', dashboardLoaded);
+      console.log('[NationalDashboard] Cached profile:', userProfile?.fullName);
+      
+      // Prevent multiple initialization
+      if (dashboardLoaded) {
+        console.log('[NationalDashboard] Already initialized, skipping');
+        return;
+      }
+      
+      if (!user) {
+        console.log('[NationalDashboard] ❌ No user, redirecting to login');
+        window.location.href = '/membership.html?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+      
+      currentUser = user;
+      
+      // If we don't have cached profile, try to get it from AuthModule first
+      if (!userProfile) {
+        const authUser = AuthModule.getCurrentUser();
+        if (authUser && authUser.profile) {
+          userProfile = authUser.profile;
+          console.log('[NationalDashboard] ✅ Profile loaded from AuthModule:', userProfile.fullName);
+        }
+      }
+      
+      // If still no profile, wait for it to load
+      if (!userProfile) {
+        console.log('[NationalDashboard] Profile not loaded yet, waiting...');
+        
+        let attempts = 0;
+        const maxAttempts = 30; // 30 attempts * 300ms = 9 seconds max wait
+        
+        const waitForProfile = async () => {
+          attempts++;
+          console.log('[NationalDashboard] Waiting for profile, attempt', attempts, '/', maxAttempts);
+          
+          // Check if AuthModule has loaded it
+          const authUser = AuthModule.getCurrentUser();
+          if (authUser && authUser.profile) {
+            userProfile = authUser.profile;
+            console.log('[NationalDashboard] ✅ Profile loaded from AuthModule after', attempts, 'attempts');
+            await checkRoleAndLoadDashboard();
+            return;
+          }
+          
+          // Try loading directly from Firestore as fallback
+          if (attempts === 10) {
+            console.log('[NationalDashboard] Trying direct Firestore load as fallback...');
+            try {
+              const db = window.FirebaseModule.firestore();
+              const userDoc = await db.collection('users').doc(user.uid).get();
+              
+              if (userDoc.exists) {
+                userProfile = userDoc.data();
+                console.log('[NationalDashboard] ✅ Profile loaded from Firestore:', userProfile.fullName);
+                await checkRoleAndLoadDashboard();
+                return;
+              }
+            } catch (error) {
+              console.error('[NationalDashboard] Firestore load failed:', error);
+            }
+          }
+          
+          // Timeout check
+          if (attempts >= maxAttempts) {
+            console.error('[NationalDashboard] ❌ TIMEOUT waiting for profile after', attempts, 'attempts');
+            UIModule.showAlert('Failed to load your profile. Please try logging in again.', 'error');
+            setTimeout(() => {
+              sessionStorage.clear();
+              window.location.href = '/membership.html';
+            }, 2000);
+            return;
+          }
+          
+          // Wait and retry
+          setTimeout(waitForProfile, 300);
+        };
+        
+        waitForProfile();
+      } else {
+        // Profile already loaded
+        await checkRoleAndLoadDashboard();
+      }
+    });
+    
+    async function checkRoleAndLoadDashboard() {
+      if (dashboardLoaded) {
+        console.log('[NationalDashboard] Already loaded, skipping');
+        return;
+      }
+      
+      console.log('[NationalDashboard] Checking role:', userProfile.role);
+      
+      const role = userProfile.role;
+      
+      // Check if user has national executive access
+      if (role !== 'national_executive' && role !== 'super_admin') {
+        console.error('[NationalDashboard] ❌ Access denied. User role:', role);
+        UIModule.showAlert('Access denied. You do not have national executive privileges.', 'error');
+        
+        // Redirect to appropriate dashboard
+        setTimeout(() => {
+          if (role === 'regional_executive') {
+            window.location.href = '/region-dashboard/index.html';
+          } else {
+            window.location.href = '/member-dashboard.html';
+          }
+        }, 2000);
+        return;
+      }
+      
+      console.log('[NationalDashboard] ✅ Access granted, loading dashboard...');
+      dashboardLoaded = true;
+      await loadDashboardData(currentUser);
+    }
+    
+    async function loadDashboardData(user) {
+      try {
+        UIModule.showLoader('Loading national data...');
+        
+        const db = window.FirebaseModule.firestore();
+        
+        // Load nationwide statistics
+        const memberStats = await APIModule.Members.getStats();
+        document.getElementById('total-members').textContent = UIModule.formatNumber(memberStats.total);
+        
+        // Load employment statistics
+        const usersSnapshot = await db.collection('users')
+          .where('role', '==', 'member')
+          .get();
+        
+        let employedCount = 0;
+        let unemployedCount = 0;
+        
+        usersSnapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.employmentStatus === 'Employed') {
+            employedCount++;
+          } else if (data.employmentStatus === 'Not Employed') {
+            unemployedCount++;
+          }
+        });
+        
+        document.getElementById('total-employed').textContent = UIModule.formatNumber(employedCount);
+        document.getElementById('total-unemployed').textContent = UIModule.formatNumber(unemployedCount);
+        
+        // Load payment statistics
+        const paymentStats = await APIModule.Payments.getStats();
+        const revenueInMillions = (paymentStats.totalAmount / 1000000).toFixed(1);
+        document.getElementById('total-revenue').textContent = revenueInMillions + 'M';
+        
+        // Load regions
+        const regions = await APIModule.Regions.getAll();
+        document.getElementById('total-regions').textContent = regions.length;
+        
+        UIModule.hideLoader();
+        
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        UIModule.hideLoader();
+        UIModule.showAlert('Error loading dashboard data. Using demo data.', 'warning');
+      }
+    }
+    
+    function signOut() {
+      if (confirm('Are you sure you want to sign out?')) {
+        AuthModule.signOut();
+      }
+    }
+    
+    // Theme Toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      // Update toggle icon
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    // Initialize theme on load
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      // Update icon if dark mode
+      if (savedTheme === 'dark') {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) icon.textContent = '☀️';
+      }
+    })();
+  </script>
+
+  <!-- Mobile Menu Handler -->
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

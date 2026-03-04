@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leadership | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <ul class="navbar-menu">
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><a href="/about.html" class="navbar-link">About</a></li>
+        <li><a href="/leadership.html" class="navbar-link active">Leadership</a></li>
+        <li><a href="/events.html" class="navbar-link">Events</a></li>
+        <li><a href="/news.html" class="navbar-link">News</a></li>
+        <li><a href="/gallery.html" class="navbar-link">Gallery</a></li>
+        <li><a href="/regions.html" class="navbar-link">Regions</a></li>
+        <li><a href="/contact.html" class="navbar-link">Contact</a></li>
+        <li><a href="/membership.html" class="navbar-cta">Member Portal</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="hero" style="padding: var(--space-10) 0 var(--space-8);">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">National Leadership</h1>
+        <p class="hero-subtitle">Meet the dedicated executives guiding AMCAG's vision</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Executive Council</span>
+        <h2 class="section-title">National Executives</h2>
+      </div>
+      
+      <div class="grid grid-3 gap-6" id="leadership-grid">
+        <div class="card text-center">
+          <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-primary-40); border-radius: var(--radius-full);"></div>
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National President</h3>
+          <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Leadership & Strategy</p>
+          <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Leading AMCAG's strategic vision and representing members at the national level.</p>
+        </div>
+
+        <div class="card text-center">
+          <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-secondary-50); border-radius: var(--radius-full);"></div>
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">General Secretary</h3>
+          <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Administration & Records</p>
+          <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Managing administrative operations and maintaining organizational records.</p>
+        </div>
+
+        <div class="card text-center">
+          <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-success); border-radius: var(--radius-full);"></div>
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National Treasurer</h3>
+          <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Finance & Accountability</p>
+          <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Overseeing financial operations and ensuring transparent accountability.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script>
+    // Helper: Calculate days between dates
+    function daysBetween(date1, date2) {
+      const oneDay = 24 * 60 * 60 * 1000;
+      return Math.round((date2 - date1) / oneDay);
+    }
+
+    // Helper: Get term status
+    function getTermStatus(termEndDate) {
+      const now = new Date();
+      const endDate = termEndDate.toDate ? termEndDate.toDate() : new Date(termEndDate);
+      const daysRemaining = daysBetween(now, endDate);
+
+      if (daysRemaining < 0) {
+        return { status: 'expired', label: 'Term Expired', daysRemaining, color: 'var(--color-error)' };
+      } else if (daysRemaining <= 90) {
+        return { status: 'expiring', label: `${daysRemaining} days left`, daysRemaining, color: 'var(--color-warning)' };
+      } else {
+        return { status: 'active', label: `Term ends ${endDate.toLocaleDateString()}`, daysRemaining, color: 'var(--color-success)' };
+      }
+    }
+
+    async function loadLeadership() {
+      const leadershipGrid = document.getElementById('leadership-grid');
+      
+      try {
+        const db = FirebaseModule.db();
+        let snapshot;
+        
+        try {
+          snapshot = await db.collection('leadership')
+            .where('level', '==', 'national')
+            .orderBy('order', 'asc')
+            .get();
+        } catch (queryError) {
+          console.warn('Leadership query failed, trying without orderBy:', queryError);
+          try {
+            snapshot = await db.collection('leadership')
+              .where('level', '==', 'national')
+              .get();
+          } catch (whereError) {
+            console.warn('Leadership query with where failed, using all:', whereError);
+            snapshot = await db.collection('leadership').get();
+          }
+        }
+        
+        // Load active terms for national positions
+        let termsMap = {};
+        try {
+          const termsSnapshot = await db.collection('leadership_terms')
+            .where('level', '==', 'national')
+            .get();
+          
+          termsSnapshot.docs.forEach(doc => {
+            const term = doc.data();
+            termsMap[term.positionTitle] = term;
+          });
+        } catch (termsError) {
+          console.warn('Could not load terms:', termsError);
+        }
+        
+        if (snapshot.empty) {
+          leadershipGrid.innerHTML = `
+            <div class="card text-center">
+              <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-primary-40); border-radius: var(--radius-full);"></div>
+              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National President</h3>
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Leadership & Strategy</p>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Leading AMCAG's strategic vision and representing members at the national level.</p>
+            </div>
+            <div class="card text-center">
+              <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-secondary-50); border-radius: var(--radius-full);"></div>
+              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">General Secretary</h3>
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Administration & Records</p>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Managing administrative operations and maintaining organizational records.</p>
+            </div>
+            <div class="card text-center">
+              <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-success); border-radius: var(--radius-full);"></div>
+              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National Treasurer</h3>
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Finance & Accountability</p>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Overseeing financial operations and ensuring transparent accountability.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        const colors = ['var(--color-primary-40)', 'var(--color-secondary-50)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-error)'];
+        
+        leadershipGrid.innerHTML = snapshot.docs.map((doc, index) => {
+          const data = doc.data();
+          const photoUrl = data.photoUrl || '';
+          const bgStyle = photoUrl ? `background-image: url('${photoUrl}'); background-size: cover; background-position: center;` : `background: ${colors[index % colors.length]};`;
+          
+          // Check if we have term information for this position
+          const term = termsMap[data.position];
+          let termInfo = '';
+          
+          if (term && term.termEndDate) {
+            const status = getTermStatus(term.termEndDate);
+            termInfo = `
+              <div style="margin-top: var(--space-3); padding: var(--space-2); background: rgba(0,0,0,0.05); border-radius: var(--radius-sm); font-size: var(--text-xs);">
+                <div style="font-weight: var(--font-semibold); color: ${status.color};">📅 ${status.label}</div>
+              </div>
+            `;
+          }
+          
+          return `
+            <div class="card text-center">
+              <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); ${bgStyle} border-radius: var(--radius-full);"></div>
+              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">${data.position || 'Position'}</h3>
+              ${data.name ? `<p style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${data.name}</p>` : ''}
+              ${term && term.incumbentName && !data.name ? `<p style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${term.incumbentName}</p>` : ''}
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">${data.responsibility || ''}</p>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">${data.description || ''}</p>
+              ${termInfo}
+            </div>
+          `;
+        }).join('');
+        
+      } catch (error) {
+        console.error('Error loading leadership:', error);
+        console.log('Showing sample leadership placeholders due to error');
+        // Show default placeholders on error
+        leadershipGrid.innerHTML = `
+          <div class="card text-center">
+            <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-primary-40); border-radius: var(--radius-full);"></div>
+            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National President</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Leadership & Strategy</p>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Leading AMCAG's strategic vision and representing members at the national level.</p>
+          </div>
+          <div class="card text-center">
+            <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-secondary-50); border-radius: var(--radius-full);"></div>
+            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">General Secretary</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Administration & Records</p>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Managing administrative operations and maintaining organizational records.</p>
+          </div>
+          <div class="card text-center">
+            <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-success); border-radius: var(--radius-full);"></div>
+            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National Treasurer</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Finance & Accountability</p>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Overseeing financial operations and ensuring transparent accountability.</p>
+          </div>
+        `;
+      }
+    }
+    loadLeadership();
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

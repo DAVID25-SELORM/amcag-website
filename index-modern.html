@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMCAG - Association of Medicine Counter Assistants of Ghana | Professional Healthcare Excellence</title>
+  <meta name="description" content="Ghana's Premier Professional Association for Medicine Counter Assistants. Empowering healthcare professionals through excellence, advocacy, and digital transformation.">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  
+  <!-- Google Fonts -->  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Modern Homepage Enhancements */
+    :root {
+      --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --gradient-healthcare: linear-gradient(135deg, #0575E6 0%, #021B79 100%);
+      --shadow-elevation-1: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.12);
+      --shadow-elevation-2: 0 3px 6px rgba(0,0,0,0.08), 0 3px 6px rgba(0,0,0,0.15);
+      --shadow-elevation-3: 0 10px 20px rgba(0,0,0,0.10), 0 6px 6px rgba(0,0,0,0.15);
+      --shadow-elevation-4: 0 15px 25px rgba(0,0,0,0.12), 0 10px 10px rgba(0,0,0,0.15);
+    }
+    
+    /* Scroll Reveal Animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                  transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+    
+    /* Modern Hero Section */
+    .modern-hero {
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0575E6 0%, #021B79 100%);
+    }
+    
+    .hero-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .hero-circles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .hero-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      animation: float 20s infinite ease-in-out;
+    }
+    
+    .hero-circle-1 {
+      width: 400px;
+      height: 400px;
+      top: 10%;
+      right: 10%;
+      animation-delay: 0s;
+    }
+    
+    .hero-circle-2 {
+      width: 300px;
+      height: 300px;
+      bottom: 15%;
+      left: 5%;
+      animation-delay: 2s;
+    }
+    
+    .hero-circle-3 {
+      width: 200px;
+      height: 200px;
+      top: 40%;
+      left: 15%;
+      animation-delay: 4s;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(30px, -30px) rotate(120deg); }
+      66% { transform: translate(-20px, 20px) rotate(240deg); }
+    }
+    
+    /* Stat Counter Animation */
+    .stat-number {
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 800;
+      background: var(--gradient-healthcare);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+    }
+    
+     /* Testimonial Slider */
+    .testimonial-slider {
+      position: relative;
+      overflow: hidden;
+      padding: 3rem 0;
+    }
+    
+    .testimonial-track {
+      display: flex;
+      transition: transform 0.5s ease;
+    }
+    
+    .testimonial-card {
+      min-width: 100%;
+      padding: 0 2rem;
+    }
+    
+    @media (min-width: 768px) {
+      .testimonial-card {
+        min-width: 50%;
+      }
+    }
+    
+    @media (min-width: 1024px) {
+      .testimonial-card {
+        min-width: 33.333%;
+      }
+    }
+    
+    /* SVG Wave Separator */
+    .wave-separator {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+    }
+    
+    .wave-separator svg {
+      position: relative;
+      display: block;
+      width: calc(100% + 1.3px);
+      height: 80px;
+    }
+    
+    /* Button Micro-interactions */
+    .btn-modern {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .btn-modern::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    
+    .btn-modern:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+    
+    .btn-modern:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-elevation-3);
+    }
+    
+    .btn-modern:active {
+      transform: translateY(0);
+    }
+    
+    /* News & Events Cards */
+    .content-card {
+      border-radius: 16px;
+      overflow: hidden;
+      background: white;
+      box-shadow: var(--shadow-elevation-1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .content-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-elevation-3);
+    }
+    
+    .content-card-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    
+    .content-card-body {
+      padding: 1.5rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .content-card-category {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .content-card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--color-neutral-10);
+      line-height: 1.3;
+    }
+    
+    .content-card-excerpt {
+      color: var(--color-neutral-40);
+      margin-bottom: 1rem;
+      flex-grow: 1;
+      line-height: 1.6;
+    }
+    
+    .content-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-neutral-90);
+      font-size: 0.875rem;
+      color: var(--color-neutral-50);
+    }
+    
+    /* Glowing Effect for CTA Button */
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(5, 117, 230, 0.5); }
+      50% { box-shadow: 0 0 40px rgba(5, 117, 230, 0.8); }
+    }
+    
+    .btn-glow {
+      animation: glow 2s infinite;
+    }
+    
+    /* Trust Badges Section */
+    .trust-badge {
+      text-align: center;
+      padding: 2rem 1rem;
+      border-radius: 12px;
+      background: white;
+      box-shadow: var(--shadow-elevation-1);
+      transition: transform 0.3s ease;
+    }
+    
+    .trust-badge:hover {
+      transform: scale(1.05);
+    }
+    
+    .trust-badge-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    
+    /* Services Grid Enhancement */
+    .service-card-modern {
+      background: white;
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: var(--shadow-elevation-1);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid var(--color-neutral-95);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .service-card-modern::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 4px;
+      background: var(--gradient-healthcare);
+      transition: width 0.4s ease;
+    }
+    
+    .service-card-modern:hover::before {
+      width: 100%;
+    }
+    
+    .service-card-modern:hover {
+      transform: translateY(-10px);
+      box-shadow: var(--shadow-elevation-4);
+      border-color: rgba(5, 117, 230, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar" style="box-shadow: 0 2px 20px rgba(0,0,0,0.08);">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span style="font-weight: 700;">AMCAG</span>
+      </a>
+      
+      <button class="navbar-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <ul class="navbar-menu">
+        <li><a href="/index.html" class="navbar-link active">Home</a></li>
+        <li><a href="/about.html" class="navbar-link">About</a></li>
+        <li><a href="/leadership.html" class="navbar-link">Leadership</a></li>
+        <li><a href="/events.html" class="navbar-link">Events</a></li>
+        <li><a href="/news.html" class="navbar-link">News</a></li>
+        <li><a href="/gallery.html" class="navbar-link">Gallery</a></li>
+        <li><a href="/regions.html" class="navbar-link">Regions</a></li>
+        <li><a href="/contact.html" class="navbar-link">Contact</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="/membership.html" class="navbar-cta btn-modern" style="position: relative;">Member Portal</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== MODERN HERO START ===== -->
+  <section class="modern-hero">
+    <div class="hero-background">
+      <div class="hero-circles">
+        <div class="hero-circle hero-circle-1"></div>
+        <div class="hero-circle hero-circle-2"></div>
+        <div class="hero-circle hero-circle-3"></div>
+      </div>
+    </div>
+    
+    <div class="container" style="position: relative; z-index: 10;">
+      <div style="max-width: 1000px; margin: 0 auto; text-align: center; padding: 4rem 0;">
+        
+        <!-- Trust Badge -->
+        <div class="reveal" style="display: inline-block; padding: 0.75rem 1.5rem; background: rgba(255,255,255,0.15); border-radius: 50px; margin-bottom: 2rem; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2);">
+          <span style="color: white; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🇬🇭</span>
+            <span>Ghana's Premier Healthcare Association</span>
+            <span style="background: rgba(255,255,255,0.3); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem;">Since 1999</span>
+          </span>
+        </div>
+        
+        <!-- Main Headline -->
+        <h1 class="reveal reveal-delay-1" style="font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 900; margin-bottom: 1.5rem; line-height: 1.1; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.3); letter-spacing: -0.02em;">
+          Empowering Healthcare
+          <br>
+          <span style="background: linear-gradient(90deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Excellence</span> Nationwide
+        </h1>
+        
+        <!-- Subheadline -->
+        <p class="reveal reveal-delay-2" style="font-size: clamp(1.125rem, 2.5vw, 1.5rem); margin-bottom: 3rem; color: rgba(255,255,255,0.95); max-width: 750px; margin-left: auto; margin-right: auto; line-height: 1.7; font-weight: 400;">
+          Join 15,000+ medicine counter assistants advancing pharmaceutical care standards across Ghana through professional development, advocacy, and community impact.
+        </p>
+        
+        <!-- CTA Buttons -->
+        <div class="reveal reveal-delay-3" style="display: flex; gap: 1.25rem; justify-content: center; flex-wrap: wrap; margin-bottom: 4rem;">
+          <a href="/membership.html" class="btn btn-modern btn-lg btn-glow" style="background: white; color: #0575E6; padding: 1.25rem 3rem; font-weight: 700; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; font-size: 1.125rem; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <span>✨</span>
+            <span>Become a Member</span>
+            <span style="background: #0575E6; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem;">Free Registration</span>
+          </a>
+          <a href="/dues.html" class="btn btn-modern btn-lg" style="background: rgba(255,255,255,0.15); color: white; padding: 1.25rem 3rem; font-weight: 700; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; font-size: 1.125rem; border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(20px);">
+            <span>💳</span>
+            <span>Pay Dues Online</span>
+          </a>
+        </div>
+        
+        <!-- Trust Indicators -->
+        <div class="reveal reveal-delay-4" style="display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap; color: white; opacity: 0.9;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">✓</span>
+            <span style="font-weight: 600;">15,000+ Active Members</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">✓</span>
+            <span style="font-weight: 600;">16 Regional Chapters</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">✓</span>
+            <span style="font-weight: 600;">Nationally Recognized</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Wave Separator -->
+  <div class="wave-separator">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0 C150,100 350,0 600,50 C850,100 1050,0 1200,50 L1200,120 L0,120 Z" fill="white"></path>
+    </svg>
+  </div>
+  <!-- ===== MODERN HERO END ===== -->
+
+  <!-- ===== ANIMATED STATISTICS START ===== -->
+  <section class="section" style="background: white; padding: 5rem 0;">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">Our Impact</span>
+        <h2 class="section-title">Transforming Healthcare Across Ghana</h2>
+        <p class="section-description" style="max-width: 650px; margin: 0 auto;">
+          Empowering thousands of healthcare professionals nationwide with training, certification, and professional support services.
+        </p>
+      </div>
+      
+      <div class="grid grid-4" style="gap: 2rem; margin-top: 4rem;">
+        <div class="reveal reveal-delay-1" style="text-align: center; padding: 2.5rem 1.5rem; background: linear-gradient(135deg, #f6f9fc 0%, #fff 100%); border-radius: 20px; box-shadow: var(--shadow-elevation-2);">
+          <div style="font-size: 3.5rem; margin-bottom: 1rem;">👥</div>
+          <div class="stat-number" data-target="15000">0</div>
+          <div style="color: var(--color-neutral-40); font-weight: 600; margin-top: 0.5rem; text-transform: uppercase; font-size: 0.875rem; letter-spacing: 1px;">Active Members</div>
+        </div>
+        
+        <div class="reveal reveal-delay-2" style="text-align: center; padding: 2.5rem 1.5rem; background: linear-gradient(135deg, #f6f9fc 0%, #fff 100%); border-radius: 20px; box-shadow: var(--shadow-elevation-2);">
+          <div style="font-size: 3.5rem; margin-bottom: 1rem;">🗺️</div>
+          <div class="stat-number" data-target="16">0</div>
+          <div style="color: var(--color-neutral-40); font-weight: 600; margin-top: 0.5rem; text-transform: uppercase; font-size: 0.875rem; letter-spacing: 1px;">Regional Chapters</div>
+        </div>
+        
+        <div class="reveal reveal-delay-3" style="text-align: center; padding: 2.5rem 1.5rem; background: linear-gradient(135deg, #f6f9fc 0%, #fff 100%); border-radius: 20px; box-shadow: var(--shadow-elevation-2);">
+          <div style="font-size: 3.5rem; margin-bottom: 1rem;">📜</div>
+          <div class="stat-number" data-target="12500">0</div>
+          <div style="color: var(--color-neutral-40); font-weight: 600; margin-top: 0.5rem; text-transform: uppercase; font-size: 0.875rem; letter-spacing: 1px;">Certificates Issued</div>
+        </div>
+        
+        <div class="reveal reveal-delay-4" style="text-align: center; padding: 2.5rem 1.5rem; background: linear-gradient(135deg, #f6f9fc 0%, #fff 100%); border-radius: 20px; box-shadow: var(--shadow-elevation-2);">
+          <div style="font-size: 3.5rem; margin-bottom: 1rem;">📅</div>
+          <div class="stat-number" data-target="200">0</div>
+          <div style="color: var(--color-neutral-40); font-weight: 600; margin-top: 0.5rem; text-transform: uppercase; font-size: 0.875rem; letter-spacing: 1px;">Annual Events</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== ANIMATED STATISTICS END ===== -->
+
+  <!-- Wave Separator -->
+  <div class="wave-separator" style="transform: rotate(180deg);">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0 C150,100 350,0 600,50 C850,100 1050,0 1200,50 L1200,120 L0,120 Z" fill="white"></path>
+    </svg>
+  </div>
+
+  <!-- ===== PROFESSIONAL SERVICES START ===== -->
+  <section class="section" style="background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%); padding: 6rem 0;">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">What We Offer</span>
+        <h2 class="section-title">Professional Services</h2>
+        <p class="section-description">
+          Comprehensive support services designed to elevate pharmaceutical care standards
+        </p>
+      </div>
+      
+      <div class="grid grid-2" style="gap: 2.5rem; margin-top: 4rem;">
+        <!-- Service 1 -->
+        <div class="service-card-modern reveal reveal-delay-1">
+          <div style="display: flex; align-items: flex-start; gap: 1.5rem;">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0; box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);">
+              📚
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--color-neutral-10);">Professional Training & Development</h3>
+              <p style="color: var(--color-neutral-40); margin-bottom: 1.5rem; line-height: 1.7;">
+                Accredited CPD programs, workshops, and certification courses designed to enhance pharmaceutical knowledge and professional competence.
+              </p>
+              <ul style="list-style: none; padding: 0; color: var(--color-neutral-30);">
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--color-neutral-95);">
+                  <span style="color: #667eea; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Continuing Professional Development (CPD) Accredited</span>
+                </li>
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--color-neutral-95);">
+                  <span style="color: #667eea; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Online & In-Person Training Sessions</span>
+                </li>
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                  <span style="color: #667eea; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Expert Facilitators from Leading Institutions</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service 2 -->
+        <div class="service-card-modern reveal reveal-delay-2">
+          <div style="display: flex; align-items: flex-start; gap: 1.5rem;">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0; box-shadow: 0 8px 20px rgba(240, 147, 251, 0.3);">
+              📋
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--color-neutral-10);">NHIS Claims & Compliance</h3>
+              <p style="color: var(--color-neutral-40); margin-bottom: 1.5rem; line-height: 1.7;">
+                Comprehensive training on National Health Insurance Scheme claims processing, documentation, and regulatory compliance.
+              </p>
+              <ul style="list-style: none; padding: 0; color: var(--color-neutral-30);">
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--color-neutral-95);">
+                  <span style="color: #f093fb; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">NHIS Claims Processing & Management</span>
+                </li>
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--color-neutral-95);">
+                  <span style="color: #f093fb; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Documentation Best Practices & Standards</span>
+                </li>
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                  <span style="color: #f093fb; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Regulatory Updates & Compliance Training</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service 3 -->
+        <div class="service-card-modern reveal reveal-delay-3">
+          <div style="display: flex; align-items: flex-start; gap: 1.5rem;">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #4facfe, #00f2fe); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0; box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);">
+              🤝
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--color-neutral-10);">Networking & Professional Community</h3>
+              <p style="color: var(--color-neutral-40); margin-bottom: 1.5rem; line-height: 1.7;">
+                Connect with 15,000+ healthcare professionals nationwide through conferences, regional chapters, and mentorship programs.
+              </p>
+              <ul style="list-style: none; padding: 0; color: var(--color-neutral-30);">
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--color-neutral-95);">
+                  <span style="color: #4facfe; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Annual National Conferences & Symposiums</span>
+                </li>
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--color-neutral-95);">
+                  <span style="color: #4facfe; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">16 Active Regional Chapter Meetings</span>
+                </li>
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                  <span style="color: #4facfe; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Peer Mentorship & Career Development</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service 4 -->
+        <div class="service-card-modern reveal reveal-delay-4">
+          <div style="display: flex; align-items: flex-start; gap: 1.5rem;">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #fa709a, #fee140); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0; box-shadow: 0 8px 20px rgba(250, 112, 154, 0.3);">
+              🛡️
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--color-neutral-10);">Member Welfare & Advocacy</h3>
+              <p style="color: var(--color-neutral-40); margin-bottom: 1.5rem; line-height: 1.7;">
+                Comprehensive member support programs including benefits, emergency assistance, and professional advocacy services.
+              </p>
+              <ul style="list-style: none; padding: 0; color: var(--color-neutral-30);">
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--color-neutral-95);">
+                  <span style="color: #fa709a; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Member Welfare Fund & Emergency Support</span>
+                </li>
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--color-neutral-95);">
+                  <span style="color: #fa709a; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Legal & Professional Advocacy Services</span>
+                </li>
+                <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                  <span style="color: #fa709a; font-size: 1.25rem;">✓</span>
+                  <span style="font-weight: 500;">Policy Influence & Industry Representation</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== PROFESSIONAL SERVICES END ===== -->
+
+  <!-- Wave Separator -->
+  <div class="wave-separator">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0 C150,100 350,0 600,50 C850,100 1050,0 1200,50 L1200,120 L0,120 Z" fill="#f8f9fa"></path>
+    </svg>
+  </div>
+
+  <!-- ===== LATEST NEWS START ===== -->
+  <section class="section" style="background: white; padding: 6rem 0;">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">Stay Updated</span>
+        <h2 class="section-title">Latest News & Announcements</h2>
+        <p class="section-description">
+          Stay informed with the latest updates, news, and announcements from AMCAG
+        </p>
+      </div>
+      
+      <div class="grid grid-3" style="gap: 2rem; margin-top: 4rem;" id="newsContainer">
+        <!-- News will be loaded dynamically -->
+        <div class="content-card reveal reveal-delay-1">
+          <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #e0e0e0, #f5f5f5); display: flex; align-items: center; justify-content: center;">
+            Loading news...
+          </div>
+        </div>
+      </div>
+      
+      <div class="reveal reveal-delay-4" style="text-align: center; margin-top: 3rem;">
+        <a href="/news.html" class="btn btn-modern btn-lg" style="background: var(--gradient-healthcare); color: white; padding: 1rem 3rem; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 700;">
+          View All News →
+        </a>
+      </div>
+    </div>
+  </section>
+  <!-- ===== LATEST NEWS END ===== -->
+
+  <!-- Wave Separator -->
+  <div class="wave-separator" style="transform: rotate(180deg);">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0 C150,100 350,0 600,50 C850,100 1050,0 1200,50 L1200,120 L0,120 Z" fill="white"></path>
+    </svg>
+  </div>
+
+  <!-- ===== UPCOMING EVENTS START ===== -->
+  <section class="section" style="background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%); padding: 6rem 0;">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">Join Us</span>
+        <h2 class="section-title">Upcoming Events</h2>
+        <p class="section-description">
+          Participate in workshops, conferences, and training sessions designed for professional growth
+        </p>
+      </div>
+      
+      <div class="grid grid-2" style="gap: 2rem; margin-top: 4rem;" id="eventsContainer">
+        <!-- Events will be loaded dynamically -->
+        <div class="content-card reveal reveal-delay-1">
+          <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #e0e0e0, #f5f5f5); display: flex; align-items: center; justify-content: center;">
+            Loading events...
+          </div>
+        </div>
+      </div>
+      
+      <div class="reveal reveal-delay-4" style="text-align: center; margin-top: 3rem;">
+        <a href="/events.html" class="btn btn-modern btn-lg" style="background: var(--gradient-healthcare); color: white; padding: 1rem 3rem; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 700;">
+          View All Events →
+        </a>
+      </div>
+    </div>
+  </section>
+  <!-- ===== UPCOMING EVENTS END ===== -->
+
+  <!-- Wave Separator -->
+  <div class="wave-separator">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0 C150,100 350,0 600,50 C850,100 1050,0 1200,50 L1200,120 L0,120 Z" fill="#f8f9fa"></path>
+    </svg>
+  </div>
+
+  <!-- ===== TESTIMONIALS START ===== -->
+  <section class="section" style="background: white; padding: 6rem 0;">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">Member Stories</span>
+        <h2 class="section-title">What Our Members Say</h2>
+        <p class="section-description">
+          Hear from healthcare professionals who are growing their careers with AMCAG
+        </p>
+      </div>
+      
+      <div class="testimonial-slider" style="margin-top: 4rem;">
+        <div class="testimonial-track" id="testimonialTrack">
+          <!-- Testimonial 1 -->
+          <div class="testimonial-card">
+            <div class="reveal reveal-delay-1" style="background: linear-gradient(135deg, #f6f9fc 0%, #fff 100%); padding: 3rem; border-radius: 20px; box-shadow: var(--shadow-elevation-2); height: 100%;">
+              <div style="font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3;">"</div>
+              <p style="font-size: 1.125rem; line-height: 1.8; color: var(--color-neutral-20); margin-bottom: 2rem; font-style: italic;">
+                AMCAG's professional training programs have significantly enhanced my pharmaceutical knowledge. The CPD courses are world-class and directly applicable to my daily practice.
+              </p>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700;">
+                  AO
+                </div>
+                <div>
+                  <div style="font-weight: 700; font-size: 1.125rem; color: var(--color-neutral-10);">Akosua Owusu</div>
+                  <div style="color: var(--color-neutral-50); font-size: 0.875rem;">Medicine Counter Assistant, Accra</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Testimonial 2 -->
+          <div class="testimonial-card">
+            <div class="reveal reveal-delay-2" style="background: linear-gradient(135deg, #f6f9fc 0%, #fff 100%); padding: 3rem; border-radius: 20px; box-shadow: var(--shadow-elevation-2); height: 100%;">
+              <div style="font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3;">"</div>
+              <p style="font-size: 1.125rem; line-height: 1.8; color: var(--color-neutral-20); margin-bottom: 2rem; font-style: italic;">
+                The networking opportunities through regional chapters have been invaluable. I've connected with peers across Ghana and learned best practices that improved my pharmacy operations.
+              </p>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f093fb, #f5576c); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700;">
+                  KA
+                </div>
+                <div>
+                  <div style="font-weight: 700; font-size: 1.125rem; color: var(--color-neutral-10);">Kwame Asante</div>
+                  <div style="color: var(--color-neutral-50); font-size: 0.875rem;">Regional Member, Kumasi</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Testimonial 3 -->
+          <div class="testimonial-card">
+            <div class="reveal reveal-delay-3" style="background: linear-gradient(135deg, #f6f9fc 0%, #fff 100%); padding: 3rem; border-radius: 20px; box-shadow: var(--shadow-elevation-2); height: 100%;">
+              <div style="font-size: 3rem; margin-bottom: 1.5rem; opacity: 0.3;">"</div>
+              <p style="font-size: 1.125rem; line-height: 1.8; color: var(--color-neutral-20); margin-bottom: 2rem; font-style: italic;">
+                AMCAG's advocacy for our profession is outstanding. They've successfully represented our interests at national policy discussions, ensuring our voices are heard.
+              </p>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4facfe, #00f2fe); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700;">
+                  EA
+                </div>
+                <div>
+                  <div style="font-weight: 700; font-size: 1.125rem; color: var(--color-neutral-10);">Esi Agyeman</div>
+                  <div style="color: var(--color-neutral-50); font-size: 0.875rem;">Senior Member, Takoradi</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Slider Controls -->
+      <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
+        <button onclick="slideTestimonials('prev')" style="width: 50px; height: 50px; border-radius: 50%; background: white; border: 2px solid var(--color-primary-50); color: var(--color-primary-50); font-size: 1.5rem; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='var(--color-primary-50)'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='var(--color-primary-50)'">
+          ←
+        </button>
+        <button onclick="slideTestimonials('next')" style="width: 50px; height: 50px; border-radius: 50%; background: white; border: 2px solid var(--color-primary-50); color: var(--color-primary-50); font-size: 1.5rem; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='var(--color-primary-50)'; this.style.color='white'" onmouseout="this.style.background='white'; this.style.color='var(--color-primary-50)'">
+          →
+        </button>
+      </div>
+    </div>
+  </section>
+  <!-- ===== TESTIMONIALS END ===== -->
+
+  <!-- Wave Separator -->
+  <div class="wave-separator" style="transform: rotate(180deg);">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0 C150,100 350,0 600,50 C850,100 1050,0 1200,50 L1200,120 L0,120 Z" fill="white"></path>
+    </svg>
+  </div>
+
+  <!-- ===== CTA SECTION START ===== -->
+  <section class="section" style="background: var(--gradient-healthcare); padding: 6rem 0; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1;">
+      <div class="hero-circles">
+        <div class="hero-circle hero-circle-1"></div>
+        <div class="hero-circle hero-circle-2"></div>
+      </div>
+    </div>
+    
+    <div class="container" style="position: relative; z-index: 10;">
+      <div class="reveal" style="text-align: center; max-width: 800px; margin: 0 auto;">
+        <h2 style="font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; margin-bottom: 1.5rem; color: white;">
+          Ready to Elevate Your Career?
+        </h2>
+        <p style="font-size: clamp(1.125rem, 2vw, 1.5rem); margin-bottom: 3rem; color: rgba(255,255,255,0.9); line-height: 1.7;">
+          Join Ghana's premier professional association for medicine counter assistants and access world-class training, networking, and career advancement opportunities.
+        </p>
+        <div style="display: flex; gap: 1.25rem; justify-content: center; flex-wrap: wrap;">
+          <a href="/membership.html" class="btn btn-modern btn-lg" style="background: white; color: #0575E6; padding: 1.25rem 3rem; font-weight: 700; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; font-size: 1.125rem;">
+            <span>🚀</span>
+            <span>Join AMCAG Today</span>
+          </a>
+          <a href="/contact.html" class="btn btn-modern btn-lg" style="background: rgba(255,255,255,0.15); color: white; padding: 1.25rem 3rem; font-weight: 700; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; font-size: 1.125rem; border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(20px);">
+            <span>💬</span>
+            <span>Contact Us</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== CTA SECTION END ===== -->
+
+  <!-- ===== FOOTER START ===== -->
+  <footer style="background: #1a1a1a; color: rgba(255,255,255,0.8); padding: 4rem 0 2rem;">
+    <div class="container">
+      <div class="grid grid-4" style="gap: 3rem; margin-bottom: 3rem;">
+        <div>
+          <h4 style="color: white; font-weight: 700; margin-bottom: 1.5rem;">AMCAG</h4>
+          <p style="line-height: 1.7; opacity: 0.8;">
+            Ghana's Premier Professional Association for Medicine Counter Assistants, advancing pharmaceutical care excellence nationwide.
+          </p>
+        </div>
+        <div>
+          <h4 style="color: white; font-weight: 700; margin-bottom: 1.5rem;">Quick Links</h4>
+          <ul style="list-style: none; padding: 0;">
+            <li style="margin-bottom: 0.75rem;"><a href="/about.html" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">About Us</a></li>
+            <li style="margin-bottom: 0.75rem;"><a href="/leadership.html" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Leadership</a></li>
+            <li style="margin-bottom: 0.75rem;"><a href="/regions.html" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Regions</a></li>
+            <li style="margin-bottom: 0.75rem;"><a href="/contact.html" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: white; font-weight: 700; margin-bottom: 1.5rem;">Member Resources</h4>
+          <ul style="list-style: none; padding: 0;">
+            <li style="margin-bottom: 0.75rem;"><a href="/membership.html" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Member Portal</a></li>
+            <li style="margin-bottom: 0.75rem;"><a href="/events.html" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Events</a></li>
+            <li style="margin-bottom: 0.75rem;"><a href="/news.html" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">News</a></li>
+            <li style="margin-bottom: 0.75rem;"><a href="/gallery.html" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Gallery</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color: white; font-weight: 700; margin-bottom: 1.5rem;">Connect With Us</h4>
+          <p style="opacity: 0.8; margin-bottom: 1rem;">Follow us on social media for updates</p>
+          <div style="display: flex; gap: 1rem;">
+            <a href="#" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; text-decoration: none; color: white; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">f</a>
+            <a href="#" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; text-decoration: none; color: white; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">t</a>
+            <a href="#" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; text-decoration: none; color: white; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">in</a>
+          </div>
+        </div>
+      </div>
+      
+      <div style="padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; opacity: 0.7;">
+        <p>&copy; 2026 Association of Medicine Counter Assistants of Ghana (AMCAG). All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+  <!-- ===== FOOTER END ===== -->
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  
+  <!-- Modern Homepage Scripts -->
+  <script>
+    // ===== SCROLL REVEAL ANIMATION =====
+    const revealElements = document.querySelectorAll('.reveal');
+    
+    const revealOnScroll = () => {
+      const windowHeight = window.innerHeight;
+      const revealPoint = 100;
+      
+      revealElements.forEach(element => {
+        const elementTop = element.getBoundingClientRect().top;
+        
+        if (elementTop < windowHeight - revealPoint) {
+          element.classList.add('active');
+        }
+      });
+    };
+    
+    window.addEventListener('scroll', revealOnScroll);
+    window.addEventListener('load', revealOnScroll);
+    
+    // ===== ANIMATED NUMBER COUNTERS =====
+    const animateCounter = (element) => {
+      const target = parseInt(element.getAttribute('data-target'));
+      const duration = 2000;
+      const start = 0;
+      const increment = target / (duration / 16);
+      let current = start;
+      
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+          element.textContent = target.toLocaleString() + '+';
+          clearInterval(timer);
+        } else {
+          element.textContent = Math.floor(current).toLocaleString();
+        }
+      }, 16);
+    };
+    
+    // Trigger counters when they come into view
+    const counterElements = document.querySelectorAll('.stat-number');
+    let countersAnimated = false;
+    
+    const checkCounters = () => {
+      if (countersAnimated) return;
+      
+      const windowHeight = window.innerHeight;
+      counterElements.forEach(counter => {
+        const elementTop = counter.getBoundingClientRect().top;
+        if (elementTop < windowHeight - 100) {
+          countersAnimated = true;
+          counterElements.forEach(animateCounter);
+        }
+      });
+    };
+    
+    window.addEventListener('scroll', checkCounters);
+    window.addEventListener('load', checkCounters);
+    
+    // ===== TESTIMONIAL SLIDER =====
+    let currentSlide = 0;
+    const testimonialTrack = document.getElementById('testimonialTrack');
+    
+    function slideTestimonials(direction) {
+      const cards = document.querySelectorAll('.testimonial-card');
+      const totalSlides = cards.length;
+      
+      if (direction === 'next') {
+        currentSlide = (currentSlide + 1) % totalSlides;
+      } else {
+        currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+      }
+      
+      const offset = -currentSlide * (100 / totalSlides);
+      testimonialTrack.style.transform = `translateX(${offset}%)`;
+    }
+    
+    // Auto-slide testimonials
+    setInterval(() => {
+      slideTestimonials('next');
+    }, 5000);
+    
+    // ===== LOAD NEWS FROM FIRESTORE =====
+    async function loadLatestNews() {
+      const newsContainer = document.getElementById('newsContainer');
+      
+      // Check if container exists
+      if (!newsContainer) {
+        console.error('News container not found');
+        return;
+      }
+      
+      try {
+        // Check if Firebase is available
+        if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+          throw new Error('Firebase not initialized');
+        }
+        
+        const db = firebase.firestore();
+        
+        // Get all news (simplified query to avoid index requirements)
+        const newsSnapshot = await db.collection('news')
+          .limit(20)
+          .get();
+        
+        if (newsSnapshot.empty) {
+          newsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">No news articles available at the moment.</p>';
+          return;
+        }
+        
+        // Filter published news and sort in JavaScript
+        const publishedNews = newsSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(article => article.published === true)
+          .sort((a, b) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+            return dateB - dateA;
+          })
+          .slice(0, 3);
+        
+        if (publishedNews.length === 0) {
+          newsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">No news articles available at the moment.</p>';
+          return;
+        }
+        
+        newsContainer.innerHTML = publishedNews.map((article, index) => {
+          const date = article.createdAt ? new Date(article.createdAt.toDate()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent';
+          const delay = index + 1;
+          
+          return `
+            <div class="content-card reveal reveal-delay-${delay}">
+              <img src="${article.image || '/images/news-placeholder.jpg'}" alt="${article.title}" class="content-card-image">
+              <div class="content-card-body">
+                <span class="content-card-category" style="background: rgba(5, 117, 230, 0.1); color: #0575E6;">
+                  ${article.category || 'News'}
+                </span>
+                <h3 class="content-card-title">${article.title}</h3>
+                <p class="content-card-excerpt">${article.excerpt || (article.content ? article.content.substring(0, 120) + '...' : '')}</p>
+                <div class="content-card-footer">
+                  <span>${date}</span>
+                  <a href="/news.html" style="color: #0575E6; text-decoration: none; font-weight: 600;">Read More →</a>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        revealOnScroll();
+      } catch (error) {
+        console.error('Error loading news:', error);
+        newsContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">Unable to load news. Please check your connection.</p>`;
+      }
+    }
+    
+    // ===== LOAD EVENTS FROM FIRESTORE =====
+    async function loadUpcomingEvents() {
+      const eventsContainer = document.getElementById('eventsContainer');
+      
+      // Check if container exists
+      if (!eventsContainer) {
+        console.error('Events container not found');
+        return;
+      }
+      
+      try {
+        // Check if Firebase is available
+        if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+          throw new Error('Firebase not initialized');
+        }
+        
+        const db = firebase.firestore();
+        const now = new Date();
+        
+        // Get all events (simplified query to avoid index requirements)
+        const eventsSnapshot = await db.collection('events')
+          .limit(10)
+          .get();
+        
+        if (eventsSnapshot.empty) {
+          eventsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">No upcoming events scheduled at the moment.</p>';
+          return;
+        }
+        
+        // Filter and sort upcoming events in JavaScript
+        const upcomingEvents = eventsSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(event => {
+            if (!event.date) return false;
+            const eventDate = event.date.toDate ? event.date.toDate() : new Date(event.date);
+            return eventDate >= now;
+          })
+          .sort((a, b) => {
+            const dateA = a.date.toDate ? a.date.toDate() : new Date(a.date);
+            const dateB = b.date.toDate ? b.date.toDate() : new Date(b.date);
+            return dateA - dateB;
+          })
+          .slice(0, 2);
+        
+        if (upcomingEvents.length === 0) {
+          eventsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">No upcoming events scheduled at the moment.</p>';
+          return;
+        }
+        
+        eventsContainer.innerHTML = upcomingEvents.map((event, index) => {
+          const eventDate = event.date.toDate ? event.date.toDate() : new Date(event.date);
+          const formattedDate = eventDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+          const delay = index + 1;
+          
+          return `
+            <div class="content-card reveal reveal-delay-${delay}">
+              <img src="${event.image || '/images/event-placeholder.jpg'}" alt="${event.title}" class="content-card-image">
+              <div class="content-card-body">
+                <span class="content-card-category" style="background: rgba(102, 126, 234, 0.1); color: #667eea;">
+                  ${event.type || 'Event'}
+                </span>
+                <h3 class="content-card-title">${event.title}</h3>
+                <p class="content-card-excerpt">${event.description || ''}</p>
+                <div class="content-card-footer">
+                  <span>📅 ${formattedDate}</span>
+                  <a href="/events.html" style="color: #667eea; text-decoration: none; font-weight: 600;">Learn More →</a>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        revealOnScroll();
+      } catch (error) {
+        console.error('Error loading events:', error);
+        eventsContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">Unable to load events. Please check your connection.</p>`;
+      }
+    }
+    
+    // ===== MOBILE MENU TOGGLE =====
+    document.addEventListener('DOMContentLoaded', () => {
+      const navbarToggle = document.querySelector('.navbar-toggle');
+      const navbarMenu = document.querySelector('.navbar-menu');
+      
+      if (navbarToggle && navbarMenu) {
+        navbarToggle.addEventListener('click', () => {
+          navbarMenu.classList.toggle('active');
+          navbarToggle.classList.toggle('active');
+        });
+        
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.navbar-container')) {
+            navbarMenu.classList.remove('active');
+            navbarToggle.classList.remove('active');
+          }
+        });
+      }
+      
+      // Load dynamic content after Firebase is initialized
+      const waitForFirebase = setInterval(() => {
+        if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+          clearInterval(waitForFirebase);
+          loadLatestNews();
+          loadUpcomingEvents();
+        }
+      }, 100);
+      
+      // Timeout after 5 seconds if Firebase doesn't load
+      setTimeout(() => {
+        clearInterval(waitForFirebase);
+      }, 5000);
+    });
+    
+    // ===== THEME TOGGLE =====
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    // Initialize theme
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      if (savedTheme === 'dark') {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) icon.textContent = '☀️';
+      }
+    })();
+  </script>
+</body>
+</html>

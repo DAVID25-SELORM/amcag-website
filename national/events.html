@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events Management | AMCAG National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/regions.html" class="dashboard-nav-item">
+          <span>🗺️</span> Regions
+        </a>
+        <a href="/national/payments.html" class="dashboard-nav-item">
+          <span>💰</span> Payments
+        </a>
+        <a href="/national/certificates.html" class="dashboard-nav-item">
+          <span>📜</span> Certificates
+        </a>
+        <a href="/national/events.html" class="dashboard-nav-item active">
+          <span>📅</span> Events
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+        <a href="/national/leadership.html" class="dashboard-nav-item">
+          <span>⚙️</span> Leadership
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Events Management</h1>
+          <p class="dashboard-subtitle">Manage nationwide events and programs</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-outline" onclick="exportEventCalendar()">Export Calendar</button>
+          <button class="btn btn-primary" onclick="createEvent()">Create Event</button>
+        </div>
+      </div>
+
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value">127</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">12</div>
+          <div class="stat-label">Upcoming</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">89</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">8,456</div>
+          <div class="stat-label">Total Attendees</div>
+        </div>
+      </div>
+
+      <!-- Upcoming Events Highlight -->
+      <div class="card mb-6">
+        <h3 class="card-title mb-4">Upcoming Events</h3>
+        <div class="grid grid-3 gap-4">
+          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-primary-95) 0%, white 100%);">
+            <div style="display: inline-block; background: var(--color-primary); color: white; padding: 0.25rem 0.75rem; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: 0.75rem;">
+              Mar 15, 2026
+            </div>
+            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.5rem;">Annual General Meeting</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: 0.75rem;">
+              📍 Accra International Conference Centre
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: var(--text-sm); color: var(--text-secondary);">
+                🎫 456 registered
+              </span>
+              <button class="btn btn-sm btn-primary" onclick="viewEventDetails('EVT-2026-001')">Details</button>
+            </div>
+          </div>
+          
+          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg);">
+            <div style="display: inline-block; background: var(--color-secondary); color: white; padding: 0.25rem 0.75rem; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: 0.75rem;">
+              Mar 22, 2026
+            </div>
+            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.5rem;">Professional Development Workshop</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: 0.75rem;">
+              📍 Virtual (Zoom)
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: var(--text-sm); color: var(--text-secondary);">
+                🎫 234 registered
+              </span>
+              <button class="btn btn-sm btn-outline" onclick="viewEventDetails('EVT-2026-002')">Details</button>
+            </div>
+          </div>
+          
+          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg);">
+            <div style="display: inline-block; background: var(--color-success); color: white; padding: 0.25rem 0.75rem; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: 0.75rem;">
+              Apr 05, 2026
+            </div>
+            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.5rem;">Regional Coordinators Summit</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: 0.75rem;">
+              📍 Kumasi Cultural Centre
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: var(--text-sm); color: var(--text-secondary);">
+                🎫 78 registered
+              </span>
+              <button class="btn btn-sm btn-outline" onclick="viewEventDetails('EVT-2026-003')">Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">All Events</h3>
+          <div class="flex gap-2">
+            <input type="text" class="form-input" placeholder="Search events..." style="width: 250px;">
+            <select class="form-input" style="width: auto;">
+              <option value="">All Types</option>
+              <option value="conference">Conference</option>
+              <option value="workshop">Workshop</option>
+              <option value="training">Training</option>
+              <option value="meeting">Meeting</option>
+              <option value="social">Social</option>
+            </select>
+            <select class="form-input" style="width: auto;">
+              <option value="">All Status</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Event Name</th>
+                <th>Type</th>
+                <th>Date & Time</th>
+                <th>Location</th>
+                <th>Registrations</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div style="font-weight: 600;">Annual General Meeting 2026</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-001</div>
+                </td>
+                <td>Conference</td>
+                <td>
+                  <div>Mar 15, 2026</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">09:00 AM - 5:00 PM</div>
+                </td>
+                <td>
+                  <div>Accra ICC</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Greater Accra</div>
+                </td>
+                <td>456 / 500</td>
+                <td><span class="badge badge-success">Upcoming</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="manageEvent('EVT-2026-001')">Manage</button>
+                  <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-001')">Attendees</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight: 600;">Professional Development Workshop</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-002</div>
+                </td>
+                <td>Workshop</td>
+                <td>
+                  <div>Mar 22, 2026</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">2:00 PM - 6:00 PM</div>
+                </td>
+                <td>
+                  <div>Virtual</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Online</div>
+                </td>
+                <td>234 / 300</td>
+                <td><span class="badge badge-success">Upcoming</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="manageEvent('EVT-2026-002')">Manage</button>
+                  <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-002')">Attendees</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight: 600;">Regional Coordinators Summit</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-003</div>
+                </td>
+                <td>Meeting</td>
+                <td>
+                  <div>Apr 05, 2026</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">10:00 AM - 3:00 PM</div>
+                </td>
+                <td>
+                  <div>Kumasi Cultural Centre</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Ashanti</div>
+                </td>
+                <td>78 / 100</td>
+                <td><span class="badge badge-success">Upcoming</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="manageEvent('EVT-2026-003')">Manage</button>
+                  <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-003')">Attendees</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight: 600;">Leadership Training Program</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-004</div>
+                </td>
+                <td>Training</td>
+                <td>
+                  <div>Feb 20, 2026</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">9:00 AM - 4:00 PM</div>
+                </td>
+                <td>
+                  <div>AMCAG Training Hall</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Greater Accra</div>
+                </td>
+                <td>120 / 120</td>
+                <td><span class="badge badge-info">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" onclick="viewEventReport('EVT-2026-004')">View Report</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight: 600;">Members Networking Social</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-005</div>
+                </td>
+                <td>Social</td>
+                <td>
+                  <div>Feb 14, 2026</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">6:00 PM - 9:00 PM</div>
+                </td>
+                <td>
+                  <div>Labadi Beach Hotel</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Greater Accra</div>
+                </td>
+                <td>89 / 150</td>
+                <td><span class="badge badge-info">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline">View Report</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="pagination-btn" disabled>Previous</button>
+          <button class="pagination-btn active">1</button>
+          <button class="pagination-btn">2</button>
+          <button class="pagination-btn">3</button>
+          <button class="pagination-btn">Next</button>
+        </div>
+      </div>
+
+      <!-- Event Analytics -->
+      <div class="grid grid-2 gap-4 mt-6">
+        <div class="card">
+          <h3 class="card-title mb-4">Event Categories Performance</h3>
+          <div class="space-y-3">
+            <div>
+              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
+                <span>Conferences</span>
+                <span style="font-weight: 600;">45 events • 3,456 attendees</span>
+              </div>
+              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
+                <div style="width: 100%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
+                <span>Workshops</span>
+                <span style="font-weight: 600;">38 events • 2,234 attendees</span>
+              </div>
+              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
+                <div style="width: 65%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
+                <span>Training Programs</span>
+                <span style="font-weight: 600;">28 events • 1,890 attendees</span>
+              </div>
+              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
+                <div style="width: 55%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
+                <span>Social Events</span>
+                <span style="font-weight: 600;">16 events • 876 attendees</span>
+              </div>
+              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
+                <div style="width: 25%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title mb-4">Event Statistics</h3>
+          <div class="space-y-3">
+            <div class="flex-between p-3" style="background: var(--color-primary-95); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Avg. Attendance Rate</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">87%</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">👥</div>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Satisfaction Rating</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">4.6 / 5.0</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">⭐</div>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Total Revenue</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">GH₵ 98,560</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">💰</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    function exportEventCalendar() {
+      UIModule.showAlert('Exporting event calendar...', 'info');
+      // Generate and download calendar export
+    }
+
+    function createEvent() {
+      UIModule.showAlert('Create Event modal - Coming soon', 'info');
+      // Open modal to create new event
+    }
+
+    function viewEventDetails(eventId) {
+      UIModule.showAlert(`Viewing details for ${eventId}`, 'info');
+      // Navigate to event details page or open modal
+    }
+
+    function manageEvent(eventId) {
+      UIModule.showAlert(`Managing event ${eventId} - Coming soon`, 'info');
+      // Open event management interface
+    }
+
+    function viewAttendees(eventId) {
+      UIModule.showAlert(`Viewing attendees for ${eventId}`, 'info');
+      // Show attendees list modal
+    }
+
+    function viewEventReport(eventId) {
+      UIModule.showAlert(`Generating report for ${eventId}`, 'info');
+      // Generate and display event report
+    }
+
+    async function loadEvents() {
+      try {
+        // Load events data from Firestore
+        const db = firebase.firestore();
+        const eventsRef = db.collection('events').orderBy('startDate', 'desc').limit(50);
+        const snapshot = await eventsRef.get();
+        
+        // Process and render events data
+        console.log('Events loaded:', snapshot.size);
+      } catch (error) {
+        console.error('Error loading events:', error);
+        UIModule.showAlert('Error loading events data', 'error');
+      }
+    }
+
+    async function loadUpcomingEvents() {
+      try {
+        const db = firebase.firestore();
+        const now = new Date();
+        const upcomingRef = db.collection('events')
+          .where('startDate', '>=', now)
+          .orderBy('startDate', 'asc')
+          .limit(10);
+        const snapshot = await upcomingRef.get();
+        
+        console.log('Upcoming events loaded:', snapshot.size);
+      } catch (error) {
+        console.error('Error loading upcoming events:', error);
+      }
+    }
+
+    AuthModule.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+      } else {
+        // Check if user has national executive or super admin role
+        if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
+          window.location.href = '/member-dashboard.html';
+        } else {
+          loadEvents();
+          loadUpcomingEvents();
+        }
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

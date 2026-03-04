@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dues Overview | AMCAG Regional Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/region-dashboard/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Regional</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/region-dashboard/index.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/region-dashboard/member-approval.html" class="dashboard-nav-item">
+          <span>✅</span> Approve Members
+        </a>
+        <a href="/region-dashboard/dues-overview.html" class="dashboard-nav-item active">
+          <span>💰</span> Dues Overview
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Monthly Dues Overview</h1>
+          <p class="dashboard-subtitle" id="regionName">Loading region...</p>
+        </div>
+        <div>
+          <button class="btn btn-secondary" onclick="exportData()">📥 Export Report</button>
+        </div>
+      </div>
+
+      <!-- Statistics Grid -->
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="totalCollected">GHS 0</div>
+          <div class="stat-label">Collected This Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalOverdue">GHS 0</div>
+          <div class="stat-label">Total Overdue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="activeMembers">0</div>
+          <div class="stat-label">Active Members</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="overdueMembers">0</div>
+          <div class="stat-label">Members with Arrears</div>
+        </div>
+      </div>
+
+      <!-- Payment Trend -->
+      <div class="card mb-6">
+        <h3 class="card-title mb-4">Payment Summary</h3>
+        <div class="grid grid-3 gap-4">
+          <div class="p-4" style="background: var(--color-success-container); border-radius: var(--radius-md); text-align: center;">
+            <div style="font-size: var(--text-2xl); font-weight: 700; color: var(--color-success);" id="paidCount">0</div>
+            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Paid This Month</div>
+          </div>
+          <div class="p-4" style="background: var(--color-warning-container); border-radius: var(--radius-md); text-align: center;">
+            <div style="font-size: var(--text-2xl); font-weight: 700; color: var(--color-warning);" id="pendingCount">0</div>
+            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Not Paid Yet</div>
+          </div>
+          <div class="p-4" style="background: var(--color-error-container); border-radius: var(--radius-md); text-align: center;">
+            <div style="font-size: var(--text-2xl); font-weight: 700; color: var(--color-error);" id="arrears Count">0</div>
+            <div style="color: var(--text-secondary); margin-top: 0.5rem;">With Arrears</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-4">
+        <div class="grid grid-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Filter by Status</label>
+            <select id="statusFilter" class="form-input" onchange="applyFilters()">
+              <option value="">All Members</option>
+              <option value="current">Up to Date</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Search by Name/ID</label>
+            <input type="text" id="searchInput" class="form-input" placeholder="Search members..." oninput="applyFilters()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Member Payment Details -->
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">Member Payment Details</h3>
+          <div>
+            <span id="memberCount" style="color: var(--text-secondary);">0 members</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Member ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Last Payment</th>
+                <th>Months Overdue</th>
+                <th>Amount Owed</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="membersTableBody">
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 2rem;">
+                  Loading member data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Member Details Modal -->
+  <div id="memberModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Payment History - <span id="modalMemberName"></span></h3>
+        <button class="modal-close" onclick="closeMemberModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-4">
+          <div class="grid grid-2 gap-4 mb-4">
+            <div>
+              <strong>Member ID:</strong> <span id="modalMemberId"></span>
+            </div>
+            <div>
+              <strong>Phone:</strong> <span id="modalPhone"></span>
+            </div>
+            <div>
+              <strong>Email:</strong> <span id="modalEmail"></span>
+            </div>
+            <div>
+              <strong>Registration Date:</strong> <span id="modalRegDate"></span>
+            </div>
+            <div>
+              <strong>Total Paid:</strong> GHS <span id="modalTotalPaid"></span>
+            </div>
+            <div>
+              <strong>Amount Owed:</strong> GHS <span id="modalAmountOwed"></span>
+            </div>
+          </div>
+        </div>
+
+        <h4 style="margin-bottom: 1rem;">Payment History</h4>
+        <div class="table-container">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="modalHistoryBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeMemberModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    const MONTHLY_DUES_AMOUNT = 50.00;
+    let currentUser = null;
+    let userRegion = null;
+    let allMembers = [];
+    let allPayments = [];
+
+    // Get month name
+    function getMonthName(month) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[month - 1];
+    }
+
+    // Load all data for the region
+    async function loadRegionalData() {
+      try {
+        UIModule.showLoader('Loading regional data...');
+        
+        const db = firebase.firestore();
+
+        // Load members in this region
+        const membersSnapshot = await db.collection('users')
+          .where('region', '==', userRegion)
+          .where('status', '==', 'active')
+          .get();
+
+        allMembers = membersSnapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data()
+        }));
+
+        // Load payments for these members
+        if (allMembers.length > 0) {
+          const memberUids = allMembers.map(m => m.uid);
+          
+          // Firestore 'in' query supports max 10 items, so we need to batch
+          const batches = [];
+          for (let i = 0; i < memberUids.length; i += 10) {
+            const batch = memberUids.slice(i, i + 10);
+            const paymentsSnapshot = await db.collection('payments')
+              .where('uid', 'in', batch)
+              .where('type', '==', 'monthly_dues')
+              .get();
+            
+            batches.push(...paymentsSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            })));
+          }
+          
+          allPayments = batches;
+        }
+
+        // Calculate and render
+        calculateStatistics();
+        applyFilters();
+
+        UIModule.hideLoader();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading data:', error);
+        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+      }
+    }
+
+    // Calculate member dues status
+    function getMemberDuesStatus(member) {
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+
+      const regDate = member.registrationDate ? 
+        member.registrationDate.toDate() : 
+        new Date();
+
+      // Get member payments
+      const memberPayments = allPayments.filter(p => p.uid === member.uid);
+      
+      // Build set of paid/waived months
+      const paidMonths = new Set();
+      let totalPaid = 0;
+      let lastPayment = null;
+
+      memberPayments.forEach(payment => {
+        if (payment.status === 'paid' || payment.status === 'waived') {
+          paidMonths.add(`${payment.year}-${payment.month}`);
+          if (payment.status === 'paid') {
+            totalPaid += payment.amount || 0;
+          }
+          if (!lastPayment || 
+              payment.year > lastPayment.year || 
+              (payment.year === lastPayment.year && payment.month > lastPayment.month)) {
+            lastPayment = payment;
+          }
+        }
+      });
+
+      // Calculate overdue months
+      let checkDate = new Date(regDate);
+      let overdueMonths = 0;
+
+      while (checkDate < now) {
+        const checkMonth = checkDate.getMonth() + 1;
+        const checkYear = checkDate.getFullYear();
+        const key = `${checkYear}-${checkMonth}`;
+
+        // Don't count current month as overdue
+        const isCurrentMonth = checkYear === currentYear && checkMonth === currentMonth;
+        
+        if (!paidMonths.has(key) && !isCurrentMonth) {
+          overdueMonths++;
+        }
+
+        checkDate.setMonth(checkDate.getMonth() + 1);
+      }
+
+      const amountOwed = overdueMonths * MONTHLY_DUES_AMOUNT;
+
+      // Check if paid this month
+      const paidThisMonth = paidMonths.has(`${currentYear}-${currentMonth}`);
+
+      return {
+        overdueMonths,
+        amountOwed,
+        totalPaid,
+        lastPayment,
+        payments: memberPayments,
+        isCurrentlyOverdue: overdueMonths > 0,
+        paidThisMonth
+      };
+    }
+
+    // Calculate statistics
+    function calculateStatistics() {
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+
+      let totalCollected = 0;
+      let totalOverdue = 0;
+      let overdueCount = 0;
+      let paidThisMonth = 0;
+      let notPaidThisMonth = 0;
+      let hasArrears = 0;
+
+      allMembers.forEach(member => {
+        const status = getMemberDuesStatus(member);
+        
+        if (status.paidThisMonth) {
+          paidThisMonth++;
+          // Find this month's payment amount
+          const thisMonthPayment = status.payments.find(p => 
+            p.month === currentMonth && 
+            p.year === currentYear && 
+            p.status === 'paid'
+          );
+          if (thisMonthPayment) {
+            totalCollected += thisMonthPayment.amount || 0;
+          }
+        } else {
+          notPaidThisMonth++;
+        }
+
+        if (status.isCurrentlyOverdue) {
+          overdueCount++;
+          totalOverdue += status.amountOwed;
+          hasArrears++;
+        }
+      });
+
+      document.getElementById('totalCollected').textContent = `GHS ${totalCollected.toFixed(2)}`;
+      document.getElementById('totalOverdue').textContent = `GHS ${totalOverdue.toFixed(2)}`;
+      document.getElementById('activeMembers').textContent = allMembers.length;
+      document.getElementById('overdueMembers').textContent = overdueCount;
+
+      document.getElementById('paidCount').textContent = paidThisMonth;
+      document.getElementById('pendingCount').textContent = notPaidThisMonth;
+      document.getElementById('arrearsCount').textContent = hasArrears;
+    }
+
+    // Apply filters
+    function applyFilters() {
+      const statusFilter = document.getElementById('statusFilter').value;
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+      let filteredMembers = allMembers.filter(member => {
+        // Status filter
+        if (statusFilter) {
+          const status = getMemberDuesStatus(member);
+          if (statusFilter === 'current' && status.isCurrentlyOverdue) {
+            return false;
+          }
+          if (statusFilter === 'overdue' && !status.isCurrentlyOverdue) {
+            return false;
+          }
+        }
+
+        // Search filter
+        if (searchTerm) {
+          const searchableText = `${member.fullName || ''} ${member.memberId || ''} ${member.phone || ''} ${member.email || ''}`.toLowerCase();
+          if (!searchableText.includes(searchTerm)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      renderMembersTable(filteredMembers);
+    }
+
+    // Render members table
+    function renderMembersTable(members) {
+      const tbody = document.getElementById('membersTableBody');
+      document.getElementById('memberCount').textContent = `${members.length} members`;
+
+      if (members.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+              No members found matching filters
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = members.map(member => {
+        const status = getMemberDuesStatus(member);
+
+        const lastPaymentText = status.lastPayment ? 
+          `${getMonthName(status.lastPayment.month)} ${status.lastPayment.year}` : 
+          'Never';
+
+        const statusBadge = status.isCurrentlyOverdue ?
+          '<span class="badge badge-error">Overdue</span>' :
+          '<span class="badge badge-success">Current</span>';
+
+        return `
+          <tr>
+            <td><strong>${member.memberId || 'Pending'}</strong></td>
+            <td>${member.fullName || 'N/A'}</td>
+            <td>${member.phone || 'N/A'}</td>
+            <td>${lastPaymentText}</td>
+            <td style="font-weight: 600; color: ${status.overdueMonths > 0 ? 'var(--color-error)' : 'inherit'};">
+              ${status.overdueMonths}
+            </td>
+            <td style="font-weight: 600; color: var(--color-error);">
+              GHS ${status.amountOwed.toFixed(2)}
+            </td>
+            <td>${statusBadge}</td>
+            <td>
+              <button class="btn btn-sm btn-secondary" onclick='viewMemberDetails(${JSON.stringify(member).replace(/'/g, "&apos;")})'>
+                View
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // View member details
+    function viewMemberDetails(member) {
+      const status = getMemberDuesStatus(member);
+
+      document.getElementById('modalMemberName').textContent = member.fullName || 'N/A';
+      document.getElementById('modalMemberId').textContent = member.memberId || 'Pending';
+      document.getElementById('modalPhone').textContent = member.phone || 'N/A';
+      document.getElementById('modalEmail').textContent = member.email || 'N/A';
+      
+      const regDate = member.registrationDate ? 
+        new Date(member.registrationDate.toDate()).toLocaleDateString() : 
+        'N/A';
+      document.getElementById('modalRegDate').textContent = regDate;
+      
+      document.getElementById('modalTotalPaid').textContent = status.totalPaid.toFixed(2);
+      document.getElementById('modalAmountOwed').textContent = status.amountOwed.toFixed(2);
+
+      // Render payment history
+      const tbody = document.getElementById('modalHistoryBody');
+      
+      if (status.payments.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 1.5rem; color: var(--text-secondary);">
+              No payment history
+            </td>
+          </tr>
+        `;
+      } else {
+        // Sort by date descending
+        const sortedPayments = [...status.payments].sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          return b.month - a.month;
+        });
+
+        tbody.innerHTML = sortedPayments.map(payment => {
+          const statusBadge = payment.status === 'paid' ?
+            '<span class="badge badge-success">Paid</span>' :
+            payment.status === 'waived' ?
+            '<span class="badge badge-info">Waived</span>' :
+            '<span class="badge badge-warning">Pending</span>';
+
+          const dateText = payment.paymentDate ?
+            new Date(payment.paymentDate.toDate()).toLocaleDateString() :
+            payment.createdAt ?
+            new Date(payment.createdAt.toDate()).toLocaleDateString() :
+            'N/A';
+
+          return `
+            <tr>
+              <td>${getMonthName(payment.month)} ${payment.year}</td>
+              <td style="font-weight: 600;">GHS ${payment.amount.toFixed(2)}</td>
+              <td>${payment.paymentMethod || 'N/A'}</td>
+              <td>${statusBadge}</td>
+              <td>${dateText}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('memberModal').style.display = 'flex';
+    }
+
+    function closeMemberModal() {
+      document.getElementById('memberModal').style.display = 'none';
+    }
+
+    // Export data
+    function exportData() {
+      const now = new Date();
+      const filename = `AMCAG_${userRegion}_Dues_Report_${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}.csv`;
+
+      let csv = 'Member ID,Name,Phone,Last Payment,Months Overdue,Amount Owed,Total Paid,Status\n';
+
+      allMembers.forEach(member => {
+        const status = getMemberDuesStatus(member);
+        const lastPayment = status.lastPayment ? 
+          `${getMonthName(status.lastPayment.month)} ${status.lastPayment.year}` : 
+          'Never';
+        
+        const statusText = status.isCurrentlyOverdue ? 'Overdue' : 'Current';
+
+        csv += `"${member.memberId || 'Pending'}","${member.fullName || 'N/A'}","${member.phone || 'N/A'}","${lastPayment}",${status.overdueMonths},${status.amountOwed.toFixed(2)},${status.totalPaid.toFixed(2)},"${statusText}"\n`;
+      });
+
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      UIModule.showAlert('Report exported successfully', 'success');
+    }
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    // Initialize
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      currentUser = user;
+      
+      const db = firebase.firestore();
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      
+      if (!userDoc.exists) {
+        UIModule.showAlert('User profile not found', 'error');
+        return;
+      }
+
+      const userData = userDoc.data();
+
+      // Check permissions
+      if (!userData.role || userData.role !== 'regional_executive') {
+        UIModule.showAlert('Access denied. Regional executive access required.', 'error');
+        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+        return;
+      }
+
+      if (!userData.region) {
+        UIModule.showAlert('No region assigned to your account', 'error');
+        return;
+      }
+
+      userRegion = userData.region;
+      document.getElementById('regionName').textContent = `${userRegion} Region - Membership Dues`;
+
+      loadRegionalData();
+    });
+
+    // Close modal when clicking outside
+    window.onclick = (event) => {
+      const modal = document.getElementById('memberModal');
+      if (event.target === modal) {
+        closeMemberModal();
+      }
+    };
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

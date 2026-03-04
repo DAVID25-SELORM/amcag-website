@@ -1,0 +1,15 @@
+{
+  "name": "amcag-website-setup",
+  "version": "1.0.0",
+  "description": "AMCAG Website Setup Scripts",
+  "scripts": {
+    "setup-admin": "node setup-super-admin.js",
+    "reset-password": "node reset-admin-password.js",
+    "verify-admin": "node verify-admin.js",
+    "fix-login": "node fix-login-loop.js",
+    "final-check": "node final-verification.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

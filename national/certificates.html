@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificates Management | AMCAG National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/regions.html" class="dashboard-nav-item">
+          <span>🗺️</span> Regions
+        </a>
+        <a href="/national/payments.html" class="dashboard-nav-item">
+          <span>💰</span> Payments
+        </a>
+        <a href="/national/certificates.html" class="dashboard-nav-item active">
+          <span>📜</span> Certificates
+        </a>
+        <a href="/national/events.html" class="dashboard-nav-item">
+          <span>📅</span> Events
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+        <a href="/national/leadership.html" class="dashboard-nav-item">
+          <span>⚙️</span> Leadership
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Certificates Management</h1>
+          <p class="dashboard-subtitle">Manage member certificates and credentials</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-outline" onclick="downloadTemplate()">Download Template</button>
+          <button class="btn btn-primary" onclick="openIssueCertificateModal()">Issue Certificate</button>
+        </div>
+      </div>
+
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value">8,456</div>
+          <div class="stat-label">Total Issued</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">234</div>
+          <div class="stat-label">Pending Issuance</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">1,234</div>
+          <div class="stat-label">Verified This Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">45</div>
+          <div class="stat-label">Revoked</div>
+        </div>
+      </div>
+
+      <!-- Certificate Type Cards -->
+      <div class="grid grid-3 gap-4 mb-6">
+        <div class="card">
+          <div class="flex-between mb-2">
+            <h3 class="card-title">Membership Certificates</h3>
+            <span style="font-size: var(--text-2xl);">🎓</span>
+          </div>
+          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">6,789</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">80% of all certificates</div>
+        </div>
+        <div class="card">
+          <div class="flex-between mb-2">
+            <h3 class="card-title">Training Certificates</h3>
+            <span style="font-size: var(--text-2xl);">📚</span>
+          </div>
+          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">1,234</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">15% of all certificates</div>
+        </div>
+        <div class="card">
+          <div class="flex-between mb-2">
+            <h3 class="card-title">Achievement Awards</h3>
+            <span style="font-size: var(--text-2xl);">🏆</span>
+          </div>
+          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">433</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">5% of all certificates</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">All Certificates</h3>
+          <div class="flex gap-2">
+            <input type="text" class="form-input" placeholder="Search by member or certificate..." style="width: 250px;">
+            <select class="form-input" style="width: auto;">
+              <option value="">All Types</option>
+              <option value="membership">Membership</option>
+              <option value="training">Training</option>
+              <option value="achievement">Achievement</option>
+            </select>
+            <select class="form-input" style="width: auto;">
+              <option value="">All Status</option>
+              <option value="issued">Issued</option>
+              <option value="pending">Pending</option>
+              <option value="revoked">Revoked</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Certificate ID</th>
+                <th>Member</th>
+                <th>Type</th>
+                <th>Issue Date</th>
+                <th>Expiry Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2026-00123</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Kwame Mensah</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-001</div>
+                </td>
+                <td>Membership</td>
+                <td>Jan 15, 2026</td>
+                <td>Dec 31, 2026</td>
+                <td><span class="badge badge-success">Issued</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewCertificate('CERT-2026-00123')">View</button>
+                  <button class="btn btn-sm btn-outline" onclick="downloadCertificate('CERT-2026-00123')">Download</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2026-00122</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Akosua Boateng</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-002</div>
+                </td>
+                <td>Training</td>
+                <td>Feb 10, 2026</td>
+                <td>-</td>
+                <td><span class="badge badge-success">Issued</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewCertificate('CERT-2026-00122')">View</button>
+                  <button class="btn btn-sm btn-outline" onclick="downloadCertificate('CERT-2026-00122')">Download</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2026-00121</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Kofi Asante</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-003</div>
+                </td>
+                <td>Membership</td>
+                <td>-</td>
+                <td>-</td>
+                <td><span class="badge badge-warning">Pending</span></td>
+                <td>
+                  <button class="btn btn-sm btn-primary" onclick="issueCertificate('CERT-2026-00121')">Issue Now</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2026-00120</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Ama Owusu</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-004</div>
+                </td>
+                <td>Achievement</td>
+                <td>Feb 01, 2026</td>
+                <td>-</td>
+                <td><span class="badge badge-success">Issued</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewCertificate('CERT-2026-00120')">View</button>
+                  <button class="btn btn-sm btn-outline" onclick="downloadCertificate('CERT-2026-00120')">Download</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2025-01234</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Yaw Mohammed</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2024-234</div>
+                </td>
+                <td>Membership</td>
+                <td>Jun 20, 2025</td>
+                <td>Dec 31, 2025</td>
+                <td><span class="badge badge-error">Revoked</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" onclick="viewCertificateHistory('CERT-2025-01234')">View History</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="pagination-btn" disabled>Previous</button>
+          <button class="pagination-btn active">1</button>
+          <button class="pagination-btn">2</button>
+          <button class="pagination-btn">3</button>
+          <button class="pagination-btn">Next</button>
+        </div>
+      </div>
+
+      <!-- Certificate Verification -->
+      <div class="grid grid-2 gap-4 mt-6">
+        <div class="card">
+          <h3 class="card-title mb-4">Quick Certificate Verification</h3>
+          <p style="color: var(--text-secondary); margin-bottom: var(--space-4); font-size: var(--text-sm);">
+            Verify the authenticity of any AMCAG certificate
+          </p>
+          <div class="form-group">
+            <label class="form-label">Certificate ID</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="certIdInput" class="form-input" placeholder="Enter certificate ID (e.g., CERT-2026-00123)" style="flex: 1;">
+              <button class="btn btn-primary" onclick="verifyCertificate()">Verify</button>
+            </div>
+          </div>
+          <div id="verificationResult" style="display: none; margin-top: var(--space-4);"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title mb-4">Recent Issuances</h3>
+          <div class="space-y-3">
+            <div class="flex-between p-3" style="background: var(--color-success-95); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-weight: 600;">Today</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">45 certificates issued</div>
+              </div>
+              <div style="color: var(--color-success); font-size: var(--text-2xl);">📜</div>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-weight: 600;">This Week</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">287 certificates issued</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">📊</div>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-weight: 600;">This Month</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">1,234 certificates issued</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">📈</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    function viewCertificate(certId) {
+      window.open(`/certificate-view.html?id=${certId}`, '_blank');
+    }
+
+    function downloadCertificate(certId) {
+      UIModule.showAlert(`Downloading certificate: ${certId}`, 'success');
+      // Trigger certificate PDF download
+      // This would typically call a cloud function to generate and download PDF
+    }
+
+    function issueCertificate(certId) {
+      if (confirm(`Issue certificate ${certId} now?`)) {
+        UIModule.showLoader('Issuing certificate...');
+        // Call cloud function to issue certificate
+        setTimeout(() => {
+          UIModule.hideLoader();
+          UIModule.showAlert('Certificate issued successfully!', 'success');
+          loadCertificates();
+        }, 1500);
+      }
+    }
+
+    function viewCertificateHistory(certId) {
+      UIModule.showAlert(`Viewing history for certificate: ${certId}`, 'info');
+      // Show certificate history modal with all status changes
+    }
+
+    function downloadTemplate() {
+      UIModule.showAlert('Certificate template download - Coming soon', 'info');
+      // Download certificate template file
+    }
+
+    function openIssueCertificateModal() {
+      UIModule.showAlert('Issue Certificate modal - Coming soon', 'info');
+      // Open modal to issue new certificate
+    }
+
+    async function loadCertificates() {
+      try {
+        // Load certificates data from Firestore
+        const db = firebase.firestore();
+        const certificatesRef = db.collection('certificates').orderBy('issuedAt', 'desc').limit(50);
+        const snapshot = await certificatesRef.get();
+        
+        // Process and render certificates data
+        console.log('Certificates loaded:', snapshot.size);
+      } catch (error) {
+        console.error('Error loading certificates:', error);
+        UIModule.showAlert('Error loading certificates data', 'error');
+      }
+    }
+
+    async function verifyCertificate() {
+      const certId = document.getElementById('certIdInput').value.trim();
+      
+      if (!certId) {
+        UIModule.showAlert('Please enter a certificate ID', 'error');
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Verifying certificate...');
+        
+        const db = firebase.firestore();
+        const certDoc = await db.collection('certificates').doc(certId).get();
+        
+        UIModule.hideLoader();
+        
+        const resultDiv = document.getElementById('verificationResult');
+        resultDiv.style.display = 'block';
+        
+        if (certDoc.exists) {
+          const data = certDoc.data();
+          const isValid = data.status === 'issued' && (!data.expiryDate || new Date(data.expiryDate) > new Date());
+          
+          if (isValid) {
+            resultDiv.innerHTML = `
+              <div style="padding: var(--space-4); background: var(--color-success-95); border: 1px solid var(--color-success); border-radius: var(--radius-md);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <span style="font-size: var(--text-2xl);">✅</span>
+                  <strong style="color: var(--color-success);">Valid Certificate</strong>
+                </div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">
+                  <p><strong>Member:</strong> ${data.memberName || 'N/A'}</p>
+                  <p><strong>Type:</strong> ${data.type || 'N/A'}</p>
+                  <p><strong>Issued:</strong> ${data.issuedAt ? new Date(data.issuedAt).toLocaleDateString() : 'N/A'}</p>
+                </div>
+              </div>
+            `;
+          } else {
+            resultDiv.innerHTML = `
+              <div style="padding: var(--space-4); background: var(--color-error-95); border: 1px solid var(--color-error); border-radius: var(--radius-md);">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: var(--text-2xl);">❌</span>
+                  <strong style="color: var(--color-error);">Invalid or Expired Certificate</strong>
+                </div>
+              </div>
+            `;
+          }
+        } else {
+          resultDiv.innerHTML = `
+            <div style="padding: var(--space-4); background: var(--color-error-95); border: 1px solid var(--color-error); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: var(--text-2xl);">❌</span>
+                <strong style="color: var(--color-error);">Certificate Not Found</strong>
+              </div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error verifying certificate:', error);
+        UIModule.showAlert('Error verifying certificate', 'error');
+      }
+    }
+
+    AuthModule.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+      } else {
+        // Check if user has national executive or super admin role
+        if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
+          window.location.href = '/member-dashboard.html';
+        } else {
+          loadCertificates();
+        }
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

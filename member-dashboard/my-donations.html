@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Donations | AMCAG Member Portal</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Member Portal</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/member-dashboard/profile.html" class="dashboard-nav-item">
+          <span>👤</span> My Profile
+        </a>
+        <a href="/member-dashboard/dues-payment.html" class="dashboard-nav-item">
+          <span>💳</span> Pay Dues
+        </a>
+        <a href="/member-dashboard/donate.html" class="dashboard-nav-item">
+          <span>💰</span> Donate
+        </a>
+        <a href="/member-dashboard/my-donations.html" class="dashboard-nav-item active">
+          <span>📜</span> My Donations
+        </a>
+        <a href="/member-dashboard/waiver-request.html" class="dashboard-nav-item">
+          <span>📝</span> Request Waiver
+        </a>
+        <a href="/member-dashboard/certificates.html" class="dashboard-nav-item">
+          <span>🎓</span> Certificates
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">My Donations</h1>
+          <p class="dashboard-subtitle">Track your contribution history and impact</p>
+        </div>
+        <div>
+          <button class="btn btn-outline" onclick="exportDonations()">📥 Export</button>
+        </div>
+      </div>
+
+      <!-- Donation Summary -->
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="totalContributed" style="color: var(--color-primary);">GHS 0</div>
+          <div class="stat-label">Total Contributed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="donationCount" style="color: var(--color-secondary);">0</div>
+          <div class="stat-label">Total Donations</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="currentYear" style="color: var(--color-tertiary);">GHS 0</div>
+          <div class="stat-label">This Year</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="donorTier" style="color: var(--color-primary);">🥉 Bronze</div>
+          <div class="stat-label">Donor Status</div>
+        </div>
+      </div>
+
+      <!-- Donor Recognition Card -->
+      <div class="card mb-4" style="background: linear-gradient(135deg, var(--color-primary-95) 0%, var(--color-secondary-95) 100%);">
+        <div style="display: flex; align-items: center; gap: 2rem;">
+          <div style="font-size: 4rem;" id="tierIcon">🥉</div>
+          <div style="flex: 1;">
+            <h3 style="margin-bottom: 0.5rem;" id="tierTitle">Bronze Donor</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;" id="tierDescription">Thank you for your contribution!</p>
+            <div class="progress-bar" style="height: 12px; background: white; border-radius: 6px; overflow: hidden;">
+              <div id="tierProgress" style="height: 100%; background: var(--color-primary); width: 0%; transition: width 0.5s;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+              <span>Current: <strong id="currentAmount">GHS 0</strong></span>
+              <span>Next tier: <strong id="nextTierAmount">GHS 100</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-4">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <select id="statusFilter" class="form-input" style="width: auto;">
+            <option value="">All Status</option>
+            <option value="pledged">Pledged</option>
+            <option value="received">Received</option>
+            <option value="allocated">Allocated</option>
+            <option value="distributed">Distributed</option>
+          </select>
+          <select id="typeFilter" class="form-input" style="width: auto;">
+            <option value="">All Types</option>
+            <option value="monetary">Monetary</option>
+            <option value="material">Material</option>
+          </select>
+          <select id="yearFilter" class="form-input" style="width: auto;">
+            <option value="">All Time</option>
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Donations List -->
+      <div class="card">
+        <h3 class="card-title mb-4">Donation History</h3>
+        
+        <div id="donationsList">
+          <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+            Loading your donations...
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Donation Details Modal -->
+  <div id="detailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; overflow-y: auto; padding: 2rem;">
+    <div class="card" style="max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <div style="padding: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2rem;">
+          <div>
+            <h3 style="margin-bottom: 0.5rem;">Donation Details</h3>
+            <p style="color: var(--text-secondary);" id="donationId">DON-2026-001</p>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="closeDetailsModal()">Close</button>
+        </div>
+
+        <div id="donationDetails">
+          <!-- Details populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/suspension-check.js"></script>
+
+  <script>
+    let currentUser = null;
+    let allDonations = [];
+    let filteredDonations = [];
+
+    const TIER_THRESHOLDS = {
+      bronze: { min: 0, max: 99, icon: '🥉', name: 'Bronze Donor', next: 100 },
+      silver: { min: 100, max: 499, icon: '🥈', name: 'Silver Donor', next: 500 },
+      gold: { min: 500, max: 999, icon: '🥇', name: 'Gold Donor', next: 1000 },
+      platinum: { min: 1000, max: 4999, icon: '💎', name: 'Platinum Donor', next: 5000 },
+      diamond: { min: 5000, max: Infinity, icon: '💠', name: 'Diamond Donor', next: null }
+    };
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    async function loadDonations() {
+      try {
+        UIModule.showLoader('Loading donations...');
+        
+        const db = firebase.firestore();
+        const snapshot = await db.collection('donations')
+          .where('donorUid', '==', currentUser.uid)
+          .orderBy('donatedAt', 'desc')
+          .get();
+
+        allDonations = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        filteredDonations = [...allDonations];
+        
+        renderDonations();
+        updateStatistics();
+        updateDonorTier();
+
+        UIModule.hideLoader();
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading donations:', error);
+        UIModule.showAlert('Error loading donations: ' + error.message, 'error');
+      }
+    }
+
+    function updateStatistics() {
+      const totalMonetary = allDonations
+        .filter(d => d.type === 'monetary' && d.status === 'received')
+        .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+      const currentYearDonations = allDonations.filter(d => {
+        const year = new Date(d.donatedAt.toDate()).getFullYear();
+        return year === new Date().getFullYear() && d.status === 'received';
+      }).reduce((sum, d) => sum + (d.type === 'monetary' ? (d.amount || 0) : 0), 0);
+
+      document.getElementById('totalContributed').textContent = `GHS ${totalMonetary.toLocaleString()}`;
+      document.getElementById('donationCount').textContent = allDonations.length;
+      document.getElementById('currentYear').textContent = `GHS ${currentYearDonations.toLocaleString()}`;
+    }
+
+    function updateDonorTier() {
+      const totalMonetary = allDonations
+        .filter(d => d.type === 'monetary' && d.status === 'received')
+        .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+      let currentTier = 'bronze';
+      for (const [tier, data] of Object.entries(TIER_THRESHOLDS)) {
+        if (totalMonetary >= data.min && totalMonetary <= data.max) {
+          currentTier = tier;
+          break;
+        }
+      }
+
+      const tierData = TIER_THRESHOLDS[currentTier];
+      
+      document.getElementById('donorTier').textContent = `${tierData.icon} ${tierData.name.split(' ')[0]}`;
+      document.getElementById('tierIcon').textContent = tierData.icon;
+      document.getElementById('tierTitle').textContent = tierData.name;
+      
+      let description = 'Thank you for your generosity!';
+      if (tierData.next) {
+        const remaining = tierData.next - totalMonetary;
+        description = `GHS ${remaining.toLocaleString()} more to reach ${Object.keys(TIER_THRESHOLDS)[Object.keys(TIER_THRESHOLDS).indexOf(currentTier) + 1]} tier`;
+      }
+      document.getElementById('tierDescription').textContent = description;
+
+      if (tierData.next) {
+        const progress = ((totalMonetary - tierData.min) / (tierData.next - tierData.min)) * 100;
+        document.getElementById('tierProgress').style.width = `${Math.min(progress, 100)}%`;
+        document.getElementById('currentAmount').textContent = `GHS ${totalMonetary.toLocaleString()}`;
+        document.getElementById('nextTierAmount').textContent = `GHS ${tierData.next.toLocaleString()}`;
+      } else {
+        document.getElementById('tierProgress').style.width = '100%';
+        document.getElementById('currentAmount').textContent = `GHS ${totalMonetary.toLocaleString()}`;
+        document.getElementById('nextTierAmount').textContent = 'Max Level';
+      }
+    }
+
+    function renderDonations() {
+      const container = document.getElementById('donationsList');
+
+      if (filteredDonations.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 3rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💝</div>
+            <h3 style="margin-bottom: 0.5rem;">No donations yet</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">Start making a difference today</p>
+            <a href="/member-dashboard/donate.html" class="btn btn-primary">Make a Donation</a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filteredDonations.map(donation => {
+        const date = new Date(donation.donatedAt.toDate()).toLocaleDateString();
+        const statusColor = {
+          pledged: 'warning',
+          received: 'success',
+          allocated: 'info',
+          distributed: 'primary'
+        }[donation.status] || 'secondary';
+
+        return `
+          <div class="card mb-3" style="cursor: pointer;" onclick='viewDonationDetails(${JSON.stringify(donation).replace(/'/g, "\\'")}'>
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                  <span style="font-size: 1.5rem;">${donation.type === 'monetary' ? '💰' : '📦'}</span>
+                  <div>
+                    <h4 style="margin: 0;">${donation.type === 'monetary' ? `GHS ${donation.amount.toLocaleString()}` : `${donation.items.length} items`}</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">${donation.donationId}</p>
+                  </div>
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                  ${donation.campaign ? `<div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">📋 ${donation.campaignTitle || 'Campaign'}</div>` : ''}
+                  ${donation.purpose ? `<div style="font-size: 0.875rem; color: var(--text-secondary);">💬 ${donation.purpose}</div>` : ''}
+                </div>
+              </div>
+
+              <div style="text-align: right;">
+                <span class="badge badge-${statusColor}">${donation.status}</span>
+                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">${date}</div>
+                ${donation.distribution ? `
+                  <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--color-success-95); border-radius: var(--radius-sm);">
+                    <div style="font-size: 0.75rem; color: var(--color-success);">✅ Distributed</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">${donation.distribution.beneficiaries} beneficiaries</div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            ${donation.type === 'material' ? `
+              <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">Items:</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                  ${donation.items.map(item => `
+                    <span class="badge badge-info">${item.quantity} ${item.unit} ${item.name}</span>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.viewDonationDetails = (donation) => {
+      document.getElementById('donationId').textContent = donation.donationId;
+      
+      const date = new Date(donation.donatedAt.toDate()).toLocaleDateString();
+      
+      let detailsHTML = `
+        <div style="display: grid; gap: 1.5rem;">
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Type</label>
+            <span class="badge badge-${donation.type === 'monetary' ? 'success' : 'info'}">${donation.type}</span>
+          </div>
+
+          ${donation.type === 'monetary' ? `
+            <div>
+              <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Amount</label>
+              <div style="font-size: 1.5rem; color: var(--color-primary);">GHS ${donation.amount.toLocaleString()}</div>
+            </div>
+
+            <div>
+              <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Payment Method</label>
+              <div>${donation.paymentMethod}</div>
+            </div>
+          ` : `
+            <div>
+              <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Items Donated</label>
+              <ul style="margin: 0.5rem 0 0 1.5rem;">
+                ${donation.items.map(item => `<li>${item.quantity} ${item.unit} of ${item.name}</li>`).join('')}
+              </ul>
+            </div>
+          `}
+
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Status</label>
+            <span class="badge badge-${{'pledged':'warning','received':'success','allocated':'info','distributed':'primary'}[donation.status]}">${donation.status}</span>
+          </div>
+
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Donation Date</label>
+            <div>${date}</div>
+          </div>
+
+          ${donation.campaign ? `
+            <div>
+              <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Campaign</label>
+              <div>${donation.campaignTitle || 'Campaign'}</div>
+            </div>
+          ` : ''}
+
+          ${donation.purpose ? `
+            <div>
+              <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Purpose/Message</label>
+              <div>${donation.purpose}</div>
+            </div>
+          ` : ''}
+
+          ${donation.distribution ? `
+            <div style="padding: 1.5rem; background: var(--color-success-95); border-radius: var(--radius-md);">
+              <label style="font-weight: 600; display: block; margin-bottom: 1rem;">Distribution Details</label>
+              <div style="display: grid; gap: 0.5rem;">
+                <div><strong>Location:</strong> ${donation.distribution.location}</div>
+                <div><strong>Beneficiaries:</strong> ${donation.distribution.beneficiaries} people</div>
+                <div><strong>Date:</strong> ${new Date(donation.distribution.distributedAt.toDate()).toLocaleDateString()}</div>
+                <div><strong>Distributed by:</strong> ${donation.distribution.distributedByName}</div>
+                ${donation.distribution.notes ? `<div><strong>Notes:</strong> ${donation.distribution.notes}</div>` : ''}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      document.getElementById('donationDetails').innerHTML = detailsHTML;
+      document.getElementById('detailsModal').style.display = 'flex';
+    };
+
+    window.closeDetailsModal = () => {
+      document.getElementById('detailsModal').style.display = 'none';
+    };
+
+    function applyFilters() {
+      const statusFilter = document.getElementById('statusFilter').value;
+      const typeFilter = document.getElementById('typeFilter').value;
+      const yearFilter = document.getElementById('yearFilter').value;
+
+      filteredDonations = allDonations.filter(donation => {
+        const matchesStatus = !statusFilter || donation.status === statusFilter;
+        const matchesType = !typeFilter || donation.type === typeFilter;
+        
+        let matchesYear = true;
+        if (yearFilter) {
+          const donationYear = new Date(donation.donatedAt.toDate()).getFullYear();
+          matchesYear = donationYear === parseInt(yearFilter);
+        }
+
+        return matchesStatus && matchesType && matchesYear;
+      });
+
+      renderDonations();
+    }
+
+    function exportDonations() {
+      const csv = [
+        ['Date', 'Donation ID', 'Type', 'Amount/Items', 'Status', 'Campaign', 'Purpose'].join(','),
+        ...filteredDonations.map(d => [
+          new Date(d.donatedAt.toDate()).toLocaleDateString(),
+          d.donationId,
+          d.type,
+          d.type === 'monetary' ? `GHS ${d.amount}` : `${d.items.length} items`,
+          d.status,
+          d.campaignTitle || 'General Fund',
+          `"${(d.purpose || '').replace(/"/g, '""')}"`
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `my-donations-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('typeFilter').addEventListener('change', applyFilters);
+    document.getElementById('yearFilter').addEventListener('change', applyFilters);
+
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      currentUser = user;
+      loadDonations();
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

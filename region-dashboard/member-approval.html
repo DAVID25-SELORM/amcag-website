@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Approval | AMCAG Regional Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">  <link rel="stylesheet" href="/css/mobile.css">  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap
+
+" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/region-dashboard/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Regional</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/region-dashboard/index.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/region-dashboard/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/region-dashboard/member-approval.html" class="dashboard-nav-item active">
+          <span>✅</span> Member Approval
+        </a>
+        <a href="/region-dashboard/events.html" class="dashboard-nav-item">
+          <span>📅</span> Events
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Member Approval</h1>
+          <p class="dashboard-subtitle" id="regionSubtitle">Review pending registrations</p>
+        </div>
+        <div>
+          <button class="btn btn-outline" onclick="loadPendingMembers()">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <!-- Permission Notice -->
+      <div id="noPermissionNotice" style="display: none;">
+        <div class="alert alert-warning mb-4">
+          <h4 style="margin-bottom: 0.5rem;">⚠️ Regional Approval Not Enabled</h4>
+          <p>Your region does not have permission to approve members locally. All approvals must be done by National Executives.</p>
+        </div>
+      </div>
+
+      <div id="approvalInterface">
+        <div class="grid grid-3 gap-4 mb-6">
+          <div class="stat-card">
+            <div class="stat-value" id="pendingCount">0</div>
+            <div class="stat-label">Pending Approval</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="approvedCount">0</div>
+            <div class="stat-label">Approved by Region</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalMembers">0</div>
+            <div class="stat-label">Total Active Members</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="flex-between mb-4">
+            <h3 class="card-title">Pending Registrations</h3>
+            <input type="text" id="searchInput" class="form-input" placeholder="Search..." style="width: 250px;">
+          </div>
+
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Registered</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pendingTableBody">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 3rem;">
+                    <div>⏳ Loading...</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Member Details Modal -->
+  <div id="memberModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <div style="padding: 2rem;">
+        <h3 class="mb-4">Member Details</h3>
+        
+        <div class="grid grid-2 gap-3 mb-4">
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Full Name</label>
+            <div class="mb-2" id="modalName" style="font-weight: 600;">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Email</label>
+            <div class="mb-2" id="modalEmail">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Phone</label>
+            <div class="mb-2" id="modalPhone">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Region</label>
+            <div class="mb-2" id="modalRegion">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Registration Date</label>
+            <div class="mb-2" id="modalRegDate">-</div>
+          </div>
+          <div>
+            <label class="text-secondary" style="font-size: 0.85rem;">Email Verified</label>
+            <div class="mb-2" id="modalEmailVerified">-</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Member ID</label>
+          <input type="text" id="memberIdInput" class="form-input" placeholder="e.g., AMCAG-2026-001" readonly>
+          <span class="form-help">Auto-generated on approval</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes (Optional)</label>
+          <textarea id="approvalNotes" class="form-input" rows="3" placeholder="Add any notes..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-success" onclick="approveMember()">✅ Approve</button>
+          <button class="btn btn-error" onclick="rejectMember()">❌ Reject</button>
+          <button class="btn btn-outline" onclick="closeMemberModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    let currentUser = null;
+    let currentRegion = null;
+    let canApprove = false;
+    let pendingMembers = [];
+    let selectedMemberUid = null;
+    let approveMemberFunction = null;
+    let rejectMemberFunction = null;
+
+    // Initialize Cloud Functions
+    firebase.auth().onAuthStateChanged(user => {
+      if (user && !approveMemberFunction) {
+        const functions = firebase.functions();
+        approveMemberFunction = functions.httpsCallable('approveMember');
+        rejectMemberFunction = functions.httpsCallable('rejectMember');
+      }
+    });
+
+    // Load pending members
+    async function loadPendingMembers() {
+      if (!canApprove) {
+        document.getElementById('noPermissionNotice').style.display = 'block';
+        document.getElementById('approvalInterface').style.display = 'none';
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Loading pending members...');
+        
+        const db = firebase.firestore();
+        
+        // Load pending members for this region only
+        const snapshot = await db.collection('users')
+          .where('status', '==', 'pending')
+          .where('region', '==', currentRegion)
+          .orderBy('registrationDate', 'desc')
+          .get();
+
+        pendingMembers = snapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data()
+        }));
+
+        document.getElementById('pendingCount').textContent = pendingMembers.length;
+
+        // Get approved count
+        const approvedSnapshot = await db.collection('users')
+          .where('status', '==', 'active')
+          .where('region', '==', currentRegion)
+          .get();
+        
+        document.getElementById('approvedCount').textContent = approvedSnapshot.size;
+        document.getElementById('totalMembers').textContent = approvedSnapshot.size;
+
+        renderTable();
+        UIModule.hideLoader();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading pending members:', error);
+        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+      }
+    }
+
+    // Render table
+    function renderTable() {
+      const tbody = document.getElementById('pendingTableBody');
+      
+      if (pendingMembers.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2rem;">
+              🎉 No pending approvals for your region!
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = pendingMembers.map(member => `
+        <tr>
+          <td style="font-weight: 600;">${member.fullName || 'N/A'}</td>
+          <td>${member.email || 'N/A'}</td>
+          <td>${member.phone || 'N/A'}</td>
+          <td>${member.registrationDate ? new Date(member.registrationDate.toDate()).toLocaleDateString() : 'N/A'}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick='viewMemberDetails(${JSON.stringify(member).replace(/'/g, "\\'")})'> 
+              Review
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Search filter
+    document.getElementById('searchInput')?.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('#pendingTableBody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    });
+
+    // View member details
+    function viewMemberDetails(member) {
+      selectedMemberUid = member.uid;
+      
+      document.getElementById('modalName').textContent = member.fullName || 'N/A';
+      document.getElementById('modalEmail').textContent = member.email || 'N/A';
+      document.getElementById('modalPhone').textContent = member.phone || 'N/A';
+      document.getElementById('modalRegion').textContent = member.region || 'N/A';
+      document.getElementById('modalRegDate').textContent = member.registrationDate ? 
+        new Date(member.registrationDate.toDate()).toLocaleString() : 'N/A';
+      document.getElementById('modalEmailVerified').innerHTML = member.emailVerified ? 
+        '<span class="badge badge-success">✅ Verified</span>' : 
+        '<span class="badge badge-warning">⏳ Pending</span>';
+      
+      // Auto-generate member ID
+      const year = new Date().getFullYear();
+      const regionCode = currentRegion.replace(/\s+/g, '').substring(0, 3).toUpperCase();
+      const nextNumber = String(pendingMembers.length + 1).padStart(4, '0');
+      document.getElementById('memberIdInput').value = `AMCAG-${regionCode}-${year}-${nextNumber}`;
+      
+      document.getElementById('memberModal').style.display = 'flex';
+    }
+
+    function closeMemberModal() {
+      document.getElementById('memberModal').style.display = 'none';
+      selectedMemberUid = null;
+      document.getElementById('approvalNotes').value = '';
+    }
+
+    // Approve member
+    async function approveMember() {
+      if (!selectedMemberUid) return;
+
+      const memberId = document.getElementById('memberIdInput').value;
+      const notes = document.getElementById('approvalNotes').value;
+
+      if (!memberId) {
+        UIModule.showAlert('Member ID is required', 'error');
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Approving member...');
+
+        const result = await approveMemberFunction({
+          memberUid: selectedMemberUid,
+          memberId: memberId,
+          notes: notes
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert('✅ Member approved successfully!', 'success');
+          closeMemberModal();
+          loadPendingMembers();
+        } else {
+          UIModule.showAlert('Failed: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Reject member
+    async function rejectMember() {
+      if (!selectedMemberUid) return;
+
+      const notes = document.getElementById('approvalNotes').value || 'No reason provided';
+
+      if (!confirm('Reject this registration?')) return;
+
+      try {
+        UIModule.showLoader('Rejecting...');
+
+        const result = await rejectMemberFunction({
+          memberUid: selectedMemberUid,
+          reason: notes
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert('Registration rejected', 'success');
+          closeMemberModal();
+          loadPendingMembers();
+        } else {
+          UIModule.showAlert('Failed: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    // Initialize
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      currentUser = user;
+      
+      const db = firebase.firestore();
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      
+      if (!userDoc.exists) {
+        window.location.href = '/member-dashboard.html';
+        return;
+      }
+
+      const userData = userDoc.data();
+      currentRegion = userData.region;
+
+      document.getElementById('regionSubtitle').textContent = `Review pending registrations for ${currentRegion}`;
+
+      // Check if user can approve members
+      if (userData.role !== 'regional_executive' && userData.role !== 'super_admin') {
+        UIModule.showAlert('Access denied. Regional Executive role required.', 'error');
+        setTimeout(() => window.location.href = '/region-dashboard/index.html', 2000);
+        return;
+      }
+
+      // Check if this region has approval permission
+      const regionDoc = await db.collection('regions').doc(currentRegion).get();
+      
+      if (!regionDoc.exists) {
+        // Create region document if it doesn't exist
+        await db.collection('regions').doc(currentRegion).set({
+          name: currentRegion,
+          canApproveMembersLocally: false,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        canApprove = false;
+      } else {
+        const regionData = regionDoc.data();
+        canApprove = regionData.canApproveMembersLocally === true && userData.canApproveMembership === true;
+      }
+
+      loadPendingMembers();
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

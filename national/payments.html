@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments Management | AMCAG National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/regions.html" class="dashboard-nav-item">
+          <span>🗺️</span> Regions
+        </a>
+        <a href="/national/payments.html" class="dashboard-nav-item active">
+          <span>💰</span> Payments
+        </a>
+        <a href="/national/certificates.html" class="dashboard-nav-item">
+          <span>📜</span> Certificates
+        </a>
+        <a href="/national/events.html" class="dashboard-nav-item">
+          <span>📅</span> Events
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+        <a href="/national/leadership.html" class="dashboard-nav-item">
+          <span>⚙️</span> Leadership
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Payments Management</h1>
+          <p class="dashboard-subtitle">Track membership dues and payments nationwide</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-outline" onclick="exportPaymentsReport()">Export Report</button>
+          <button class="btn btn-primary" onclick="recordPayment()">Record Payment</button>
+        </div>
+      </div>
+
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value">GH₵ 456,780</div>
+          <div class="stat-label">Total Revenue</div>
+          <div style="font-size: var(--text-sm); color: var(--color-success); margin-top: 0.5rem;">+12% vs last month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">GH₵ 89,450</div>
+          <div class="stat-label">This Month</div>
+          <div style="font-size: var(--text-sm); color: var(--color-success); margin-top: 0.5rem;">+8% growth</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">12,456</div>
+          <div class="stat-label">Paid Members</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-top: 0.5rem;">82% of total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">2,787</div>
+          <div class="stat-label">Pending Dues</div>
+          <div style="font-size: var(--text-sm); color: var(--color-warning); margin-top: 0.5rem;">18% of total</div>
+        </div>
+      </div>
+
+      <!-- Payment Type Breakdown -->
+      <div class="grid grid-3 gap-4 mb-6">
+        <div class="card">
+          <div class="flex-between mb-2">
+            <h3 class="card-title">Membership Dues</h3>
+            <span style="font-size: var(--text-2xl);">💳</span>
+          </div>
+          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GH₵ 289,340</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">63% of total revenue</div>
+        </div>
+        <div class="card">
+          <div class="flex-between mb-2">
+            <h3 class="card-title">Event Fees</h3>
+            <span style="font-size: var(--text-2xl);">🎫</span>
+          </div>
+          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GH₵ 98,560</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">22% of total revenue</div>
+        </div>
+        <div class="card">
+          <div class="flex-between mb-2">
+            <h3 class="card-title">Donations</h3>
+            <span style="font-size: var(--text-2xl);">🎁</span>
+          </div>
+          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GH₵ 68,880</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">15% of total revenue</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">Recent Payments</h3>
+          <div class="flex gap-2">
+            <input type="text" class="form-input" placeholder="Search payments..." style="width: 250px;">
+            <select class="form-input" style="width: auto;">
+              <option value="">All Types</option>
+              <option value="dues">Membership Dues</option>
+              <option value="event">Event Fees</option>
+              <option value="donation">Donations</option>
+            </select>
+            <select class="form-input" style="width: auto;">
+              <option value="">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+            </select>
+            <input type="date" class="form-input" style="width: auto;">
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Member</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00453</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Kwame Mensah</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-001</div>
+                </td>
+                <td>Membership Dues</td>
+                <td style="font-weight: 600;">GH₵ 50.00</td>
+                <td>Mobile Money</td>
+                <td>Mar 01, 2026</td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" onclick="viewReceipt('TXN-2026-00453')">View Receipt</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00452</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Akosua Boateng</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-002</div>
+                </td>
+                <td>Event Registration</td>
+                <td style="font-weight: 600;">GH₵ 120.00</td>
+                <td>Bank Transfer</td>
+                <td>Feb 28, 2026</td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" onclick="viewReceipt('TXN-2026-00452')">View Receipt</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00451</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Kofi Asante</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-003</div>
+                </td>
+                <td>Membership Dues</td>
+                <td style="font-weight: 600;">GH₵ 50.00</td>
+                <td>Mobile Money</td>
+                <td>Feb 28, 2026</td>
+                <td><span class="badge badge-warning">Pending</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" onclick="viewPaymentDetails('TXN-2026-00451')">View Details</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00450</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Ama Owusu</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-004</div>
+                </td>
+                <td>Donation</td>
+                <td style="font-weight: 600;">GH₵ 500.00</td>
+                <td>Bank Transfer</td>
+                <td>Feb 27, 2026</td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline" onclick="viewReceipt('TXN-2026-00450')">View Receipt</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00449</div>
+                </td>
+                <td>
+                  <div style="font-weight: 600;">Yaw Mohammed</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-005</div>
+                </td>
+                <td>Membership Dues</td>
+                <td style="font-weight: 600;">GH₵ 50.00</td>
+                <td>Mobile Money</td>
+                <td>Feb 27, 2026</td>
+                <td><span class="badge badge-error">Failed</span></td>
+                <td>
+                  <button class="btn btn-sm" style="background: var(--color-warning); color: white;" onclick="retryPayment('TXN-2026-00449')">Retry</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="pagination-btn" disabled>Previous</button>
+          <button class="pagination-btn active">1</button>
+          <button class="pagination-btn">2</button>
+          <button class="pagination-btn">3</button>
+          <button class="pagination-btn">4</button>
+          <button class="pagination-btn">Next</button>
+        </div>
+      </div>
+
+      <!-- Revenue Chart -->
+      <div class="grid grid-2 gap-4 mt-6">
+        <div class="card">
+          <h3 class="card-title mb-4">Monthly Revenue Trend</h3>
+          <div class="space-y-3">
+            <div>
+              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
+                <span>January 2026</span>
+                <span style="font-weight: 600;">GH₵ 78,560</span>
+              </div>
+              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
+                <div style="width: 88%; height: 100%; background: linear-gradient(90deg, var(--color-success), var(--color-primary));"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
+                <span>February 2026</span>
+                <span style="font-weight: 600;">GH₵ 82,340</span>
+              </div>
+              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
+                <div style="width: 92%; height: 100%; background: linear-gradient(90deg, var(--color-success), var(--color-primary));"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
+                <span>March 2026 (MTD)</span>
+                <span style="font-weight: 600;">GH₵ 89,450</span>
+              </div>
+              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
+                <div style="width: 100%; height: 100%; background: linear-gradient(90deg, var(--color-success), var(--color-primary));"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title mb-4">Payment Methods Distribution</h3>
+          <div class="space-y-3">
+            <div class="flex-between p-3" style="background: var(--color-primary-95); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Mobile Money</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">62%</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">📱</div>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Bank Transfer</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">28%</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">🏦</div>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Cash</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">10%</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">💵</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    function exportPaymentsReport() {
+      UIModule.showAlert('Exporting payments report...', 'info');
+      // Generate and download payments report
+    }
+
+    function recordPayment() {
+      UIModule.showAlert('Record Payment modal - Coming soon', 'info');
+      // Open modal to record new payment
+    }
+
+    function viewReceipt(txnId) {
+      window.open(`/payment-receipt.html?id=${txnId}`, '_blank');
+    }
+
+    function viewPaymentDetails(txnId) {
+      UIModule.showAlert(`Viewing payment details for ${txnId}`, 'info');
+      // Open modal with payment details
+    }
+
+    function retryPayment(txnId) {
+      if (confirm(`Retry payment ${txnId}?`)) {
+        UIModule.showLoader('Retrying payment...');
+        setTimeout(() => {
+          UIModule.hideLoader();
+          UIModule.showAlert('Payment retry initiated', 'success');
+          loadPayments();
+        }, 1500);
+      }
+    }
+
+    async function loadPayments() {
+      try {
+        // Load payments data from Firestore
+        const db = firebase.firestore();
+        const paymentsRef = db.collection('payments').orderBy('createdAt', 'desc').limit(50);
+        const snapshot = await paymentsRef.get();
+        
+        // Process and render payments data
+        console.log('Payments loaded:', snapshot.size);
+      } catch (error) {
+        console.error('Error loading payments:', error);
+        UIModule.showAlert('Error loading payments data', 'error');
+      }
+    }
+
+    async function loadRevenueSummary() {
+      try {
+        const db = firebase.firestore();
+        // Load revenue summary and statistics
+        // This would typically aggregate data from the payments collection
+        console.log('Revenue summary loaded');
+      } catch (error) {
+        console.error('Error loading revenue summary:', error);
+      }
+    }
+
+    AuthModule.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+      } else {
+        // Check if user has national executive or super admin role
+        if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
+          window.location.href = '/member-dashboard.html';
+        } else {
+          loadPayments();
+          loadRevenueSummary();
+        }
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leadership Management | AMCAG National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/regions.html" class="dashboard-nav-item">
+          <span>🗺️</span> Regions
+        </a>
+        <a href="/national/payments.html" class="dashboard-nav-item">
+          <span>💰</span> Payments
+        </a>
+        <a href="/national/certificates.html" class="dashboard-nav-item">
+          <span>📜</span> Certificates
+        </a>
+        <a href="/national/events.html" class="dashboard-nav-item">
+          <span>📅</span> Events
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+        <a href="/national/leadership.html" class="dashboard-nav-item active">
+          <span>⚙️</span> Leadership
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Leadership Management</h1>
+          <p class="dashboard-subtitle">Manage organizational structure and leadership roles</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-outline" onclick="viewOrgChart()">View Org Chart</button>
+          <button class="btn btn-primary" onclick="addLeader()">Add Leader</button>
+        </div>
+      </div>
+
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value">24</div>
+          <div class="stat-label">National Leaders</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">78</div>
+          <div class="stat-label">Regional Leaders</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">156</div>
+          <div class="stat-label">District Leaders</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">12</div>
+          <div class="stat-label">Committees</div>
+        </div>
+      </div>
+
+      <!-- National Executive -->
+      <div class="card mb-6">
+        <h3 class="card-title mb-4">National Executive</h3>
+        <div class="grid grid-3 gap-4">
+          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); text-align: center;">
+            <div style="width: 80px; height: 80px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); margin: 0 auto var(--space-3); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--text-2xl); font-weight: 700;">
+              KM
+            </div>
+            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.25rem;">Kwame Mensah</h4>
+            <div style="color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); margin-bottom: 0.5rem;">National President</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.75rem;">
+              📧 kwame.mensah@amcag.org<br>
+              📱 +233 24 123 4567
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: center;">
+              <button class="btn btn-sm btn-outline" onclick="viewProfile('LDR-001')">View Profile</button>
+              <button class="btn btn-sm btn-outline" onclick="contactLeader('LDR-001')">Contact</button>
+            </div>
+          </div>
+
+          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); text-align: center;">
+            <div style="width: 80px; height: 80px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); margin: 0 auto var(--space-3); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--text-2xl); font-weight: 700;">
+              AB
+            </div>
+            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.25rem;">Akosua Boateng</h4>
+            <div style="color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); margin-bottom: 0.5rem;">Vice President</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.75rem;">
+              📧 akosua.boateng@amcag.org<br>
+              📱 +233 24 234 5678
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: center;">
+              <button class="btn btn-sm btn-outline" onclick="viewProfile('LDR-002')">View Profile</button>
+              <button class="btn btn-sm btn-outline" onclick="contactLeader('LDR-002')">Contact</button>
+            </div>
+          </div>
+
+          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); text-align: center;">
+            <div style="width: 80px; height: 80px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-success), var(--color-primary)); margin: 0 auto var(--space-3); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--text-2xl); font-weight: 700;">
+              KA
+            </div>
+            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.25rem;">Kofi Asante</h4>
+            <div style="color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); margin-bottom: 0.5rem;">General Secretary</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.75rem;">
+              📧 kofi.asante@amcag.org<br>
+              📱 +233 24 345 6789
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: center;">
+              <button class="btn btn-sm btn-outline" onclick="viewProfile('LDR-003')">View Profile</button>
+              <button class="btn btn-sm btn-outline" onclick="contactLeader('LDR-003')">Contact</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">All Leadership Positions</h3>
+          <div class="flex gap-2">
+            <input type="text" class="form-input" placeholder="Search leaders..." style="width: 250px;">
+            <select class="form-input" style="width: auto;">
+              <option value="">All Levels</option>
+              <option value="national">National</option>
+              <option value="regional">Regional</option>
+              <option value="district">District</option>
+            </select>
+            <select class="form-input" style="width: auto;">
+              <option value="">All Departments</option>
+              <option value="executive">Executive</option>
+              <option value="finance">Finance</option>
+              <option value="administration">Administration</option>
+              <option value="programs">Programs</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Level</th>
+                <th>Region/Zone</th>
+                <th>Term Start</th>
+                <th>Contact</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                      KM
+                    </div>
+                    <div>
+                      <div style="font-weight: 600;">Kwame Mensah</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-001</div>
+                    </div>
+                  </div>
+                </td>
+                <td>National President</td>
+                <td><span class="badge" style="background: var(--color-primary-95); color: var(--color-primary);">National</span></td>
+                <td>Nationwide</td>
+                <td>Jan 2024</td>
+                <td>
+                  <div style="font-size: var(--text-sm);">kwame.m@amcag.org</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 123 4567</div>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Manage</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                      AB
+                    </div>
+                    <div>
+                      <div style="font-weight: 600;">Akosua Boateng</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-002</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Vice President</td>
+                <td><span class="badge" style="background: var(--color-primary-95); color: var(--color-primary);">National</span></td>
+                <td>Nationwide</td>
+                <td>Jan 2024</td>
+                <td>
+                  <div style="font-size: var(--text-sm);">akosua.b@amcag.org</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 234 5678</div>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Manage</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-success), var(--color-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                      KA
+                    </div>
+                    <div>
+                      <div style="font-weight: 600;">Kofi Asante</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-003</div>
+                    </div>
+                  </div>
+                </td>
+                <td>General Secretary</td>
+                <td><span class="badge" style="background: var(--color-primary-95); color: var(--color-primary);">National</span></td>
+                <td>Nationwide</td>
+                <td>Jan 2024</td>
+                <td>
+                  <div style="font-size: var(--text-sm);">kofi.a@amcag.org</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 345 6789</div>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Manage</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-warning), var(--color-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                      AO
+                    </div>
+                    <div>
+                      <div style="font-weight: 600;">Ama Owusu</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-004</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Chief Financial Officer</td>
+                <td><span class="badge" style="background: var(--color-primary-95); color: var(--color-primary);">National</span></td>
+                <td>Nationwide</td>
+                <td>Jan 2024</td>
+                <td>
+                  <div style="font-size: var(--text-sm);">ama.o@amcag.org</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 456 7890</div>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Manage</button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-info), var(--color-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                      YM
+                    </div>
+                    <div>
+                      <div style="font-weight: 600;">Yaw Mohammed</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-015</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Regional Chairperson</td>
+                <td><span class="badge" style="background: var(--color-secondary-95); color: var(--color-secondary);">Regional</span></td>
+                <td>Greater Accra</td>
+                <td>Mar 2024</td>
+                <td>
+                  <div style="font-size: var(--text-sm);">yaw.m@amcag.org</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 567 8901</div>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Manage</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="pagination-btn" disabled>Previous</button>
+          <button class="pagination-btn active">1</button>
+          <button class="pagination-btn">2</button>
+          <button class="pagination-btn">3</button>
+          <button class="pagination-btn">Next</button>
+        </div>
+      </div>
+
+      <!-- Committees and Departments -->
+      <div class="grid grid-2 gap-4 mt-6">
+        <div class="card">
+          <h3 class="card-title mb-4">Active Committees</h3>
+          <div class="space-y-3">
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-weight: 600;">Finance Committee</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">8 members</div>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="viewCommittee('Finance Committee')">View</button>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-weight: 600;">Programs & Events</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">12 members</div>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="viewCommittee('Programs & Events')">View</button>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-weight: 600;">Membership & Growth</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">10 members</div>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="viewCommittee('Membership & Growth')">View</button>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-weight: 600;">Communications</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">6 members</div>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="viewCommittee('Communications')">View</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title mb-4">Leadership Statistics</h3>
+          <div class="space-y-3">
+            <div class="flex-between p-3" style="background: var(--color-primary-95); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Avg. Tenure</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">2.3 years</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">📅</div>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Active Positions</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">258</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">👥</div>
+            </div>
+            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+              <div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Vacant Positions</div>
+                <div style="font-weight: 600; font-size: var(--text-xl);">12</div>
+              </div>
+              <div style="font-size: var(--text-2xl);">📋</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    function viewOrgChart() {
+      UIModule.showAlert('Organization Chart viewer - Coming soon', 'info');
+    }
+
+    function addLeader() {
+      UIModule.showAlert('Add Leader modal - Coming soon', 'info');
+    }
+
+    function viewProfile(leaderId) {
+      UIModule.showAlert(`Viewing profile: ${leaderId}`, 'info');
+    }
+
+    function contactLeader(leaderId) {
+      UIModule.showAlert(`Contact feature for ${leaderId} - Coming soon`, 'info');
+    }
+
+    function manageLeader(leaderId) {
+      UIModule.showAlert(`Manage ${leaderId} - Coming soon`, 'info');
+    }
+
+    function viewCommittee(committeeName) {
+      UIModule.showAlert(`Viewing committee: ${committeeName}`, 'info');
+    }
+
+    async function loadLeadership() {
+      try {
+        // Load leadership data from Firestore
+        const db = firebase.firestore();
+        const leadersRef = db.collection('leadership').orderBy('level').orderBy('createdAt', 'desc');
+        const snapshot = await leadersRef.get();
+        
+        // Process and render leadership data
+        console.log('Leadership loaded:', snapshot.size);
+      } catch (error) {
+        console.error('Error loading leadership:', error);
+        UIModule.showAlert('Error loading leadership data', 'error');
+      }
+    }
+
+    async function loadCommittees() {
+      try {
+        const db = firebase.firestore();
+        const committeesRef = db.collection('committees').where('status', '==', 'active');
+        const snapshot = await committeesRef.get();
+        
+        console.log('Committees loaded:', snapshot.size);
+      } catch (error) {
+        console.error('Error loading committees:', error);
+      }
+    }
+
+    AuthModule.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+      } else {
+        // Check if user has national executive or super admin role
+        if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
+          window.location.href = '/member-dashboard.html';
+        } else {
+          loadLeadership();
+          loadCommittees();
+        }
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

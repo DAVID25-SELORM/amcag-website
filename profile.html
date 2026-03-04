@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile | AMCAG Member Portal</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Member Portal</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm btn-outline" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/profile.html" class="dashboard-nav-item active">
+          <span>👤</span> My Profile
+        </a>
+        <a href="/certificates.html" class="dashboard-nav-item">
+          <span>📜</span> Certificates
+        </a>
+        <a href="/dues.html" class="dashboard-nav-item">
+          <span>💳</span> Dues Payment
+        </a>
+        <a href="/payments.html" class="dashboard-nav-item">
+          <span>💰</span> Payment History
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <h1 class="dashboard-title">My Profile</h1>
+        <p class="dashboard-subtitle">Manage your personal information and account settings</p>
+      </div>
+
+      <div class="grid grid-2 gap-6">
+        <div class="card">
+          <h3 class="card-title mb-4">Profile Information</h3>
+          <form id="profile-form">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-input" id="fullName" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-input" id="email" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" class="form-input" id="phone" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Region</label>
+              <select class="form-input" id="region" required>
+                <option value="">Select Region</option>
+                <option value="greater-accra">Greater Accra</option>
+                <option value="ashanti">Ashanti</option>
+                <option value="central">Central</option>
+                <option value="eastern">Eastern</option>
+                <option value="northern">Northern</option>
+                <option value="western">Western</option>
+                <option value="volta">Volta</option>
+                <option value="upper-east">Upper East</option>
+                <option value="upper-west">Upper West</option>
+                <option value="bono">Bono</option>
+                <option value="bono-east">Bono East</option>
+                <option value="ahafo">Ahafo</option>
+                <option value="western-north">Western North</option>
+                <option value="savannah">Savannah</option>
+                <option value="north-east">North East</option>
+                <option value="oti">Oti</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Employment Status</label>
+              <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: var(--color-surface-container); border-radius: 8px;">
+                <input type="checkbox" id="currentlyEmployed" style="width: 20px; height: 20px; cursor: pointer;">
+                <label for="currentlyEmployed" style="cursor: pointer; margin: 0; font-weight: var(--font-medium);">I am currently employed</label>
+              </div>
+            </div>
+            <div class="form-group" id="workplace-group" style="display: none;">
+              <label class="form-label">Current Workplace</label>
+              <input type="text" class="form-input" id="workplace" placeholder="e.g., ABC Pharmacy, XYZ Hospital">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Address</label>
+              <textarea class="form-input" id="address" rows="3" placeholder="Your residential address"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title mb-4">Change Password</h3>
+          <form id="password-form">
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <input type="password" class="form-input" id="currentPassword" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-input" id="newPassword" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-input" id="confirmPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Change Password</button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    async function loadProfile(user) {
+      try {
+        const profile = await APIModule.Members.getById(user.uid);
+        document.getElementById('fullName').value = profile.fullName || '';
+        document.getElementById('email').value = profile.email || '';
+        document.getElementById('phone').value = profile.phone || '';
+        document.getElementById('region').value = profile.region || '';
+        document.getElementById('address').value = profile.address || '';
+        
+        // Set employment status
+        const isEmployed = profile.employmentStatus === 'Employed';
+        document.getElementById('currentlyEmployed').checked = isEmployed;
+        
+        if (isEmployed && profile.currentWorkplace && profile.currentWorkplace !== 'N/A') {
+          document.getElementById('workplace').value = profile.currentWorkplace;
+          document.getElementById('workplace-group').style.display = 'block';
+        }
+      } catch (error) {
+        UIModule.showAlert('Error loading profile', 'error');
+      }
+    }
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      UIModule.showLoader('Updating profile...');
+      try {
+        const isEmployed = document.getElementById('currentlyEmployed').checked;
+        const workplace = document.getElementById('workplace').value.trim();
+        
+        await AuthModule.updateProfile({
+          fullName: document.getElementById('fullName').value,
+          phone: document.getElementById('phone').value,
+          region: document.getElementById('region').value,
+          address: document.getElementById('address').value.trim(),
+          employmentStatus: isEmployed ? 'Employed' : 'Not Employed',
+          currentWorkplace: isEmployed && workplace ? workplace : 'N/A'
+        });
+        UIModule.hideLoader();
+        UIModule.showAlert('Profile updated successfully', 'success');
+      } catch (error) {
+        UIModule.hideLoader();
+        UIModule.showAlert(error.message, 'error');
+      }
+    });
+
+    document.getElementById('password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      if (newPassword !== confirmPassword) {
+        UIModule.showAlert('Passwords do not match', 'error');
+        return;
+      }
+
+      UIModule.showLoader('Changing password...');
+      try {
+        await AuthModule.changePassword(
+          document.getElementById('currentPassword').value,
+          newPassword
+        );
+        UIModule.hideLoader();
+        UIModule.showAlert('Password changed successfully', 'success');
+        document.getElementById('password-form').reset();
+      } catch (error) {
+        UIModule.hideLoader();
+        UIModule.showAlert(error.message, 'error');
+      }
+    });
+    
+    // Handle employment status checkbox
+    document.getElementById('currentlyEmployed').addEventListener('change', function() {
+      const workplaceGroup = document.getElementById('workplace-group');
+      
+      if (this.checked) {
+        workplaceGroup.style.display = 'block';
+      } else {
+        workplaceGroup.style.display = 'none';
+        document.getElementById('workplace').value = '';
+      }
+    });
+
+    AuthModule.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+      } else {
+        loadProfile(user);
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

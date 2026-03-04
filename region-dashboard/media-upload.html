@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media Upload | AMCAG Regional</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Regional</span>
+      </a>
+      
+      <ul class="navbar-menu" style="margin-left: auto;">
+        <li><a href="/region-dashboard/index.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/region-dashboard/media-upload.html" class="navbar-link active">Media</a></li>
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== HEADER START ===== -->
+  <section class="section-sm" style="background: var(--gradient-secondary); color: white; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -50%; right: -10%; width: 500px; height: 500px; background: rgba(255,255,255,0.1); border-radius: 50%; animation: float 18s ease-in-out infinite;"></div>
+    
+    <div class="container" style="position: relative; z-index: 1;">
+      <div class="flex-between">
+        <div class="animate-fade-in">
+          <h1 style="font-family: var(--font-display); font-size: var(--text-5xl); font-weight: var(--font-bold); margin-bottom: var(--space-2);">
+            Regional Media
+          </h1>
+          <p style="font-size: var(--text-xl); opacity: 0.95;">
+            Upload regional event photos & videos
+          </p>
+        </div>
+        <div>
+          <span style="padding: 12px 24px; background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border: var(--glass-border); border-radius: var(--radius-full); font-weight: var(--font-bold); box-shadow: var(--shadow-lg);" data-user-region>
+            📸 Your Region
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== HEADER END ===== -->
+
+  <!-- ===== MAIN CONTENT START ===== -->
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="grid grid-2" style="gap: var(--space-6); align-items: start;">
+        
+        <!-- PHOTO UPLOAD SECTION -->
+        <div class="card animate-fade-in delay-100">
+          <div class="card-header">
+            <h2 class="card-title">📷 Upload Photo</h2>
+            <p class="card-subtitle">Share regional event photos</p>
+          </div>
+          
+          <div class="card-body">
+            <form id="photo-upload-form">
+              <div class="form-group">
+                <label class="form-label required">Photo Title</label>
+                <input type="text" class="form-input" id="photo-title" placeholder="e.g., Regional Training Session" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Event Location</label>
+                <input type="text" class="form-input" id="photo-location" placeholder="e.g., Regional Office" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="photo-description" rows="3" placeholder="Brief description..."></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">Select Photo</label>
+                <input type="file" class="form-input" id="photo-file" accept="image/jpeg,image/jpg,image/png,image/webp" required>
+                <span class="form-help">JPEG, PNG, or WebP (Max 5MB)</span>
+                <div id="photo-preview" style="margin-top: var(--space-3); display: none;">
+                  <img id="photo-preview-img" style="max-width: 100%; height: auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-md);" alt="Preview">
+                </div>
+              </div>
+              
+              <button type="submit" class="btn btn-primary btn-block" id="photo-upload-btn">
+                Upload Photo
+              </button>
+              
+              <div id="photo-upload-progress" style="display: none; margin-top: var(--space-3);">
+                <div style="background: var(--color-neutral-95); height: 8px; border-radius: var(--radius-full); overflow: hidden;">
+                  <div id="photo-progress-bar" style="width: 0%; height: 100%; background: var(--gradient-primary); transition: width 0.3s;"></div>
+                </div>
+                <p style="text-align: center; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-secondary);" id="photo-progress-text">Uploading...</p>
+              </div>
+            </form>
+          </div>
+        </div>
+        
+        <!-- YOUTUBE VIDEO SECTION -->
+        <div class="card animate-fade-in delay-200">
+          <div class="card-header">
+            <h2 class="card-title">🎥 Add Video Link</h2>
+            <p class="card-subtitle">Share YouTube video links</p>
+          </div>
+          
+          <div class="card-body">
+            <form id="video-youtube-form">
+              <div class="form-group">
+                <label class="form-label required">Video Title</label>
+                <input type="text" class="form-input" id="video-youtube-title" placeholder="e.g., Training Workshop" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="video-youtube-description" rows="3" placeholder="Brief description..."></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label required">YouTube URL</label>
+                <input type="url" class="form-input" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." required>
+                <span class="form-help">Paste the full YouTube video URL</span>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Duration (optional)</label>
+                <input type="text" class="form-input" id="video-duration" placeholder="e.g., 15:30">
+              </div>
+              
+              <button type="submit" class="btn btn-primary btn-block">
+                Add YouTube Video
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      
+      <!-- RECENT UPLOADS -->
+      <div class="card animate-fade-in delay-300" style="margin-top: var(--space-6);">
+        <div class="card-header">
+          <h2 class="card-title">📁 Your Recent Uploads</h2>
+          <p class="card-subtitle">Media uploaded from your region</p>
+        </div>
+        <div class="card-body">
+          <div id="recent-uploads-list">
+            <p style="text-align: center; color: var(--text-secondary); padding: var(--space-4);">
+              No uploads yet
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== MAIN CONTENT END ===== -->
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script>
+    // Authentication check
+    window.AuthModule.requireAnyRole(['regional_executive', 'national_executive', 'super_admin']);
+    
+    let userRegion = '';
+    
+    // Get user region
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          userRegion = userDoc.data().region || '';
+          const regionBadge = document.querySelector('[data-user-region]');
+          if (regionBadge && userRegion) {
+            regionBadge.textContent = `📸 ${userRegion}`;
+          }
+        }
+      }
+    });
+    
+    // Photo preview
+    document.getElementById('photo-file').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const preview = document.getElementById('photo-preview');
+          const img = document.getElementById('photo-preview-img');
+          img.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    // Photo upload
+    document.getElementById('photo-upload-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const title = document.getElementById('photo-title').value;
+      const location = document.getElementById('photo-location').value;
+      const description = document.getElementById('photo-description').value;
+      const fileInput = document.getElementById('photo-file');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        UIModule.showAlert('Please select a photo to upload', 'error');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        UIModule.showAlert('Photo size must be less than 5MB', 'error');
+        return;
+      }
+      
+      const uploadBtn = document.getElementById('photo-upload-btn');
+      const progressDiv = document.getElementById('photo-upload-progress');
+      const progressBar = document.getElementById('photo-progress-bar');
+      const progressText = document.getElementById('photo-progress-text');
+      
+      try {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Uploading...';
+        progressDiv.style.display = 'block';
+        
+        const storage = firebase.storage();
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${file.name}`;
+        const storageRef = storage.ref(`media/photos/${fileName}`);
+        
+        const uploadTask = storageRef.put(file);
+        
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            progressBar.style.width = progress + '%';
+            progressText.textContent = `Uploading: ${Math.round(progress)}%`;
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            UIModule.showAlert('Upload failed: ' + error.message, 'error');
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Upload Photo';
+            progressDiv.style.display = 'none';
+          },
+          async () => {
+            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+            progressText.textContent = 'Saving...';
+            
+            const db = firebase.firestore();
+            const user = firebase.auth().currentUser;
+            
+            await db.collection('gallery').add({
+              title: title,
+              location: location,
+              description: description,
+              region: userRegion,
+              imageUrl: downloadURL,
+              storagePath: `media/photos/${fileName}`,
+              uploadedBy: user.uid,
+              uploaderName: user.displayName || user.email,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              type: 'photo'
+            });
+            
+            UIModule.showAlert('Photo uploaded successfully! ✅', 'success');
+            
+            document.getElementById('photo-upload-form').reset();
+            document.getElementById('photo-preview').style.display = 'none';
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = 'Upload Photo';
+            progressDiv.style.display = 'none';
+            progressBar.style.width = '0%';
+            
+            loadRecentUploads();
+          }
+        );
+        
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload Photo';
+        progressDiv.style.display = 'none';
+      }
+    });
+    
+    // YouTube link upload
+    document.getElementById('video-youtube-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const title = document.getElementById('video-youtube-title').value;
+      const description = document.getElementById('video-youtube-description').value;
+      const youtubeUrl = document.getElementById('youtube-url').value;
+      const duration = document.getElementById('video-duration').value;
+      
+      try {
+        let videoId = '';
+        const urlObj = new URL(youtubeUrl);
+        if (urlObj.hostname.includes('youtube.com')) {
+          videoId = urlObj.searchParams.get('v');
+        } else if (urlObj.hostname.includes('youtu.be')) {
+          videoId = urlObj.pathname.substring(1);
+        }
+        
+        if (!videoId) {
+          UIModule.showAlert('Invalid YouTube URL', 'error');
+          return;
+        }
+        
+        const db = firebase.firestore();
+        const user = firebase.auth().currentUser;
+        
+        await db.collection('videos').add({
+          title: title,
+          description: description,
+          region: userRegion,
+          videoUrl: youtubeUrl,
+          videoId: videoId,
+          duration: duration,
+          uploadedBy: user.uid,
+          uploaderName: user.displayName || user.email,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          type: 'youtube'
+        });
+        
+        UIModule.showAlert('YouTube video added successfully! ✅', 'success');
+        document.getElementById('video-youtube-form').reset();
+        loadRecentUploads();
+        
+      } catch (error) {
+        console.error('Error adding video:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    });
+    
+    // Load recent uploads
+    async function loadRecentUploads() {
+      const container = document.getElementById('recent-uploads-list');
+      const user = firebase.auth().currentUser;
+      
+      if (!user) return;
+      
+      try {
+        const db = firebase.firestore();
+        
+        const photosSnapshot = await db.collection('gallery')
+          .where('uploadedBy', '==', user.uid)
+          .orderBy('createdAt', 'desc')
+          .limit(10)
+          .get();
+        
+        const videosSnapshot = await db.collection('videos')
+          .where('uploadedBy', '==', user.uid)
+          .orderBy('createdAt', 'desc')
+          .limit(10)
+          .get();
+        
+        const uploads = [];
+        
+        photosSnapshot.forEach(doc => uploads.push({ id: doc.id, ...doc.data(), mediaType: 'photo' }));
+        videosSnapshot.forEach(doc => uploads.push({ id: doc.id, ...doc.data(), mediaType: 'video' }));
+        
+        uploads.sort((a, b) => {
+          const aTime = a.createdAt ? a.createdAt.toMillis() : 0;
+          const bTime = b.createdAt ? b.createdAt.toMillis() : 0;
+          return bTime - aTime;
+        });
+        
+        if (uploads.length === 0) {
+          container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: var(--space-4);">No uploads yet</p>';
+          return;
+        }
+        
+        container.innerHTML = uploads.slice(0, 10).map(item => `
+          <div style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--color-neutral-90); border-radius: var(--radius-lg); margin-bottom: var(--space-2);">
+            <div style="width: 60px; height: 60px; background: ${item.mediaType === 'photo' ? 'var(--color-primary-95)' : 'var(--color-secondary-95)'}; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: var(--text-2xl);">
+              ${item.mediaType === 'photo' ? '📷' : '🎥'}
+            </div>
+            <div style="flex: 1;">
+              <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">${item.title}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-secondary);">
+                ${item.region || item.location || ''} • ${item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString() : 'Recently'}
+              </div>
+            </div>
+            <span class="badge badge-success">Uploaded</span>
+          </div>
+        `).join('');
+        
+      } catch (error) {
+        console.error('Error loading uploads:', error);
+      }
+    }
+    
+    // Theme Toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    function signOut() {
+      if (confirm('Are you sure you want to sign out?')) {
+        AuthModule.signOut();
+      }
+    }
+    
+    // Initialize theme
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      if (savedTheme === 'dark') {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) icon.textContent = '☀️';
+      }
+    })();
+    
+    window.addEventListener('load', loadRecentUploads);
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

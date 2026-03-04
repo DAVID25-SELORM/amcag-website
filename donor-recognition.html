@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Donor Recognition | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      <div class="navbar-menu">
+        <a href="/index.html">Home</a>
+        <a href="/about.html">About</a>
+        <a href="/donate.html">Donate</a>
+        <a href="/donor-recognition.html" class="active">Donors</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+      <div class="navbar-actions">
+        <a href="/membership.html" class="btn btn-sm btn-primary">Member Login</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero" style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); color: white; padding: 4rem 0;">
+      <div class="container text-center">
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">🏆 Donor Recognition</h1>
+        <p style="font-size: 1.25rem; opacity: 0.95;">Celebrating our generous supporters who make a difference</p>
+      </div>
+    </section>
+
+    <!-- Impact Summary -->
+    <section class="section" style="background: var(--bg-secondary);">
+      <div class="container">
+        <div class="grid grid-4 gap-4">
+          <div class="stat-card">
+            <div class="stat-value" id="totalRaised" style="color: var(--color-primary);">GHS 0</div>
+            <div class="stat-label">Total Raised</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalDonors" style="color: var(--color-secondary);">0</div>
+            <div class="stat-label">Generous Donors</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalBeneficiaries" style="color: var(--color-tertiary);">0</div>
+            <div class="stat-label">Beneficiaries Reached</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalDistributions" style="color: var(--color-success);">0</div>
+            <div class="stat-label">Distributions Made</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Donor Tiers -->
+    <section class="section">
+      <div class="container">
+        <div class="text-center mb-6">
+          <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Donor Tiers</h2>
+          <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+            Every contribution counts and is deeply appreciated. Join our recognition tiers through your generosity.
+          </p>
+        </div>
+
+        <div class="grid grid-3 gap-4 mb-8">
+          <div class="card text-center" style="border-top: 4px solid #CD7F32;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🥉</div>
+            <h3 style="margin-bottom: 0.5rem;">Bronze Donor</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">GHS 1 - 99</p>
+            <p style="font-size: 0.875rem;">Every contribution makes a difference</p>
+          </div>
+
+          <div class="card text-center" style="border-top: 4px solid #C0C0C0;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🥈</div>
+            <h3 style="margin-bottom: 0.5rem;">Silver Donor</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">GHS 100 - 499</p>
+            <p style="font-size: 0.875rem;">Supporting meaningful impact</p>
+          </div>
+
+          <div class="card text-center" style="border-top: 4px solid #FFD700;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🥇</div>
+            <h3 style="margin-bottom: 0.5rem;">Gold Donor</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">GHS 500 - 999</p>
+            <p style="font-size: 0.875rem;">Making significant change</p>
+          </div>
+
+          <div class="card text-center" style="border-top: 4px solid #E5E4E2;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💎</div>
+            <h3 style="margin-bottom: 0.5rem;">Platinum Donor</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">GHS 1,000 - 4,999</p>
+            <p style="font-size: 0.875rem;">Transformational giving</p>
+          </div>
+
+          <div class="card text-center" style="border-top: 4px solid #B9F2FF;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💠</div>
+            <h3 style="margin-bottom: 0.5rem;">Diamond Donor</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">GHS 5,000+</p>
+            <p style="font-size: 0.875rem;">Exceptional philanthropy</p>
+          </div>
+
+          <div class="card text-center" style="border-top: 4px solid var(--color-primary);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🎁</div>
+            <h3 style="margin-bottom: 0.5rem;">Material Donor</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">In-Kind Gifts</p>
+            <p style="font-size: 0.875rem;">Supporting with resources</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Donor Wall -->
+    <section class="section" style="background: var(--bg-secondary);">
+      <div class="container">
+        <div class="text-center mb-6">
+          <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">🌟 Our Donors</h2>
+          <p style="color: var(--text-secondary);">
+            Thank you to everyone who has contributed to our mission
+          </p>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="tabs mb-4 text-center">
+          <button class="tab-btn active" onclick="switchTab('all')">All Donors</button>
+          <button class="tab-btn" onclick="switchTab('diamond')">💠 Diamond</button>
+          <button class="tab-btn" onclick="switchTab('platinum')">💎 Platinum</button>
+          <button class="tab-btn" onclick="switchTab('gold')">🥇 Gold</button>
+          <button class="tab-btn" onclick="switchTab('silver')">🥈 Silver</button>
+          <button class="tab-btn" onclick="switchTab('bronze')">🥉 Bronze</button>
+        </div>
+
+        <!-- Donors Grid -->
+        <div id="donorsGrid" style="margin-top: 2rem;">
+          <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+            Loading donors...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Distributions -->
+    <section class="section">
+      <div class="container">
+        <div class="text-center mb-6">
+          <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">📦 Impact Stories</h2>
+          <p style="color: var(--text-secondary);">
+            See how your donations are making a difference
+          </p>
+        </div>
+
+        <div id="distributionsGallery" class="grid grid-3 gap-4">
+          <div style="text-align: center; padding: 3rem; color: var(--text-secondary); grid-column: 1 / -1;">
+            Loading impact stories...
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="section" style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%); color: white;">
+      <div class="container text-center">
+        <h2 style="font-size: 2rem; margin-bottom: 1rem;">Join Our Generous Donors</h2>
+        <p style="font-size: 1.125rem; margin-bottom: 2rem; opacity: 0.95;">
+          Your contribution, no matter the size, makes a real difference in people's lives
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+          <a href="/donate.html" class="btn btn-white btn-lg">💝 Make a Donation</a>
+          <a href="/membership.html" class="btn btn-outline-white btn-lg">Become a Member</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div>
+          <h4>AMCAG</h4>
+          <p>Association of Methodist Church Administrators Ghana</p>
+        </div>
+        <div>
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="/about.html">About Us</a></li>
+            <li><a href="/donate.html">Donate</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 AMCAG. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    let allDonors = [];
+    let filteredDonors = [];
+    let activeFilter = 'all';
+
+    const TIER_CONFIG = {
+      diamond: { min: 5000, max: Infinity, icon: '💠', name: 'Diamond', color: '#B9F2FF' },
+      platinum: { min: 1000, max: 4999, icon: '💎', name: 'Platinum', color: '#E5E4E2' },
+      gold: { min: 500, max: 999, icon: '🥇', name: 'Gold', color: '#FFD700' },
+      silver: { min: 100, max: 499, icon: '🥈', name: 'Silver', color: '#C0C0C0' },
+      bronze: { min: 0, max: 99, icon: '🥉', name: 'Bronze', color: '#CD7F32' }
+    };
+
+    async function loadDonorData() {
+      try {
+        await waitForFirebase();
+        const db = firebase.firestore();
+        
+        // Load donations with public/members_only visibility
+        const snapshot = await db.collection('donations')
+          .where('visibility', 'in', ['public', 'members_only'])
+          .where('status', 'in', ['received', 'allocated', 'distributed'])
+          .get();
+
+        const donations = snapshot.docs.map(doc => doc.data());
+
+        // Aggregate by donor
+        const donorMap = {};
+        donations.forEach(d => {
+          if (d.anonymous) return; // Skip anonymous donations
+          
+          const key = d.donorUid;
+          if (!donorMap[key]) {
+            donorMap[key] = {
+              name: d.donorName,
+              total: 0,
+              donationCount: 0,
+              hasMaterial: false
+            };
+          }
+          
+          if (d.type === 'monetary') {
+            donorMap[key].total += d.amount || 0;
+          } else {
+            donorMap[key].hasMaterial = true;
+          }
+          donorMap[key].donationCount += 1;
+        });
+
+        allDonors = Object.values(donorMap).map(donor => ({
+          ...donor,
+          tier: getDonorTier(donor.total)
+        })).sort((a, b) => b.total - a.total);
+
+        filteredDonors = [...allDonors];
+
+        // Load statistics
+        loadStatistics(donations);
+        loadDistributions();
+        renderDonors();
+
+      } catch (error) {
+        console.error('Error loading donor data:', error);
+      }
+    }
+
+    function getDonorTier(total) {
+      for (const [tier, config] of Object.entries(TIER_CONFIG)) {
+        if (total >= config.min && total <= config.max) {
+          return tier;
+        }
+      }
+      return 'bronze';
+    }
+
+    async function loadStatistics(donations) {
+      const totalRaised = donations
+        .filter(d => d.type === 'monetary')
+        .reduce((sum, d) => sum + (d.amount || 0), 0);
+      
+      const totalDonors = new Set(donations.map(d => d.donorUid)).size;
+
+      const db = firebase.firestore();
+      const distSnapshot = await db.collection('donations')
+        .where('status', '==', 'distributed')
+        .get();
+      
+      const distributions = distSnapshot.docs.map(doc => doc.data());
+      const totalBeneficiaries = distributions.reduce((sum, d) => 
+        sum + (d.distribution?.beneficiaries || 0), 0);
+
+      document.getElementById('totalRaised').textContent = `GHS ${totalRaised.toLocaleString()}`;
+      document.getElementById('totalDonors').textContent = totalDonors;
+      document.getElementById('totalBeneficiaries').textContent = totalBeneficiaries;
+      document.getElementById('totalDistributions').textContent = distributions.length;
+    }
+
+    async function loadDistributions() {
+      try {
+        const db = firebase.firestore();
+        const snapshot = await db.collection('donations')
+          .where('status', '==', 'distributed')
+          .orderBy('distribution.distributedAt', 'desc')
+          .limit(6)
+          .get();
+
+        const distributions = snapshot.docs.map(doc => doc.data());
+        const container = document.getElementById('distributionsGallery');
+
+        if (distributions.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary); grid-column: 1 / -1;">
+              No distributions yet
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = distributions.map(d => {
+          const dist = d.distribution;
+          const date = new Date(dist.distributedAt.toDate()).toLocaleDateString();
+          const hasPhoto = dist.photoUrls && dist.photoUrls.length > 0;
+          
+          return `
+            <div class="card">
+              ${hasPhoto ? `
+                <img src="${dist.photoUrls[0]}" alt="Distribution" style="width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius-md) var(--radius-md) 0 0; margin: -1.5rem -1.5rem 1rem -1.5rem;">
+              ` : `
+                <div style="width: 100%; height: 150px; background: linear-gradient(135deg, var(--color-primary-95) 0%, var(--color-secondary-95) 100%); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+                  📦
+                </div>
+              `}
+              <h4 style="margin-bottom: 0.5rem;">${dist.location}</h4>
+              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                👥 ${dist.beneficiaries} beneficiaries
+              </div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                📅 ${date}
+              </div>
+              ${dist.notes ? `
+                <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
+                  ${dist.notes}
+                </p>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading distributions:', error);
+      }
+    }
+
+    function switchTab(filter) {
+      activeFilter = filter;
+      
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (filter === 'all') {
+        filteredDonors = [...allDonors];
+      } else {
+        filteredDonors = allDonors.filter(d => d.tier === filter);
+      }
+
+      renderDonors();
+    }
+
+    function renderDonors() {
+      const container = document.getElementById('donorsGrid');
+
+      if (filteredDonors.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+            No donors in this tier yet
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="grid grid-4 gap-4">
+          ${filteredDonors.map(donor => {
+            const tierConfig = TIER_CONFIG[donor.tier];
+            return `
+              <div class="card text-center" style="border-top: 3px solid ${tierConfig.color};">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">${tierConfig.icon}</div>
+                <h4 style="margin-bottom: 0.25rem;">${donor.name}</h4>
+                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                  ${tierConfig.name} Donor
+                </div>
+                ${donor.total > 0 ? `
+                  <div style="font-weight: 600; color: var(--color-primary);">
+                    GHS ${donor.total.toLocaleString()}
+                  </div>
+                ` : ''}
+                ${donor.hasMaterial ? `
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                    + Material donations
+                  </div>
+                ` : ''}
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                  ${donor.donationCount} donation${donor.donationCount > 1 ? 's' : ''}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    async function waitForFirebase() {
+      while (typeof firebase === 'undefined') {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    loadDonorData();
+  </script>
+</body>
+</html>

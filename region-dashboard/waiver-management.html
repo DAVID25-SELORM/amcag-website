@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waiver Management | AMCAG Regional Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/region-dashboard/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Regional</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/region-dashboard/index.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/region-dashboard/member-approval.html" class="dashboard-nav-item">
+          <span>✅</span> Approve Members
+        </a>
+        <a href="/region-dashboard/dues-overview.html" class="dashboard-nav-item">
+          <span>💰</span> Dues Overview
+        </a>
+        <a href="/region-dashboard/waiver-management.html" class="dashboard-nav-item active">
+          <span>📝</span> Waiver Management
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Dues Waiver Management</h1>
+          <p class="dashboard-subtitle" id="regionName">Loading region...</p>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="openDirectWaiverModal()">➕ Direct Waiver</button>
+        </div>
+      </div>
+
+      <!-- Statistics Grid -->
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="pendingCount">0</div>
+          <div class="stat-label">Pending Requests</div>
+        </div>
+        <div class="stat-card" style="background: var(--color-success-container);">
+          <div class="stat-value" style="color: var(--color-success);" id="approvedCount">0</div>
+          <div class="stat-label">Approved This Month</div>
+        </div>
+        <div class="stat-card" style="background: var(--color-error-container);">
+          <div class="stat-value" style="color: var(--color-error);" id="rejectedCount">0</div>
+          <div class="stat-label">Rejected This Month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">GHS <span id="totalWaived">0</span></div>
+          <div class="stat-label">Total Waived (This Month)</div>
+        </div>
+      </div>
+
+      <div class="alert alert-info mb-4">
+        <h4 style="margin-bottom: 0.5rem;">💡 Regional Financial Secretary Guidelines</h4>
+        <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
+          <li>Review each waiver request carefully before making a decision</li>
+          <li>You can only waive dues for members in your region</li>
+          <li>Approved waivers are permanent and cannot be reversed</li>
+          <li>You can also grant direct waivers to members proactively</li>
+          <li>All waiver actions are logged and audited</li>
+        </ul>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-4">
+        <div class="grid grid-3 gap-4">
+          <div class="form-group">
+            <label class="form-label">Filter by Status</label>
+            <select id="statusFilter" class="form-input" onchange="applyFilters()">
+              <option value="">All Requests</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sort By</label>
+            <select id="sortFilter" class="form-input" onchange="applyFilters()">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="amount_high">Amount (High to Low)</option>
+              <option value="amount_low">Amount (Low to High)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Search Member</label>
+            <input type="text" id="searchInput" class="form-input" placeholder="Name or Member ID..." oninput="applyFilters()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Waiver Requests Table -->
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">Waiver Requests</h3>
+          <div>
+            <span id="requestCount" style="color: var(--text-secondary);">0 requests</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Request Date</th>
+                <th>Member</th>
+                <th>Member ID</th>
+                <th>Months</th>
+                <th>Amount</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requestsTableBody">
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 2rem;">
+                  Loading requests...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Request Details Modal -->
+  <div id="requestModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Waiver Request Review</h3>
+        <button class="modal-close" onclick="closeRequestModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid grid-2 gap-4 mb-4">
+          <div>
+            <strong>Member Name:</strong> <span id="modalMemberName"></span>
+          </div>
+          <div>
+            <strong>Member ID:</strong> <span id="modalMemberId"></span>
+          </div>
+          <div>
+            <strong>Request Date:</strong> <span id="modalRequestDate"></span>
+          </div>
+          <div>
+            <strong>Recovery Date:</strong> <span id="modalRecoveryDate"></span>
+          </div>
+          <div>
+            <strong>Months Requested:</strong> <span id="modalMonths"></span>
+          </div>
+          <div>
+            <strong>Total Amount:</strong> GHS <span id="modalAmount"></span>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <strong>Reason Category:</strong>
+          <p id="modalReasonCategory" style="margin-top: 0.5rem; padding: 0.75rem; background: var(--color-surface-container); border-radius: var(--radius-md);"></p>
+        </div>
+
+        <div class="mb-4">
+          <strong>Detailed Explanation:</strong>
+          <p id="modalExplanation" style="margin-top: 0.5rem; padding: 1rem; background: var(--color-surface-container); border-radius: var(--radius-md); max-height: 200px; overflow-y: auto;"></p>
+        </div>
+
+        <div id="reviewFormSection">
+          <hr style="margin: 1.5rem 0;">
+          <h4 style="margin-bottom: 1rem;">Review Decision</h4>
+
+          <div class="form-group">
+            <label class="form-label required">Decision</label>
+            <div style="display: flex; gap: 1rem;">
+              <label style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer;">
+                <input type="radio" name="decision" value="approve" id="decisionApprove">
+                <div>
+                  <div style="font-weight: 600; color: var(--color-success);">✅ Approve</div>
+                  <div style="font-size: 0.85rem; color: var(--text-secondary);">Grant the waiver</div>
+                </div>
+              </label>
+              <label style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer;">
+                <input type="radio" name="decision" value="reject" id="decisionReject">
+                <div>
+                  <div style="font-weight: 600; color: var(--color-error);">❌ Reject</div>
+                  <div style="font-size: 0.85rem; color: var(--text-secondary);">Deny the request</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Review Notes</label>
+            <textarea id="reviewNotes" class="form-input" rows="4" placeholder="Provide explanation for your decision..." required></textarea>
+          </div>
+        </div>
+
+        <div id="reviewedSection" style="display: none;">
+          <hr style="margin: 1.5rem 0;">
+          <div class="alert alert-info">
+            <p><strong>Already Reviewed</strong></p>
+            <p style="margin: 0.5rem 0 0;">This request has been reviewed by <strong id="reviewedByName"></strong> on <strong id="reviewedDate"></strong>.</p>
+          </div>
+          <div class="mt-4">
+            <strong>Review Notes:</strong>
+            <p id="existingReviewNotes" style="margin-top: 0.5rem; padding: 1rem; background: var(--color-surface-container); border-radius: var(--radius-md);"></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" id="modalFooter">
+        <button class="btn btn-error" onclick="submitReview('reject')" id="rejectBtn">❌ Reject Request</button>
+        <button class="btn btn-success" onclick="submitReview('approve')" id="approveBtn">✅ Approve Waiver</button>
+        <button class="btn btn-secondary" onclick="closeRequestModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direct Waiver Modal -->
+  <div id="directWaiverModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Grant Direct Waiver</h3>
+        <button class="modal-close" onclick="closeDirectWaiverModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-4">
+          <p style="margin: 0;"><strong>Note:</strong> Direct waivers bypass the request process. Use this for proactive waivers in exceptional circumstances.</p>
+        </div>
+
+        <form id="directWaiverForm">
+          <div class="form-group">
+            <label class="form-label required">Select Member</label>
+            <select id="memberSelect" class="form-input" required onchange="loadMemberOverdueMonths()">
+              <option value="">Select a member...</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="memberOverdueSection" style="display: none;">
+            <label class="form-label">Member's Overdue Months</label>
+            <div id="memberOverdueList" class="p-4" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); max-height: 250px; overflow-y: auto;"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Reason for Waiver</label>
+            <select id="directWaiverReason" class="form-input" required>
+              <option value="">Select a reason...</option>
+              <option value="financial_hardship">Financial Hardship</option>
+              <option value="medical_emergency">Medical Emergency</option>
+              <option value="unemployment">Unemployment / Job Loss</option>
+              <option value="family_emergency">Family Emergency</option>
+              <option value="administrative_error">Administrative Error</option>
+              <option value="special_circumstances">Special Circumstances</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Detailed Explanation</label>
+            <textarea id="directWaiverExplanation" class="form-input" rows="4" required placeholder="Explain why this waiver is being granted..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">Grant Waiver</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/suspension-check.js"></script>
+
+  <script>
+    const MONTHLY_DUES_AMOUNT = 50.00;
+    let currentUser = null;
+    let userRegion = null;
+    let allRequests = [];
+    let regionMembers = [];
+    let selectedRequest = null;
+    let reviewWaiverRequestFunction = null;
+
+    // Get month name
+    function getMonthName(month) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[month - 1];
+    }
+
+    // Initialize Cloud Functions
+    firebase.auth().onAuthStateChanged(user => {
+      if (user && !reviewWaiverRequestFunction) {
+        const functions = firebase.functions();
+        reviewWaiverRequestFunction = functions.httpsCallable('reviewWaiverRequest');
+      }
+    });
+
+    // Load waiver requests
+    async function loadWaiverRequests() {
+      try {
+        UIModule.showLoader('Loading waiver requests...');
+        
+        const db = firebase.firestore();
+
+        // Load requests for this region
+        const requestsSnapshot = await db.collection('waiver_requests')
+          .where('region', '==', userRegion)
+          .get();
+
+        allRequests = requestsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Load region members for direct waiver
+        const membersSnapshot = await db.collection('users')
+          .where('region', '==', userRegion)
+          .where('status', '==', 'active')
+          .get();
+
+        regionMembers = membersSnapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data()
+        }));
+
+        // Populate member select
+        const memberSelect = document.getElementById('memberSelect');
+        memberSelect.innerHTML = '<option value="">Select a member...</option>';
+        regionMembers.forEach(member => {
+          const option = document.createElement('option');
+          option.value = member.uid;
+          option.textContent = `${member.fullName || 'Unknown'} (${member.memberId || 'No ID'})`;
+          memberSelect.appendChild(option);
+        });
+
+        calculateStatistics();
+        applyFilters();
+
+        UIModule.hideLoader();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading requests:', error);
+        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+      }
+    }
+
+    // Calculate statistics
+    function calculateStatistics() {
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+
+      const pending = allRequests.filter(r => r.status === 'pending').length;
+      
+      const approvedThisMonth = allRequests.filter(r => {
+        if (r.status !== 'approved' || !r.reviewedAt) return false;
+        const reviewDate = r.reviewedAt.toDate();
+        return reviewDate.getMonth() + 1 === currentMonth && 
+               reviewDate.getFullYear() === currentYear;
+      }).length;
+
+      const rejectedThisMonth = allRequests.filter(r => {
+        if (r.status !== 'rejected' || !r.reviewedAt) return false;
+        const reviewDate = r.reviewedAt.toDate();
+        return reviewDate.getMonth() + 1 === currentMonth && 
+               reviewDate.getFullYear() === currentYear;
+      }).length;
+
+      const totalWaivedThisMonth = allRequests
+        .filter(r => {
+          if (r.status !== 'approved' || !r.reviewedAt) return false;
+          const reviewDate = r.reviewedAt.toDate();
+          return reviewDate.getMonth() + 1 === currentMonth && 
+                 reviewDate.getFullYear() === currentYear;
+        })
+        .reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+
+      document.getElementById('pendingCount').textContent = pending;
+      document.getElementById('approvedCount').textContent = approvedThisMonth;
+      document.getElementById('rejectedCount').textContent = rejectedThisMonth;
+      document.getElementById('totalWaived').textContent = totalWaivedThisMonth.toFixed(2);
+    }
+
+    // Apply filters
+    function applyFilters() {
+      const statusFilter = document.getElementById('statusFilter').value;
+      const sortFilter = document.getElementById('sortFilter').value;
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+      let filteredRequests = allRequests.filter(request => {
+        // Status filter
+        if (statusFilter && request.status !== statusFilter) {
+          return false;
+        }
+
+        // Search filter
+        if (searchTerm) {
+          const searchableText = `${request.memberName || ''} ${request.memberId || ''}`.toLowerCase();
+          if (!searchableText.includes(searchTerm)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      // Sort
+      filteredRequests.sort((a, b) => {
+        switch (sortFilter) {
+          case 'newest':
+            return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
+          case 'oldest':
+            return (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
+          case 'amount_high':
+            return (b.totalAmount || 0) - (a.totalAmount || 0);
+          case 'amount_low':
+            return (a.totalAmount || 0) - (b.totalAmount || 0);
+          default:
+            return 0;
+        }
+      });
+
+      renderRequestsTable(filteredRequests);
+    }
+
+    // Render requests table
+    function renderRequestsTable(requests) {
+      const tbody = document.getElementById('requestsTableBody');
+      document.getElementById('requestCount').textContent = `${requests.length} requests`;
+
+      if (requests.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+              No waiver requests found
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = requests.map(request => {
+        const requestDate = request.createdAt ? 
+          new Date(request.createdAt.toDate()).toLocaleDateString() : 
+          'N/A';
+        
+        const monthsText = request.months.map(m => `${getMonthName(m.month)} ${m.year}`).join(', ');
+        
+        let statusBadge;
+        if (request.status === 'pending') {
+          statusBadge = '<span class="badge badge-warning">Pending</span>';
+        } else if (request.status === 'approved') {
+          statusBadge = '<span class="badge badge-success">Approved</span>';
+        } else if (request.status === 'rejected') {
+          statusBadge = '<span class="badge badge-error">Rejected</span>';
+        }
+
+        return `
+          <tr>
+            <td>${requestDate}</td>
+            <td>${request.memberName || 'Unknown'}</td>
+            <td>${request.memberId || 'N/A'}</td>
+            <td>${monthsText}</td>
+            <td style="font-weight: 600;">GHS ${(request.totalAmount || 0).toFixed(2)}</td>
+            <td><small>${request.reasonCategory || 'N/A'}</small></td>
+            <td>${statusBadge}</td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick='reviewRequest(${JSON.stringify(request).replace(/'/g, "&apos;")})'>
+                ${request.status === 'pending' ? 'Review' : 'View'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Review request
+    function reviewRequest(request) {
+      selectedRequest = request;
+
+      document.getElementById('modalMemberName').textContent = request.memberName || 'Unknown';
+      document.getElementById('modalMemberId').textContent = request.memberId || 'N/A';
+      
+      const requestDate = request.createdAt ? 
+        new Date(request.createdAt.toDate()).toLocaleDateString() : 
+        'N/A';
+      document.getElementById('modalRequestDate').textContent = requestDate;
+      document.getElementById('modalRecoveryDate').textContent = request.recoveryDate || 'Not specified';
+      
+      const monthsText = request.months.map(m => `${getMonthName(m.month)} ${m.year}`).join(', ');
+      document.getElementById('modalMonths').textContent = monthsText;
+      document.getElementById('modalAmount').textContent = (request.totalAmount || 0).toFixed(2);
+      document.getElementById('modalReasonCategory').textContent = request.reasonCategory || 'N/A';
+      document.getElementById('modalExplanation').textContent = request.explanation || 'No explanation provided';
+
+      // Show/hide review form
+      if (request.status === 'pending') {
+        document.getElementById('reviewFormSection').style.display = 'block';
+        document.getElementById('reviewedSection').style.display = 'none';
+        document.getElementById('modalFooter').style.display = 'flex';
+        document.getElementById('reviewNotes').value = '';
+        document.querySelectorAll('input[name="decision"]').forEach(r => r.checked = false);
+      } else {
+        document.getElementById('reviewFormSection').style.display = 'none';
+        document.getElementById('reviewedSection').style.display = 'block';
+        document.getElementById('modalFooter').style.display = 'none';
+        
+        document.getElementById('reviewedByName').textContent = request.reviewedByName || 'Unknown';
+        const reviewDate = request.reviewedAt ? 
+          new Date(request.reviewedAt.toDate()).toLocaleDateString() : 
+          'N/A';
+        document.getElementById('reviewedDate').textContent = reviewDate;
+        document.getElementById('existingReviewNotes').textContent = request.reviewNotes || 'No notes provided';
+      }
+
+      document.getElementById('requestModal').style.display = 'flex';
+    }
+
+    function closeRequestModal() {
+      document.getElementById('requestModal').style.display = 'none';
+      selectedRequest = null;
+    }
+
+    // Submit review
+    async function submitReview(decision) {
+      if (!selectedRequest) return;
+
+      const reviewNotes = document.getElementById('reviewNotes').value.trim();
+
+      if (!reviewNotes || reviewNotes.length < 10) {
+        UIModule.showAlert('Please provide review notes (minimum 10 characters)', 'error');
+        return;
+      }
+
+      const actionText = decision === 'approve' ? 'approve' : 'reject';
+      if (!confirm(`${actionText.toUpperCase()} this waiver request?\n\nMember: ${selectedRequest.memberName}\nAmount: GHS ${(selectedRequest.totalAmount || 0).toFixed(2)}\n\nThis action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        UIModule.showLoader(`${actionText}ing request...`);
+
+        const result = await reviewWaiverRequestFunction({
+          requestId: selectedRequest.id,
+          decision: decision,
+          reviewNotes: reviewNotes
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert(`✅ Request ${decision}ed successfully!`, 'success');
+          closeRequestModal();
+          setTimeout(() => loadWaiverRequests(), 1000);
+        } else {
+          UIModule.showAlert('Error: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error reviewing request:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Direct waiver modal
+    function openDirectWaiverModal() {
+      document.getElementById('directWaiverForm').reset();
+      document.getElementById('memberOverdueSection').style.display = 'none';
+      document.getElementById('directWaiverModal').style.display = 'flex';
+    }
+
+    function closeDirectWaiverModal() {
+      document.getElementById('directWaiverModal').style.display = 'none';
+    }
+
+    // Load member overdue months
+    async function loadMemberOverdueMonths() {
+      const memberUid = document.getElementById('memberSelect').value;
+      if (!memberUid) {
+        document.getElementById('memberOverdueSection').style.display = 'none';
+        return;
+      }
+
+      try {
+        const member = regionMembers.find(m => m.uid === memberUid);
+        if (!member) return;
+
+        const db = firebase.firestore();
+        
+        // Get payments
+        const paymentsSnapshot = await db.collection('payments')
+          .where('uid', '==', memberUid)
+          .where('type', '==', 'monthly_dues')
+          .get();
+
+        const paidMonths = new Set();
+        paymentsSnapshot.docs.forEach(doc => {
+          const payment = doc.data();
+          if (payment.status === 'paid' || payment.status === 'waived') {
+            paidMonths.add(`${payment.year}-${payment.month}`);
+          }
+        });
+
+        // Calculate overdue
+        const now = new Date();
+        const regDate = member.registrationDate ? member.registrationDate.toDate() : new Date();
+        const overdueMonths = [];
+        let checkDate = new Date(regDate);
+
+        while (checkDate < now) {
+          const month = checkDate.getMonth() + 1;
+          const year = checkDate.getFullYear();
+          const key = `${year}-${month}`;
+          
+          if (!paidMonths.has(key)) {
+            overdueMonths.push({ month, year });
+          }
+          
+          checkDate.setMonth(checkDate.getMonth() + 1);
+        }
+
+        const container = document.getElementById('memberOverdueList');
+        
+        if (overdueMonths.length === 0) {
+          container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No overdue months</p>';
+        } else {
+          container.innerHTML = overdueMonths.map(m => `
+            <label style="display: flex; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--border-color);">
+              <input type="checkbox" class="direct-waiver-month" data-month="${m.month}" data-year="${m.year}" style="margin-right: 0.75rem;">
+              ${getMonthName(m.month)} ${m.year} - GHS ${MONTHLY_DUES_AMOUNT.toFixed(2)}
+            </label>
+          `).join('');
+        }
+
+        document.getElementById('memberOverdueSection').style.display = 'block';
+
+      } catch (error) {
+        console.error('Error loading overdue months:', error);
+      }
+    }
+
+    // Direct waiver form submission
+    document.getElementById('directWaiverForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const memberUid = document.getElementById('memberSelect').value;
+      const reason = document.getElementById('directWaiverReason').value;
+      const explanation = document.getElementById('directWaiverExplanation').value;
+      
+      const selectedMonths = Array.from(document.querySelectorAll('.direct-waiver-month:checked')).map(cb => ({
+        month: parseInt(cb.dataset.month),
+        year: parseInt(cb.dataset.year)
+      }));
+
+      if (selectedMonths.length === 0) {
+        UIModule.showAlert('Please select at least one month to waive', 'error');
+        return;
+      }
+
+      const member = regionMembers.find(m => m.uid === memberUid);
+      
+      if (!confirm(`Grant direct waiver to ${member.fullName}?\n\n${selectedMonths.length} month(s) - GHS ${(selectedMonths.length * MONTHLY_DUES_AMOUNT).toFixed(2)}`)) {
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Granting waiver...');
+
+        const functions = firebase.functions();
+        const waiveDuesPayment = functions.httpsCallable('waiveDuesPayment');
+
+        const result = await waiveDuesPayment({
+          memberUid: memberUid,
+          months: selectedMonths,
+          reason: `${reason}: ${explanation}`
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert('✅ Waiver granted successfully!', 'success');
+          closeDirectWaiverModal();
+        } else {
+          UIModule.showAlert('Error: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error granting waiver:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    });
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    // Initialize
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      // Check for suspension
+      await SuspensionCheckModule.initRegionalDashboardCheck();
+
+      currentUser = user;
+      
+      const db = firebase.firestore();
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      
+      if (!userDoc.exists) {
+        UIModule.showAlert('User profile not found', 'error');
+        return;
+      }
+
+      const userData = userDoc.data();
+
+      // Check permissions
+      if (!userData.role || userData.role !== 'regional_executive') {
+        UIModule.showAlert('Access denied. Regional executive access required.', 'error');
+        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+        return;
+      }
+
+      if (!userData.region) {
+        UIModule.showAlert('No region assigned to your account', 'error');
+        return;
+      }
+
+      userRegion = userData.region;
+      document.getElementById('regionName').textContent = `${userRegion} Region - Waiver Management`;
+
+      loadWaiverRequests();
+    });
+
+    // Close modals when clicking outside
+    window.onclick = (event) => {
+      const requestModal = document.getElementById('requestModal');
+      const directWaiverModal = document.getElementById('directWaiverModal');
+      
+      if (event.target === requestModal) {
+        closeRequestModal();
+      }
+      if (event.target === directWaiverModal) {
+        closeDirectWaiverModal();
+      }
+    };
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

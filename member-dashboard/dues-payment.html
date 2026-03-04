@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pay Dues | AMCAG Member Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Paystack Inline JS -->
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Member</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/profile.html" class="dashboard-nav-item">
+          <span>👤</span> My Profile
+        </a>
+        <a href="/member-dashboard/dues-payment.html" class="dashboard-nav-item active">
+          <span>💰</span> Pay Dues
+        </a>
+        <a href="/member-dashboard/waiver-request.html" class="dashboard-nav-item">
+          <span>📝</span> Request Waiver
+        </a>
+        <a href="/certificates.html" class="dashboard-nav-item">
+          <span>📜</span> Certificates
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Monthly Dues Payment</h1>
+          <p class="dashboard-subtitle">Pay your monthly membership dues - GHS 50.00 per month</p>
+        </div>
+      </div>
+
+      <!-- Payment Status Alert -->
+      <div id="statusAlert" style="display: none;"></div>
+
+      <div class="grid grid-3 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="overdueMonths">0</div>
+          <div class="stat-label">Months Overdue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">GHS <span id="totalOwed">0</span></div>
+          <div class="stat-label">Total Amount Owed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="lastPayment">Never</div>
+          <div class="stat-label">Last Payment</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2 gap-6" style="align-items: start;">
+        <!-- Payment Form -->
+        <div class="card">
+          <h3 class="card-title mb-4">Make Payment</h3>
+
+          <div class="alert alert-info mb-4">
+            <p style="margin-bottom: 0.5rem;"><strong>Payment Rules:</strong></p>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+              <li>Monthly dues: GHS 50.00</li>
+              <li>You can pay for current month or missed months (arrears)</li>
+              <li>You cannot skip ahead - must pay all overdue months first</li>
+            </ul>
+          </div>
+
+          <form id="paymentForm">
+            <div class="form-group">
+              <label class="form-label required">Select Months to Pay</label>
+              <div id="monthsSelection" class="p-4" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); max-height: 300px; overflow-y: auto;">
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                  Loading available months...
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Payment Summary</label>
+              <div class="p-4" style="background: var(--color-surface-container); border-radius: var(--radius-md);">
+                <div class="flex-between mb-2">
+                  <span>Months Selected:</span>
+                  <strong id="selectedCount">0</strong>
+                </div>
+                <div class="flex-between mb-2">
+                  <span>Amount per Month:</span>
+                  <strong>GHS 50.00</strong>
+                </div>
+                <hr style="margin: 1rem 0; border-color: var(--border-color);">
+                <div class="flex-between">
+                  <strong>Total Amount:</strong>
+                  <strong style="font-size: var(--text-xl); color: var(--color-primary);">GHS <span id="totalAmount">0.00</span></strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">Payment Method</label>
+              <select id="paymentMethod" class="form-input" required>
+                <option value="">Select payment method...</option>
+                <option value="paystack">💳 Pay Now (Card / Mobile Money / Bank)</option>
+                <option value="bank_transfer">🏦 Bank Transfer (Manual Confirmation)</option>
+                <option value="cash">💵 Cash Payment (At Office)</option>
+              </select>
+            </div>
+            
+            <div class="alert alert-info" id="paystackInfo" style="display: none;">
+              <p style="margin: 0;">💡 You'll be redirected to Paystack to complete payment securely. Supports cards, mobile money (MTN, Vodafone, AirtelTigo), and bank transfers.</p>
+            </div>
+            
+            <div class="alert alert-warning" id="manualPaymentInfo" style="display: none;">
+              <p style="margin: 0; font-weight: 600;">Bank Details:</p>
+              <p style="margin: 0.5rem 0 0 0;">Bank: [Your Bank Name]<br>Account: [Your Account Number]<br>Account Name: AMCAG Ghana</p>
+              <p style="margin: 0.5rem 0 0 0; font-size: var(--text-sm);">⚠️ Payment will be marked as pending until confirmed by admin.</p>
+            </div>
+
+            <div id="manualPaymentFields" style="display: none;">
+              <div class="form-group">
+                <label class="form-label">Bank Transfer Reference (Optional)</label>
+                <input type="text" id="transferReference" class="form-input" placeholder="e.g., Bank transfer reference number">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Reference / Notes (Optional)</label>
+              <textarea id="paymentNotes" class="form-input" rows="2" placeholder="Add any notes about this payment..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="submitBtn">
+              💳 Process Payment
+            </button>
+          </form>
+        </div>
+
+        <!-- Payment History -->
+        <div class="card">
+          <h3 class="card-title mb-4">Payment History</h3>
+          
+          <div class="table-container">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Date Paid</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr>
+                  <td colspan="4" style="text-align: center; padding: 2rem;">
+                    Loading history...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/suspension-check.js"></script>
+
+  <script>
+    // Paystack Configuration
+    const PAYSTACK_PUBLIC_KEY = 'pk_test_xxxxxxxxxxxxxxxxxxxx'; // Replace with your Paystack public key
+    
+    const MONTHLY_DUES_AMOUNT = 50.00;
+    let currentUser = null;
+    let memberData = null;
+    let paymentHistory = [];
+    let availableMonths = [];
+    let processDuesPaymentFunction = null;
+
+    // Initialize Cloud Functions
+    firebase.auth().onAuthStateChanged(user => {
+      if (user && !processDuesPaymentFunction) {
+        const functions = firebase.functions();
+        processDuesPaymentFunction = functions.httpsCallable('processDuesPayment');
+      }
+    });
+
+    // Get month name
+    function getMonthName(month) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[month - 1];
+    }
+
+    function getFullMonthName(month) {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+      return months[month - 1];
+    }
+
+    // Load payment data
+    async function loadPaymentData() {
+      try {
+        UIModule.showLoader('Loading payment information...');
+        
+        const db = firebase.firestore();
+        const uid = currentUser.uid;
+
+        // Get member data
+        const memberDoc = await db.collection('users').doc(uid).get();
+        if (!memberDoc.exists) {
+          throw new Error('Member data not found');
+        }
+
+        memberData = memberDoc.data();
+
+        // Get payment history
+        const paymentsSnapshot = await db.collection('payments')
+          .where('uid', '==', uid)
+          .where('type', '==', 'monthly_dues')
+          .orderBy('year', 'desc')
+          .orderBy('month', 'desc')
+          .get();
+
+        paymentHistory = paymentsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Calculate available months
+        calculateAvailableMonths();
+        
+        // Update UI
+        updateStats();
+        renderMonthsSelection();
+        renderPaymentHistory();
+
+        UIModule.hideLoader();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading payment data:', error);
+        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+      }
+    }
+
+    // Calculate which months can be paid
+    function calculateAvailableMonths() {
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1; // 1-12
+      const currentYear = now.getFullYear();
+
+      // Get registration date
+      const regDate = memberData.registrationDate ? 
+        memberData.registrationDate.toDate() : 
+        new Date();
+      
+      const regMonth = regDate.getMonth() + 1;
+      const regYear = regDate.getFullYear();
+
+      // Build set of paid/waived months
+      const paidMonths = new Set();
+      paymentHistory.forEach(payment => {
+        if (payment.status === 'paid' || payment.status === 'waived') {
+          paidMonths.add(`${payment.year}-${payment.month}`);
+        }
+      });
+
+      // Find first unpaid month
+      let checkDate = new Date(regDate);
+      let firstUnpaid = null;
+
+      while (checkDate <= now) {
+        const checkMonth = checkDate.getMonth() + 1;
+        const checkYear = checkDate.getFullYear();
+        const key = `${checkYear}-${checkMonth}`;
+
+        if (!paidMonths.has(key)) {
+          firstUnpaid = { month: checkMonth, year: checkYear };
+          break;
+        }
+
+        checkDate.setMonth(checkDate.getMonth() + 1);
+      }
+
+      // Build available months list (from first unpaid to current month)
+      availableMonths = [];
+      
+      if (firstUnpaid) {
+        let buildDate = new Date(firstUnpaid.year, firstUnpaid.month - 1, 1);
+        const endDate = new Date(currentYear, currentMonth - 1, 1);
+
+        while (buildDate <= endDate) {
+          const buildMonth = buildDate.getMonth() + 1;
+          const buildYear = buildDate.getFullYear();
+          const key = `${buildYear}-${buildMonth}`;
+
+          if (!paidMonths.has(key)) {
+            const isOverdue = buildYear < currentYear || 
+                            (buildYear === currentYear && buildMonth < currentMonth);
+            
+            availableMonths.push({
+              month: buildMonth,
+              year: buildYear,
+              key: key,
+              isOverdue: isOverdue,
+              isCurrent: buildYear === currentYear && buildMonth === currentMonth
+            });
+          }
+
+          buildDate.setMonth(buildDate.getMonth() + 1);
+        }
+      }
+    }
+
+    // Update statistics
+    function updateStats() {
+      const overdueCount = availableMonths.filter(m => m.isOverdue).length;
+      const totalOwed = availableMonths.length * MONTHLY_DUES_AMOUNT;
+
+      document.getElementById('overdueMonths').textContent = overdueCount;
+      document.getElementById('totalOwed').textContent = totalOwed.toFixed(2);
+
+      // Last payment
+      if (paymentHistory.length > 0) {
+        const lastPayment = paymentHistory[0];
+        const lastDate = lastPayment.paymentDate ? 
+          new Date(lastPayment.paymentDate.toDate()).toLocaleDateString() : 
+          'Unknown';
+        document.getElementById('lastPayment').textContent = lastDate;
+      } else {
+        document.getElementById('lastPayment').textContent = 'Never';
+      }
+
+      // Show status alert if overdue
+      const alertDiv = document.getElementById('statusAlert');
+      if (overdueCount > 0) {
+        alertDiv.className = 'alert alert-warning mb-4';
+        alertDiv.innerHTML = `
+          <h4 style="margin-bottom: 0.5rem;">⚠️ Payment Overdue</h4>
+          <p>You have <strong>${overdueCount}</strong> overdue month(s). Please pay GHS ${(overdueCount * MONTHLY_DUES_AMOUNT).toFixed(2)} to bring your account up to date.</p>
+        `;
+        alertDiv.style.display = 'block';
+      } else if (availableMonths.length > 0) {
+        alertDiv.className = 'alert alert-info mb-4';
+        alertDiv.innerHTML = `
+          <p>✅ Your account is up to date! Pay this month's dues to stay current.</p>
+        `;
+        alertDiv.style.display = 'block';
+      } else {
+        alertDiv.style.display = 'none';
+      }
+    }
+
+    // Render months selection
+    function renderMonthsSelection() {
+      const container = document.getElementById('monthsSelection');
+
+      if (availableMonths.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--color-success);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+            <strong>All Paid Up!</strong>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">You have no outstanding dues at this time.</p>
+          </div>
+        `;
+        document.getElementById('submitBtn').disabled = true;
+        return;
+      }
+
+      container.innerHTML = availableMonths.map((monthData, index) => {
+        const isFirst = index === 0;
+        const badgeClass = monthData.isOverdue ? 'badge-error' : 
+                          monthData.isCurrent ? 'badge-primary' : 'badge-secondary';
+        const badgeText = monthData.isOverdue ? 'OVERDUE' : 
+                         monthData.isCurrent ? 'CURRENT' : 'Available';
+
+        return `
+          <label style="display: flex; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-color); cursor: pointer; ${monthData.isOverdue ? 'background: var(--color-error-container);' : ''}"
+                 onchange="updatePaymentSummary()">
+            <input type="checkbox" 
+                   class="month-checkbox" 
+                   data-month="${monthData.month}" 
+                   data-year="${monthData.year}"
+                   data-key="${monthData.key}"
+                   style="margin-right: 1rem;"
+                   ${isFirst ? 'checked' : ''}>
+            <div style="flex: 1;">
+              <strong>${getFullMonthName(monthData.month)} ${monthData.year}</strong>
+              <div style="font-size: 0.85rem; color: var(--text-secondary);">GHS ${MONTHLY_DUES_AMOUNT.toFixed(2)}</div>
+            </div>
+            <span class="badge ${badgeClass}">${badgeText}</span>
+          </label>
+        `;
+      }).join('');
+
+      // Initial summary update
+      updatePaymentSummary();
+    }
+
+    // Update payment summary
+    function updatePaymentSummary() {
+      const checkboxes = document.querySelectorAll('.month-checkbox');
+      const selectedMonths = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => ({
+          month: parseInt(cb.dataset.month),
+          year: parseInt(cb.dataset.year),
+          key: cb.dataset.key
+        }));
+
+      // Validate sequential selection (can't skip months)
+      if (selectedMonths.length > 0) {
+        const firstAvailable = availableMonths[0].key;
+        let isValid = true;
+        
+        // Check all selected months are sequential from first available
+        for (let i = 0; i < selectedMonths.length; i++) {
+          const expectedMonth = availableMonths[i];
+          if (!expectedMonth || selectedMonths[i].key !== expectedMonth.key) {
+            isValid = false;
+            break;
+          }
+        }
+
+        if (!isValid) {
+          UIModule.showAlert('You must pay months sequentially. Cannot skip months.', 'error');
+          // Uncheck invalid selections
+          checkboxes.forEach((cb, idx) => {
+            if (idx < selectedMonths.length) {
+              cb.checked = true;
+            } else {
+              cb.checked = false;
+            }
+          });
+          return;
+        }
+      }
+
+      const count = selectedMonths.length;
+      const total = count * MONTHLY_DUES_AMOUNT;
+
+      document.getElementById('selectedCount').textContent = count;
+      document.getElementById('totalAmount').textContent = total.toFixed(2);
+
+      document.getElementById('submitBtn').disabled = count === 0;
+    }
+
+    // Render payment history
+    function renderPaymentHistory() {
+      const tbody = document.getElementById('historyTableBody');
+
+      if (paymentHistory.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+              No payment history yet
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = paymentHistory.map(payment => {
+        const statusBadge = payment.status === 'paid' ? 
+          '<span class="badge badge-success">Paid</span>' :
+          payment.status === 'waived' ?
+          '<span class="badge badge-info">Waived</span>' :
+          '<span class="badge badge-warning">Pending</span>';
+
+        const dateText = payment.paymentDate ? 
+          new Date(payment.paymentDate.toDate()).toLocaleDateString() : 
+          payment.createdAt ?
+          new Date(payment.createdAt.toDate()).toLocaleDateString() :
+          'N/A';
+
+        return `
+          <tr>
+            <td>${getMonthName(payment.month)} ${payment.year}</td>
+            <td style="font-weight: 600;">GHS ${payment.amount.toFixed(2)}</td>
+            <td>${statusBadge}</td>
+            <td>${dateText}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Payment method change handler
+    document.getElementById('paymentMethod')?.addEventListener('change', (e) => {
+      const method = e.target.value;
+      
+      // Hide all conditional elements
+      document.getElementById('paystackInfo').style.display = 'none';
+      document.getElementById('manualPaymentInfo').style.display = 'none';
+      document.getElementById('manualPaymentFields').style.display = 'none';
+      
+      // Show relevant info based on method
+      if (method === 'paystack') {
+        document.getElementById('paystackInfo').style.display = 'block';
+        document.getElementById('submitBtn').innerHTML = '💳 Pay with Paystack';
+      } else if (method === 'bank_transfer' || method === 'cash') {
+        document.getElementById('manualPaymentInfo').style.display = 'block';
+        if (method === 'bank_transfer') {
+          document.getElementById('manualPaymentFields').style.display = 'block';
+        }
+        document.getElementById('submitBtn').innerHTML = '📝 Submit Payment Request';
+      } else {
+        document.getElementById('submitBtn').innerHTML = '💳 Process Payment';
+      }
+    });
+
+    // Paystack Payment Handler
+    function initiatePaystackPayment(selectedMonths, totalAmount, notes) {
+      const handler = PaystackPop.setup({
+        key: PAYSTACK_PUBLIC_KEY,
+        email: currentUser.email,
+        amount: totalAmount * 100, // Paystack amount is in kobo/pesewas (GHS * 100)
+        currency: 'GHS',
+        ref: 'AMCAG-DUES-' + Math.floor((Math.random() * 1000000000) + 1),
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Member Name",
+              variable_name: "member_name",
+              value: memberData.fullName || currentUser.email
+            },
+            {
+              display_name: "Member ID",
+              variable_name: "member_id",
+              value: memberData.memberId || 'N/A'
+            },
+            {
+              display_name: "Months Count",
+              variable_name: "months_count",
+              value: selectedMonths.length.toString()
+            },
+            {
+              display_name: "Months",
+              variable_name: "months",
+              value: selectedMonths.map(m => `${m.month}/${m.year}`).join(', ')
+            }
+          ]
+        },
+        onClose: function() {
+          UIModule.showAlert('Payment cancelled', 'warning');
+        },
+        callback: async function(response) {
+          try {
+            UIModule.showLoader('Verifying payment...');
+            
+            // Call Cloud Function to verify and record payment
+            const result = await processDuesPaymentFunction({
+              months: selectedMonths,
+              paymentMethod: 'paystack',
+              amount: totalAmount,
+              notes: notes,
+              paystackReference: response.reference
+            });
+
+            UIModule.hideLoader();
+
+            if (result.data.success) {
+              UIModule.showAlert(`✅ Payment successful!\n${selectedMonths.length} month(s) paid.\nTotal: GHS ${totalAmount.toFixed(2)}`, 'success');
+              
+              // Reset form
+              document.getElementById('paymentForm').reset();
+              
+              // Reload data
+              setTimeout(() => {
+                loadPaymentData();
+              }, 1000);
+            } else {
+              UIModule.showAlert('Payment verification failed: ' + (result.data.error || 'Unknown error'), 'error');
+            }
+
+          } catch (error) {
+            UIModule.hideLoader();
+            console.error('Payment verification error:', error);
+            UIModule.showAlert('Error verifying payment: ' + error.message, 'error');
+          }
+        }
+      });
+      
+      handler.openIframe();
+    }
+
+    // Form submission
+    document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const checkboxes = document.querySelectorAll('.month-checkbox:checked');
+      const selectedMonths = Array.from(checkboxes).map(cb => ({
+        month: parseInt(cb.dataset.month),
+        year: parseInt(cb.dataset.year)
+      }));
+
+      const paymentMethod = document.getElementById('paymentMethod').value;
+      const notes = document.getElementById('paymentNotes').value;
+      const transferReference = document.getElementById('transferReference')?.value;
+
+      if (selectedMonths.length === 0) {
+        UIModule.showAlert('Please select at least one month to pay', 'error');
+        return;
+      }
+
+      if (!paymentMethod) {
+        UIModule.showAlert('Please select a payment method', 'error');
+        return;
+      }
+
+      const totalAmount = selectedMonths.length * MONTHLY_DUES_AMOUNT;
+
+      // Handle Paystack payment
+      if (paymentMethod === 'paystack') {
+        initiatePaystackPayment(selectedMonths, totalAmount, notes);
+        return;
+      }
+
+      // Handle manual payments (bank transfer / cash)
+      if (!confirm(`Submit payment request for GHS ${totalAmount.toFixed(2)} for ${selectedMonths.length} month(s)?`)) {
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Submitting payment request...');
+
+        const result = await processDuesPaymentFunction({
+          months: selectedMonths,
+          paymentMethod: paymentMethod,
+          amount: totalAmount,
+          notes: notes,
+          transferReference: transferReference || null,
+          paystackReference: null // Manual payment, no Paystack reference
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert(`✅ Payment request submitted!\nYour payment will be confirmed by an admin.\nMonths: ${selectedMonths.length}\nTotal: GHS ${totalAmount.toFixed(2)}`, 'success');
+          
+          // Reset form
+          document.getElementById('paymentForm').reset();
+          
+          // Reload data
+          setTimeout(() => {
+            loadPaymentData();
+          }, 1000);
+        } else {
+          UIModule.showAlert('Request failed: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Payment request error:', error);
+        UIModule.showAlert('Error submitting request: ' + error.message, 'error');
+      }
+    });
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    // Initialize
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      // Check for suspension
+      await SuspensionCheckModule.initMemberDashboardCheck();
+
+      currentUser = user;
+      
+      const db = firebase.firestore();
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      
+      if (!userDoc.exists) {
+        UIModule.showAlert('User profile not found', 'error');
+        return;
+      }
+
+      const userData = userDoc.data();
+
+      if (userData.status !== 'active') {
+        UIModule.showAlert('Your membership is not active yet. Please wait for approval.', 'warning');
+        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+        return;
+      }
+
+      loadPaymentData();
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

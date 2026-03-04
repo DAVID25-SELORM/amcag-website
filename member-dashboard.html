@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Dashboard | AMCAG</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      
+      <ul class="navbar-menu" style="margin-left: auto;">
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== DASHBOARD HEADER START ===== -->
+  <section class="section-sm bg-surface">
+    <div class="container">
+      <div class="flex-between">
+        <div>
+          <h1 style="font-family: var(--font-display); font-size: var(--text-4xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">
+            Welcome back, <span data-user-name>Member</span>
+          </h1>
+          <p style="color: var(--text-secondary); font-size: var(--text-lg);">
+            Member Dashboard
+          </p>
+        </div>
+        <div>
+          <span class="badge badge-success">Active Member</span>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== DASHBOARD HEADER END ===== -->
+
+  <!-- ===== MAIN DASHBOARD START ===== -->
+  <section class="section">
+    <div class="container">
+      <!-- Quick Stats -->
+      <div class="grid grid-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-icon">📜</div>
+          <div class="stat-value" id="cert-count">0</div>
+          <div class="stat-label">Certificates</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value">GHS <span id="dues-paid">0</span></div>
+          <div class="stat-label">Dues Paid</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-value" id="events-attended">0</div>
+          <div class="stat-label">Events Attended</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">⏰</div>
+          <div class="stat-value" id="member-since">2026</div>
+          <div class="stat-label">Member Since</div>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="grid grid-2" style="gap: var(--space-6); align-items: start;">
+        <!-- Left Column -->
+        <div class="flex-col gap-4">
+          <!-- Quick Actions -->
+          <div class="card">
+            <h3 class="card-title">Quick Actions</h3>
+            <div class="flex-col gap-2 mt-3">
+              <a href="/member-dashboard/regional-chat.html" class="btn btn-outline btn-block">💬 Regional Chat</a>
+              <a href="/member-dashboard/dues-payment.html" class="btn btn-outline btn-block">💳 Pay Monthly Dues</a>
+              <a href="/member-dashboard/donate.html" class="btn btn-outline btn-block">💰 Make Donation</a>
+              <a href="/member-dashboard/my-donations.html" class="btn btn-outline btn-block">📊 My Donations</a>
+              <a href="/member-dashboard/meetings.html" class="btn btn-outline btn-block">📹 Join Meetings</a>
+              <a href="/member-dashboard/waiver-request.html" class="btn btn-outline btn-block">📝 Request Waiver</a>
+              <a href="/certificates.html" class="btn btn-outline btn-block">📜 View Certificates</a>
+              <a href="/profile.html" class="btn btn-outline btn-block">👤 Update Profile</a>
+              <a href="/events.html" class="btn btn-outline btn-block">📅 Upcoming Events</a>
+            </div>
+          </div>
+          
+          <!-- Payment Status -->
+          <div class="card">
+            <h3 class="card-title">Payment Status</h3>
+            <div class="mt-3">
+              <div class="flex-between mb-2">
+                <span style="color: var(--text-secondary);">2026 Annual Dues</span>
+                <span class="badge badge-warning">Pending</span>
+              </div>
+              <div class="flex-between mb-3">
+                <span style="font-weight: var(--font-semibold);">Amount Due</span>
+                <span style="font-weight: var(--font-bold); color: var(--color-primary-40);">GHS 150</span>
+              </div>
+              <a href="/dues.html" class="btn btn-primary btn-block">Pay Now</a>
+            </div>
+          </div>
+          
+          <!-- Membership Renewal Status -->
+          <div class="card" id="renewal-status-card">
+            <h3 class="card-title">Membership Renewal</h3>
+            <div class="mt-3">
+              <div class="flex-between mb-2">
+                <span style="color: var(--text-secondary);">Status</span>
+                <span class="badge" id="membership-status-badge">Checking...</span>
+              </div>
+              <div class="flex-between mb-2" id="renewal-date-section" style="display: none;">
+                <span style="color: var(--text-secondary);">Renewal Date</span>
+                <span style="font-weight: var(--font-semibold);" id="renewal-date-display">-</span>
+              </div>
+              <div id="countdown-section" style="display: none; margin-top: var(--space-3); padding: var(--space-3); background: var(--color-primary-99); border-radius: var(--radius-md); text-align: center;">
+                <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-1);">Time Until Renewal</div>
+                <div id="countdown-display" style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--color-primary-40);">
+                  <span id="days">0</span>d <span id="hours">0</span>h <span id="minutes">0</span>m
+                </div>
+              </div>
+              <div id="expired-section" style="display: none; margin-top: var(--space-3); padding: var(--space-3); background: var(--color-error-99); border-radius: var(--radius-md); text-align: center;">
+                <div style="font-size: var(--text-sm); color: var(--color-error-40); font-weight: var(--font-semibold);">⚠️ Membership Expired</div>
+                <a href="/member-dashboard/dues-payment.html" class="btn btn-primary btn-sm mt-2">Renew Now</a>
+              </div>
+              <div id="pending-section" style="display: none; margin-top: var(--space-3); padding: var(--space-3); background: var(--color-warning-99); border-radius: var(--radius-md); text-align: center;">
+                <div style="font-size: var(--text-sm); color: var(--color-warning-40); font-weight: var(--font-semibold);">⏳ Payment Pending</div>
+                <p style="font-size: var(--text-xs); color: var(--text-secondary); margin-top: var(--space-1);">Complete payment to activate membership</p>
+                <a href="/member-dashboard/dues-payment.html" class="btn btn-warning btn-sm mt-2">Pay Now</a>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Membership Info -->
+          <div class="card">
+            <h3 class="card-title">Membership Information</h3>
+            <div class="mt-3 flex-col gap-2">
+              <div class="flex-between">
+                <span style="color: var(--text-secondary);">Member ID</span>
+                <span style="font-weight: var(--font-medium);" data-user-id>-</span>
+              </div>
+              <div class="flex-between">
+                <span style="color: var(--text-secondary);">Region</span>
+                <span style="font-weight: var(--font-medium);" data-user-region>-</span>
+              </div>
+              <div class="flex-between">
+                <span style="color: var(--text-secondary);">Status</span>
+                <span class="badge badge-success">Active</span>
+              </div>
+              <div class="flex-between">
+                <span style="color: var(--text-secondary);">Employment</span>
+                <span class="badge" id="employment-status-badge">-</span>
+              </div>
+              <div class="flex-between">
+                <span style="color: var(--text-secondary);">Email</span>
+                <span style="font-weight: var(--font-medium); font-size: var(--text-sm);" data-user-email>-</span>
+              </div>
+            </div>
+            <a href="/profile.html" class="btn btn-outline btn-block mt-3">Edit Profile</a>
+          </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div class="flex-col gap-4">
+          <!-- My Certificates -->
+          <div class="card">
+            <div class="flex-between mb-3">
+              <h3 class="card-title" style="margin: 0;">My Certificates</h3>
+              <a href="/certificates.html" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            <div id="certificates-list">
+              <div style="text-align: center; padding: var(--space-6); color: var(--text-secondary);">
+                <div style="font-size: var(--text-5xl); margin-bottom: var(--space-2);">📜</div>
+                <p>No certificates yet</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Recent Payments -->
+          <div class="card">
+            <div class="flex-between mb-3">
+              <h3 class="card-title" style="margin: 0;">Recent Payments</h3>
+              <a href="/payments.html" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            <div id="payments-list">
+              <div style="text-align: center; padding: var(--space-6); color: var(--text-secondary);">
+                <p>No payment history</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Upcoming Events -->
+          <div class="card">
+            <div class="flex-between mb-3">
+              <h3 class="card-title" style="margin: 0;">Upcoming Events</h3>
+              <a href="/events.html" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            <div id="events-list">
+              <div class="flex-col gap-2">
+                <div style="padding: var(--space-2); background: var(--color-primary-99); border-radius: var(--radius-md);">
+                  <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">Annual General Meeting</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">March 15, 2026 • Accra</div>
+                </div>
+                
+                <div style="padding: var(--space-2); background: var(--color-secondary-99); border-radius: var(--radius-md);">
+                  <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">Professional Workshop</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">March 22, 2026 • Kumasi</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== MAIN DASHBOARD END ===== -->
+
+  <!-- Firebase & Modules -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/suspension-check.js"></script>
+  
+  <script>
+    let dashboardLoaded = false;
+    
+    // Require authentication
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (dashboardLoaded) return;
+      
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      // Wait for profile to load
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      const checkAndLoad = async () => {
+        const currentUser = AuthModule.getCurrentUser();
+        
+        if (currentUser && currentUser.profile) {
+          dashboardLoaded = true;
+          await SuspensionCheckModule.initMemberDashboardCheck();
+          await loadDashboardData(currentUser);
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(checkAndLoad, 200);
+        } else {
+          window.location.href = '/membership.html';
+        }
+      };
+      
+      checkAndLoad();
+    });
+    
+    async function loadDashboardData(user) {
+      try {
+        // Load certificates
+        const certificates = await APIModule.Certificates.getByMember(user.uid);
+        document.getElementById('cert-count').textContent = certificates.length;
+        
+        // Load payments
+        const payments = await APIModule.Payments.getAll({ memberId: user.uid });
+        const stats = await APIModule.Payments.getStats({ memberId: user.uid });
+        document.getElementById('dues-paid').textContent = stats.totalAmount;
+        
+        // Display member since
+        if (user.profile && user.profile.registrationDate) {
+          const regDate = UIModule.formatDate(user.profile.registrationDate, 'short');
+          document.getElementById('member-since').textContent = regDate.split('/')[2];
+        }
+        
+        // Update UI elements
+        if (user.profile) {
+          const userIdElements = document.querySelectorAll('[data-user-id]');
+          userIdElements.forEach(el => el.textContent = user.uid.substring(0, 8).toUpperCase());
+          
+          const userRegionElements = document.querySelectorAll('[data-user-region]');
+          userRegionElements.forEach(el => el.textContent = user.profile.region || 'Not Set');
+          
+          // Update employment status badge
+          const employmentBadge = document.getElementById('employment-status-badge');
+          if (employmentBadge) {
+            const isEmployed = user.profile.employmentStatus === 'Employed';
+            employmentBadge.textContent = isEmployed ? 'Employed' : 'Not Employed';
+            employmentBadge.className = isEmployed ? 'badge badge-success' : 'badge badge-warning';
+          }
+          
+          // ===== MEMBERSHIP RENEWAL STATUS & COUNTDOWN =====
+          updateRenewalStatus(user.profile);
+        }
+        
+        // Render certificates if available
+        if (certificates.length > 0) {
+          renderCertificates(certificates.slice(0, 3));
+        }
+        
+        // Render payments if available
+        if (payments.length > 0) {
+          renderPayments(payments.slice(0, 3));
+        }
+        
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        UIModule.showAlert('Error loading dashboard data', 'error');
+      }
+    }
+    
+    function renderCertificates(certificates) {
+      const container = document.getElementById('certificates-list');
+      container.innerHTML = certificates.map(cert => `
+        <div style="padding: var(--space-2); border: 1px solid var(--color-neutral-90); border-radius: var(--radius-md); margin-bottom: var(--space-2);">
+          <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">${cert.type || 'Certificate'}</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">
+            Issued: ${UIModule.formatDate(cert.issueDate)}
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function renderPayments(payments) {
+      const container = document.getElementById('payments-list');
+      container.innerHTML = payments.map(payment => `
+        <div style="padding: var(--space-2); border: 1px solid var(--color-neutral-90); border-radius: var(--radius-md); margin-bottom: var(--space-2);">
+          <div class="flex-between">
+            <div>
+              <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">${payment.type}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-secondary);">
+                ${UIModule.formatDate(payment.createdAt)}
+              </div>
+              ${payment.status === 'paid' || payment.status === 'completed' ? 
+                `<a href="/payment-receipt.html?id=${payment.id}" target="_blank" class="btn btn-sm btn-outline" style="margin-top: 0.5rem; font-size: 0.75rem; padding: 0.25rem 0.75rem;">
+                  📄 View Receipt
+                </a>` : 
+                ''}
+            </div>
+            <div>
+              <div style="font-weight: var(--font-bold);">${UIModule.formatCurrency(payment.amount)}</div>
+              <span class="badge badge-${payment.status === 'completed' || payment.status === 'paid' ? 'success' : 'warning'}">${payment.status}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // ===== MEMBERSHIP RENEWAL STATUS & COUNTDOWN =====
+    let countdownInterval = null;
+    
+    function updateRenewalStatus(profile) {
+      const statusBadge = document.getElementById('membership-status-badge');
+      const renewalDateSection = document.getElementById('renewal-date-section');
+      const renewalDateDisplay = document.getElementById('renewal-date-display');
+      const countdownSection = document.getElementById('countdown-section');
+      const expiredSection = document.getElementById('expired-section');
+      const pendingSection = document.getElementById('pending-section');
+      
+      // Clear any existing countdown
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+      
+      // Check membership status
+      if (profile.status === 'pending' || !profile.renewalDate) {
+        statusBadge.textContent = 'Pending';
+        statusBadge.className = 'badge badge-warning';
+        pendingSection.style.display = 'block';
+        renewalDateSection.style.display = 'none';
+        countdownSection.style.display = 'none';
+        expiredSection.style.display = 'none';
+        return;
+      }
+      
+      // Get renewal date
+      const renewalDate = profile.renewalDate.toDate ? profile.renewalDate.toDate() : new Date(profile.renewalDate);
+      const now = new Date();
+      
+      // Check if expired
+      if (renewalDate < now) {
+        statusBadge.textContent = 'Expired';
+        statusBadge.className = 'badge badge-error';
+        expiredSection.style.display = 'block';
+        renewalDateSection.style.display = 'block';
+        renewalDateDisplay.textContent = renewalDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        countdownSection.style.display = 'none';
+        pendingSection.style.display = 'none';
+        return;
+      }
+      
+      // Active membership - show countdown
+      statusBadge.textContent = 'Active';
+      statusBadge.className = 'badge badge-success';
+      renewalDateSection.style.display = 'block';
+      renewalDateDisplay.textContent = renewalDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      countdownSection.style.display = 'block';
+      expiredSection.style.display = 'none';
+      pendingSection.style.display = 'none';
+      
+      // Start countdown timer
+      updateCountdown(renewalDate);
+      countdownInterval = setInterval(() => updateCountdown(renewalDate), 60000); // Update every minute
+    }
+    
+    function updateCountdown(targetDate) {
+      const now = new Date();
+      const diff = targetDate - now;
+      
+      if (diff <= 0) {
+        document.getElementById('countdown-display').innerHTML = '<span style=\"color: var(--color-error-40);\">Expired</span>';
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+        // Reload to show expired status
+        location.reload();
+        return;
+      }
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      document.getElementById('days').textContent = days;
+      document.getElementById('hours').textContent = hours;
+      document.getElementById('minutes').textContent = minutes;
+      
+      // Change color if less than 30 days
+      const countdownDisplay = document.getElementById('countdown-display');
+      if (days < 30) {
+        countdownDisplay.style.color = 'var(--color-warning-40)';
+      } else {
+        countdownDisplay.style.color = 'var(--color-primary-40)';
+      }
+    }
+    
+    function signOut() {
+      if (confirm('Are you sure you want to sign out?')) {
+        AuthModule.signOut();
+      }
+    }
+    
+    // Theme Toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      // Update toggle icon
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    // Initialize theme on load
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      // Update icon if dark mode
+      if (savedTheme === 'dark') {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) icon.textContent = '☀️';
+      }
+    })();
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMCAG - Association of Medicine Counter Assistants of Ghana</title>
+  <meta name="description" content="Official portal of the Association of Medicine Counter Assistants of Ghana - National professional association platform">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      
+      <button class="navbar-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <ul class="navbar-menu">
+        <li><a href="/index.html" class="navbar-link active">Home</a></li>
+        <li><a href="/about.html" class="navbar-link">About</a></li>
+        <li><a href="/leadership.html" class="navbar-link">Leadership</a></li>
+        <li><a href="/events.html" class="navbar-link">Events</a></li>
+        <li><a href="/news.html" class="navbar-link">News</a></li>
+        <li><a href="/gallery.html" class="navbar-link">Gallery</a></li>
+        <li><a href="/regions.html" class="navbar-link">Regions</a></li>
+        <li><a href="/contact.html" class="navbar-link">Contact</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="/membership.html" class="navbar-cta">Member Portal</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== HERO START ===== -->
+  <section class="hero" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-secondary-50) 100%); padding: 8rem 0 6rem; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 600'%3E%3Cpath d='M0,300 Q300,200 600,300 T1200,300 L1200,600 L0,600 Z' fill='rgba(255,255,255,0.05)'/%3E%3C/svg%3E&quot;) no-repeat bottom; opacity: 0.6;"></div>
+    <div class="container" style="position: relative; z-index: 1;">
+      <div class="hero-content" style="text-align: center; max-width: 900px; margin: 0 auto; color: white;">
+        <div style="display: inline-block; padding: 0.5rem 1.5rem; background: rgba(255,255,255,0.2); border-radius: 50px; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
+          <span style="font-size: var(--text-sm); font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: 1px;">🇬🇭 Ghana's Premier Healthcare Association</span>
+        </div>
+        <h1 class="hero-title" style="font-size: clamp(2.5rem, 5vw, 4rem); font-weight: var(--font-bold); margin-bottom: 1.5rem; line-height: 1.1; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+          Empowering Medicine Counter Assistants Across Ghana
+        </h1>
+        <p class="hero-subtitle" style="font-size: clamp(1.125rem, 2vw, 1.5rem); margin-bottom: 3rem; color: rgba(255,255,255,0.95); max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+          Uniting healthcare professionals through excellence, advocacy, and digital transformation for quality pharmaceutical care nationwide.
+        </p>
+        <div class="hero-actions" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+          <a href="/membership.html" class="btn btn-lg" style="background: white; color: var(--color-primary-40); padding: 1rem 2.5rem; font-weight: var(--font-semibold); border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 30px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)'">
+            <span>✓</span> Become a Member
+          </a>
+          <a href="/dues.html" class="btn btn-lg" style="background: rgba(255,255,255,0.15); color: white; padding: 1rem 2.5rem; font-weight: var(--font-semibold); border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px); transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.25)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'; this.style.transform='translateY(0)'">
+            <span>💳</span> Pay Dues Online
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== HERO END ===== -->
+
+  <!-- ===== ROLE GATEWAY START ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Access Portals</span>
+        <h2 class="section-title">Choose Your Portal</h2>
+        <p class="section-description">
+          Access role-specific features and resources based on your membership level
+        </p>
+      </div>
+      
+      <div class="grid grid-4">
+        <!-- Public Portal -->
+        <div class="card gateway-card">
+          <div class="card-icon primary">
+            <span>👥</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Public Portal</h3>
+            <p class="card-subtitle">Open Access</p>
+          </div>
+          <div class="card-body">
+            <p>Explore AMCAG's mission, events, news, and verify certificates.</p>
+          </div>
+          <div class="card-footer">
+            <a href="/about.html" class="btn btn-outline btn-sm btn-block">Explore</a>
+          </div>
+        </div>
+        
+        <!-- Member Portal -->
+        <div class="card gateway-card">
+          <div class="card-icon secondary">
+            <span>👤</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Member Portal</h3>
+            <p class="card-subtitle">Members Only</p>
+          </div>
+          <div class="card-body">
+            <p>Access your dashboard, manage dues, view certificates, and more.</p>
+          </div>
+          <div class="card-footer">
+            <a href="/membership.html" class="btn btn-outline btn-sm btn-block">Sign In</a>
+          </div>
+        </div>
+        
+        <!-- Regional Portal -->
+        <div class="card gateway-card">
+          <div class="card-icon success">
+            <span>🏛️</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Regional Portal</h3>
+            <p class="card-subtitle">Regional Executives</p>
+          </div>
+          <div class="card-body">
+            <p>Manage regional members, events, payments, and local governance.</p>
+          </div>
+          <div class="card-footer">
+            <a href="/membership.html" class="btn btn-outline btn-sm btn-block">Access</a>
+          </div>
+        </div>
+        
+        <!-- National Portal -->
+        <div class="card gateway-card">
+          <div class="card-icon warning">
+            <span>🏆</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">National Portal</h3>
+            <p class="card-subtitle">National Executives</p>
+          </div>
+          <div class="card-body">
+            <p>Nationwide oversight, analytics, certificate management, and governance.</p>
+          </div>
+          <div class="card-footer">
+            <a href="/membership.html" class="btn btn-outline btn-sm btn-block">Access</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== ROLE GATEWAY END ===== -->
+
+  <!-- ===== IMPACT STATISTICS START ===== -->
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Our Impact</span>
+        <h2 class="section-title">AMCAG Nationwide</h2>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-value">15,000+</div>
+          <div class="stat-label">Active Members</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">🗺️</div>
+          <div class="stat-value">16</div>
+          <div class="stat-label">Regional Chapters</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">📜</div>
+          <div class="stat-value">12,500+</div>
+          <div class="stat-label">Certificates Issued</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-value">200+</div>
+          <div class="stat-label">Annual Events</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== IMPACT STATISTICS END ===== -->
+
+  <!-- ===== ABOUT AMCAG START ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="grid grid-2" style="align-items: center; gap: var(--space-8);">
+        <div>
+          <span class="section-tag">Who We Are</span>
+          <h2 class="section-title" style="text-align: left; margin-bottom: var(--space-4);">
+            About AMCAG
+          </h2>
+          <p style="color: var(--text-secondary); line-height: var(--line-height-relaxed); margin-bottom: var(--space-3);">
+            The Association of Medicine Counter Assistants of Ghana (AMCAG) is the premier 
+            professional body representing medicine counter assistants across the nation.
+          </p>
+          <p style="color: var(--text-secondary); line-height: var(--line-height-relaxed); margin-bottom: var(--space-3);">
+            We are committed to professional development, ethical practice, and ensuring 
+            quality pharmaceutical care reaches every Ghanaian community.
+          </p>
+          <a href="/about.html" class="btn btn-primary">Learn More About Us</a>
+        </div>
+        
+        <div style="background: var(--color-primary-95); padding: var(--space-6); border-radius: var(--radius-2xl);">
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: var(--space-4);">
+            Our Mission
+          </h3>
+          <p style="color: var(--text-secondary); line-height: var(--line-height-relaxed);">
+            To advance the professional competence of medicine counter assistants, 
+            promote ethical standards, and ensure accessible quality pharmaceutical 
+            services throughout Ghana.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== ABOUT AMCAG END ===== -->
+
+  <!-- ===== SERVICES START ===== -->
+  <section class="section" style="background: linear-gradient(to bottom, white 0%, var(--color-neutral-98) 100%);">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">What We Offer</span>
+        <h2 class="section-title">Professional Services</h2>
+        <p class="section-description">
+          Comprehensive support services for medicine counter assistants across Ghana
+        </p>
+      </div>
+      
+      <div class="grid grid-2" style="gap: var(--space-6);">
+        <!-- Professional Training -->
+        <div class="card" style="border-left: 4px solid var(--color-primary-50); transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 40px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+          <div style="display: flex; align-items: flex-start; gap: var(--space-4);">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--color-primary-40), var(--color-primary-60)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: var(--text-3xl); flex-shrink: 0;">
+              📚
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-2);">Professional Training</h3>
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">
+                Accredited courses, workshops, and certification programs designed to enhance pharmaceutical knowledge and skills.
+              </p>
+              <ul style="list-style: none; padding: 0; color: var(--text-secondary);">
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-primary-50);">✓</span> CPD Certified Programs
+                </li>
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-primary-50);">✓</span> Online & In-Person Sessions
+                </li>
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-primary-50);">✓</span> Expert Facilitators
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Claims Education -->
+        <div class="card" style="border-left: 4px solid var(--color-secondary-50); transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 40px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+          <div style="display: flex; align-items: flex-start; gap: var(--space-4);">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--color-secondary-40), var(--color-secondary-60)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: var(--text-3xl); flex-shrink: 0;">
+              📋
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-2);">Claims & Insurance Education</h3>
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">
+                Comprehensive training on NHIS claims processing, documentation, and compliance requirements.
+              </p>
+              <ul style="list-style: none; padding: 0; color: var(--text-secondary);">
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-secondary-50);">✓</span> NHIS Claims Management
+                </li>
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-secondary-50);">✓</span> Documentation Best Practices
+                </li>
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-secondary-50);">✓</span> Regulatory Updates
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Networking Opportunities -->
+        <div class="card" style="border-left: 4px solid var(--color-success); transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 40px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+          <div style="display: flex; align-items: flex-start; gap: var(--space-4);">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #198754, #51b96a); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: var(--text-3xl); flex-shrink: 0;">
+              🤝
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-2);">Networking Opportunities</h3>
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">
+                Connect with over 15,000 professionals nationwide through events, conferences, and regional chapters.
+              </p>
+              <ul style="list-style: none; padding: 0; color: var(--text-secondary);">
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-success);">✓</span> Annual National Conferences
+                </li>
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-success);">✓</span> Regional Chapter Meetings
+                </li>
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-success);">✓</span> Peer Mentorship Programs
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Welfare Support -->
+        <div class="card" style="border-left: 4px solid var(--color-warning); transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 40px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-sm)'">
+          <div style="display: flex; align-items: flex-start; gap: var(--space-4);">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #fd7e14, #ffa94d); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: var(--text-3xl); flex-shrink: 0;">
+              🛡️
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-2);">Welfare & Support Services</h3>
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">
+                Comprehensive member welfare programs including benefits, emergency support, and advocacy.
+              </p>
+              <ul style="list-style: none; padding: 0; color: var(--text-secondary);">
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-warning);">✓</span> Member Welfare Fund
+                </li>
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-warning);">✓</span> Legal & Professional Advocacy
+                </li>
+                <li style="padding: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: var(--color-warning);">✓</span> Emergency Assistance
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== SERVICES END ===== -->
+
+  <!-- ===== MEMBER BENEFITS START ===== -->
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Why Join</span>
+        <h2 class="section-title">Member Benefits</h2>
+        <p class="section-description">
+          Unlock exclusive benefits and professional development opportunities
+        </p>
+      </div>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-icon primary">
+            <span>📚</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Professional Training</h3>
+          </div>
+          <div class="card-body">
+            <p>Access continuous professional development programs, workshops, and certification courses.</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon secondary">
+            <span>🤝</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Networking</h3>
+          </div>
+          <div class="card-body">
+            <p>Connect with peers nationwide through regional chapters and national events.</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon success">
+            <span>📜</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Official Recognition</h3>
+          </div>
+          <div class="card-body">
+            <p>Receive nationally recognized certification and professional credentials.</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon warning">
+            <span>🛡️</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Advocacy</h3>
+          </div>
+          <div class="card-body">
+            <p>Benefit from collective advocacy for professional rights and standards.</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon primary">
+            <span>📰</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Updates & Resources</h3>
+          </div>
+          <div class="card-body">
+            <p>Stay informed with industry news, guidelines, and professional resources.</p>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon secondary">
+            <span>💼</span>
+          </div>
+          <div class="card-header">
+            <h3 class="card-title">Career Support</h3>
+          </div>
+          <div class="card-body">
+            <p>Access career guidance, job opportunities, and professional mentorship.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== MEMBER BENEFITS END ===== -->
+
+  <!-- ===== ONLINE SERVICES START ===== -->
+  <section class="section" style="background: linear-gradient(135deg, var(--color-primary-95) 0%, var(--color-secondary-95) 50%, var(--color-primary-95) 100%); position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: var(--color-primary-50); opacity: 0.1; border-radius: 50%;"></div>
+    <div style="position: absolute; bottom: -50px; left: -50px; width: 250px; height: 250px; background: var(--color-secondary-50); opacity: 0.1; border-radius: 50%;"></div>
+    
+    <div class="container" style="position: relative; z-index: 1;">
+      <div class="section-header">
+        <span class="section-tag" style="background: rgba(255,255,255,0.9);">🚀 Digital Transformation</span>
+        <h2 class="section-title">Online Services</h2>
+        <p class="section-description">
+          Experience seamless digital services designed for the modern healthcare professional
+        </p>
+      </div>
+      
+      <div class="grid grid-2" style="gap: var(--space-5); max-width: 1000px; margin: 0 auto;">
+        <!-- Member Registration -->
+        <div class="card" style="background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-10px)'; this.style.boxShadow='0 20px 50px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'">
+          <div style="padding: var(--space-5);">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, var(--color-primary-40), var(--color-primary-60)); border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); box-shadow: 0 4px 15px rgba(34, 158, 68, 0.3);">
+              <span style="font-size: var(--text-4xl);">✍️</span>
+            </div>
+            <h3 class="card-title" style="margin-bottom: var(--space-2); font-size: var(--text-xl);">Member Registration</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.6;">
+              Join AMCAG online in minutes. Complete digital registration form with instant verification and e-certificate.
+            </p>
+            <a href="/membership.html" class="btn btn-primary btn-sm" style="width: 100%;">Register Now →</a>
+          </div>
+        </div>
+
+        <!-- Online Dues Payment -->
+        <div class="card" style="background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-10px)'; this.style.boxShadow='0 20px 50px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'">
+          <div style="padding: var(--space-5);">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, var(--color-secondary-40), var(--color-secondary-60)); border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); box-shadow: 0 4px 15px rgba(0, 123, 155, 0.3);">
+              <span style="font-size: var(--text-4xl);">💳</span>
+            </div>
+            <h3 class="card-title" style="margin-bottom: var(--space-2); font-size: var(--text-xl);">Online Dues Payment</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.6;">
+              Secure mobile money and card payments. Instant receipts, payment history, and automated reminders.
+            </p>
+            <a href="/dues.html" class="btn btn-secondary btn-sm" style="width: 100%; background: var(--color-secondary-40); color: white;">Pay Dues →</a>
+          </div>
+        </div>
+
+        <!-- Event Registration -->
+        <div class="card" style="background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-10px)'; this.style.boxShadow='0 20px 50px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'">
+          <div style="padding: var(--space-5);">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #198754, #51b96a); border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);">
+              <span style="font-size: var(--text-4xl);">📅</span>
+            </div>
+            <h3 class="card-title" style="margin-bottom: var(--space-2); font-size: var(--text-xl);">Event Registration</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.6;">
+              Browse and register for conferences, training, and meetings. Digital attendance tracking and certificates.
+            </p>
+            <a href="/events.html" class="btn btn-sm" style="width: 100%; background: var(--color-success); color: white;">View Events →</a>
+          </div>
+        </div>
+
+        <!-- Member Portal -->
+        <div class="card" style="background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-10px)'; this.style.boxShadow='0 20px 50px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 30px rgba(0,0,0,0.08)'">
+          <div style="padding: var(--space-5);">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #fd7e14, #ffa94d); border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); box-shadow: 0 4px 15px rgba(253, 126, 20, 0.3);">
+              <span style="font-size: var(--text-4xl);">🔐</span>
+            </div>
+            <h3 class="card-title" style="margin-bottom: var(--space-2); font-size: var(--text-xl);">Member Verification</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.6;">
+              Public verification portal for employers and institutions. Verify certificates and membership status instantly.
+            </p>
+            <a href="/certificate-verify.html" class="btn btn-sm btn-outline" style="width: 100%;">Verify Certificate →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Member Dashboard Feature Highlight -->
+      <div style="margin-top: var(--space-8); max-width: 800px; margin-left: auto; margin-right: auto; background: white; border-radius: var(--radius-2xl); padding: var(--space-6); box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+        <div style="text-align: center; margin-bottom: var(--space-4);">
+          <span style="display: inline-block; padding: 0.5rem 1.5rem; background: linear-gradient(135deg, var(--color-primary-40), var(--color-secondary-40)); color: white; border-radius: 50px; font-weight: var(--font-semibold); margin-bottom: var(--space-3);">
+            ⭐ Member Dashboard
+          </span>
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: var(--space-2);">Your Personal Command Center</h3>
+          <p style="color: var(--text-secondary);">Access everything you need in one secure, personalized dashboard</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+          <div style="text-align: center; padding: var(--space-3);">
+            <div style="font-size: var(--text-3xl); margin-bottom: var(--space-2);">💰</div>
+            <div style="font-weight: var(--font-semibold); margin-bottom: 0.25rem;">Payment History</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">View & download receipts</div>
+          </div>
+          <div style="text-align: center; padding: var(--space-3);">
+            <div style="font-size: var(--text-3xl); margin-bottom: var(--space-2);">👤</div>
+            <div style="font-weight: var(--font-semibold); margin-bottom: 0.25rem;">Profile Management</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">Update info anytime</div>
+          </div>
+          <div style="text-align: center; padding: var(--space-3);">
+            <div style="font-size: var(--text-3xl); margin-bottom: var(--space-2);">🔔</div>
+            <div style="font-weight: var(--font-semibold); margin-bottom: 0.25rem;">Notifications</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">Real-time updates</div>
+          </div>
+          <div style="text-align: center; padding: var(--space-3);">
+            <div style="font-size: var(--text-3xl); margin-bottom: var(--space-2);">📜</div>
+            <div style="font-weight: var(--font-semibold); margin-bottom: 0.25rem;">Certificates</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">Digital credentials</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== ONLINE SERVICES END ===== -->
+
+  <!-- ===== LEADERSHIP START ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Leadership</span>
+        <h2 class="section-title">National Executives</h2>
+        <p class="section-description">
+          Meet the dedicated leaders guiding AMCAG's national vision
+        </p>
+      </div>
+      
+      <div class="grid grid-3">
+        <div class="card text-center">
+          <div style="width: 120px; height: 120px; margin: 0 auto var(--space-3); background: var(--color-neutral-90); border-radius: var(--radius-full);"></div>
+          <h3 class="card-title">National President</h3>
+          <p class="card-subtitle">Leadership</p>
+        </div>
+        
+        <div class="card text-center">
+          <div style="width: 120px; height: 120px; margin: 0 auto var(--space-3); background: var(--color-neutral-90); border-radius: var(--radius-full);"></div>
+          <h3 class="card-title">National Secretary</h3>
+          <p class="card-subtitle">Administration</p>
+        </div>
+        
+        <div class="card text-center">
+          <div style="width: 120px; height: 120px; margin: 0 auto var(--space-3); background: var(--color-neutral-90); border-radius: var(--radius-full);"></div>
+          <h3 class="card-title">National Treasurer</h3>
+          <p class="card-subtitle">Finance</p>
+        </div>
+      </div>
+      
+      <div class="text-center mt-6">
+        <a href="/leadership.html" class="btn btn-outline">View Full Leadership</a>
+      </div>
+    </div>
+  </section>
+  <!-- ===== LEADERSHIP END ===== -->
+
+  <!-- ===== EVENTS & NEWS START ===== -->
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="grid grid-2" style="gap: var(--space-8);">
+        <!-- Events -->
+        <div>
+          <div class="flex-between mb-4">
+            <h2 class="section-title" style="margin: 0;">Upcoming Events</h2>
+            <a href="/events.html" class="btn btn-sm btn-outline">View All</a>
+          </div>
+          
+          <div class="flex-col gap-3">
+            <div class="card">
+              <div class="flex gap-3">
+                <div style="background: var(--color-primary-40); color: white; padding: var(--space-2); border-radius: var(--radius-lg); text-align: center; min-width: 60px;">
+                  <div style="font-size: var(--text-2xl); font-weight: var(--font-bold);">15</div>
+                  <div style="font-size: var(--text-xs);">MAR</div>
+                </div>
+                <div style="flex: 1;">
+                  <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Annual General Meeting</h4>
+                  <p style="font-size: var(--text-sm); color: var(--text-secondary);">Accra International Conference Centre</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="flex gap-3">
+                <div style="background: var(--color-secondary-50); color: white; padding: var(--space-2); border-radius: var(--radius-lg); text-align: center; min-width: 60px;">
+                  <div style="font-size: var(--text-2xl); font-weight: var(--font-bold);">22</div>
+                  <div style="font-size: var(--text-xs);">MAR</div>
+                </div>
+                <div style="flex: 1;">
+                  <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Professional Development Workshop</h4>
+                  <p style="font-size: var(--text-sm); color: var(--text-secondary);">Kumasi Regional Office</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- News -->
+        <div>
+          <div class="flex-between mb-4">
+            <h2 class="section-title" style="margin: 0;">Latest News</h2>
+            <a href="/news.html" class="btn btn-sm btn-outline">View All</a>
+          </div>
+          
+          <div class="flex-col gap-3">
+            <div class="card">
+              <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-2);">
+                New Certification Program Launched
+              </h4>
+              <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">
+                AMCAG introduces advanced certification pathway for experienced professionals...
+              </p>
+              <div style="font-size: var(--text-xs); color: var(--text-tertiary);">2 days ago</div>
+            </div>
+            
+            <div class="card">
+              <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-2);">
+                Partnership with Ministry of Health
+              </h4>
+              <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">
+                Strengthening collaboration for improved pharmaceutical care delivery...
+              </p>
+              <div style="font-size: var(--text-xs); color: var(--text-tertiary);">5 days ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== EVENTS & NEWS END ===== -->
+
+  <!-- ===== CERTIFICATE VERIFICATION START ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="grid grid-2" style="align-items: center; gap: var(--space-8);">
+        <div>
+          <span class="section-tag">Verification</span>
+          <h2 class="section-title" style="text-align: left; margin-bottom: var(--space-4);">
+            Verify Certificates
+          </h2>
+          <p style="color: var(--text-secondary); line-height: var(--line-height-relaxed); margin-bottom: var(--space-4);">
+            Verify the authenticity of AMCAG-issued certificates instantly using our secure verification system.
+          </p>
+          <a href="/certificate-verify.html" class="btn btn-primary">Verify Certificate</a>
+        </div>
+        
+        <div class="card" style="background: var(--color-secondary-99);">
+          <div class="card-icon secondary" style="margin: 0 auto;">
+            <span style="font-size: var(--text-4xl);">🔐</span>
+          </div>
+          <div class="text-center mt-4">
+            <h3 style="font-size: var(--text-xl); font-weight: var(--font-semibold); margin-bottom: var(--space-2);">
+              Secure & Instant
+            </h3>
+            <p style="color: var(--text-secondary);">
+              Enter certificate ID to verify credentials in seconds
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== CERTIFICATE VERIFICATION END ===== -->
+
+  <!-- ===== FOOTER START ===== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <!-- About Section -->
+        <div class="footer-section">
+          <h4>About AMCAG</h4>
+          <p style="color: var(--color-neutral-80); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">
+            The Association of Medicine Counter Assistants of Ghana is dedicated to professional 
+            excellence and quality pharmaceutical care nationwide.
+          </p>
+          <div class="footer-social">
+            <a href="#" class="social-link" aria-label="Facebook">f</a>
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="Instagram">📷</a>
+          </div>
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="/about.html">About Us</a></li>
+            <li><a href="/leadership.html">Leadership</a></li>
+            <li><a href="/membership.html">Membership</a></li>
+            <li><a href="/events.html">Events</a></li>
+            <li><a href="/news.html">News</a></li>
+          </ul>
+        </div>
+        
+        <!-- Resources -->
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="/gallery.html">Gallery</a></li>
+            <li><a href="/videos.html">Videos</a></li>
+            <li><a href="/certificate-verify.html">Verify Certificate</a></li>
+            <li><a href="/regions.html">Regional Chapters</a></li>
+          </ul>
+        </div>
+        
+        <!-- Contact -->
+        <div class="footer-section">
+          <h4>Contact Us</h4>
+          <ul class="footer-links">
+            <li style="color: var(--color-neutral-80);">📍 Accra, Ghana</li>
+            <li style="color: var(--color-neutral-80);">📧 info@amcag.org.gh</li>
+            <li style="color: var(--color-neutral-80);">📞 +233 XX XXX XXXX</li>
+            <li><a href="/contact.html">Contact Form</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2026 Association of Medicine Counter Assistants of Ghana (AMCAG). All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+  <!-- ===== FOOTER END ===== -->
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+  
+  <!-- Mobile Menu Toggle -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const navbarToggle = document.querySelector('.navbar-toggle');
+      const navbarMenu = document.querySelector('.navbar-menu');
+      
+      if (navbarToggle && navbarMenu) {
+        navbarToggle.addEventListener('click', () => {
+          navbarMenu.classList.toggle('active');
+          navbarToggle.classList.toggle('active');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.navbar-container')) {
+            navbarMenu.classList.remove('active');
+            navbarToggle.classList.remove('active');
+          }
+        });
+      }
+    });
+    
+    // Theme Toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      // Update toggle icon
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    // Initialize theme on load
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      // Update icon if dark mode
+      if (savedTheme === 'dark') {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) icon.textContent = '☀️';
+      }
+    })();
+  </script>
+</body>
+</html>

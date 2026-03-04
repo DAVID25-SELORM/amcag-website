@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment History | AMCAG Member Portal</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Member Portal</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm btn-outline" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/profile.html" class="dashboard-nav-item">
+          <span>👤</span> My Profile
+        </a>
+        <a href="/certificates.html" class="dashboard-nav-item">
+          <span>📜</span> Certificates
+        </a>
+        <a href="/dues.html" class="dashboard-nav-item">
+          <span>💳</span> Dues Payment
+        </a>
+        <a href="/payments.html" class="dashboard-nav-item active">
+          <span>💰</span> Payment History
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Payment History</h1>
+          <p class="dashboard-subtitle">View all your payment transactions</p>
+        </div>
+        <div>
+          <button class="btn btn-outline">Export PDF</button>
+        </div>
+      </div>
+
+      <div class="grid grid-3 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value">GHS 1,240</div>
+          <div class="stat-label">Total Paid</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">8</div>
+          <div class="stat-label">Transactions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">GHS 150</div>
+          <div class="stat-label">Pending</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">All Transactions</h3>
+          <div class="flex gap-2">
+            <select class="form-input" style="width: auto;" id="filterType">
+              <option value="">All Types</option>
+              <option value="dues">Dues</option>
+              <option value="contribution">Contributions</option>
+              <option value="event">Events</option>
+            </select>
+            <select class="form-input" style="width: auto;" id="filterStatus">
+              <option value="">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="payments-table">
+              <tr>
+                <td>#PAY-2025-001</td>
+                <td><span class="badge badge-primary">Dues</span></td>
+                <td>Annual Membership Dues 2025</td>
+                <td>GHS 150.00</td>
+                <td>Jan 15, 2025</td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Receipt</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#PAY-2024-087</td>
+                <td><span class="badge badge-secondary">Contribution</span></td>
+                <td>Building Fund Contribution</td>
+                <td>GHS 200.00</td>
+                <td>Nov 20, 2024</td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Receipt</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#PAY-2024-045</td>
+                <td><span class="badge badge-accent">Event</span></td>
+                <td>AGM Registration Fee</td>
+                <td>GHS 50.00</td>
+                <td>Oct 10, 2024</td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Receipt</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#PAY-2024-012</td>
+                <td><span class="badge badge-primary">Dues</span></td>
+                <td>Annual Membership Dues 2024</td>
+                <td>GHS 120.00</td>
+                <td>Feb 20, 2024</td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline">Receipt</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="pagination-btn" disabled>Previous</button>
+          <button class="pagination-btn active">1</button>
+          <button class="pagination-btn">2</button>
+          <button class="pagination-btn">Next</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    async function loadPayments(user) {
+      try {
+        const payments = await APIModule.Payments.getAll({ memberId: user.uid });
+        // Render payments dynamically here
+      } catch (error) {
+        UIModule.showAlert('Error loading payments', 'error');
+      }
+    }
+
+    AuthModule.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+      } else {
+        loadPayments(user);
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

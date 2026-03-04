@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regional Chapter | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <ul class="navbar-menu">
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><a href="/about.html" class="navbar-link">About</a></li>
+        <li><a href="/leadership.html" class="navbar-link">Leadership</a></li>
+        <li><a href="/events.html" class="navbar-link">Events</a></li>
+        <li><a href="/news.html" class="navbar-link">News</a></li>
+        <li><a href="/gallery.html" class="navbar-link">Gallery</a></li>
+        <li><a href="/regions.html" class="navbar-link active">Regions</a></li>
+        <li><a href="/contact.html" class="navbar-link">Contact</a></li>
+        <li><a href="/membership.html" class="navbar-cta">Member Portal</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="hero" style="padding: var(--space-10) 0 var(--space-8);">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title" id="region-name">Loading...</h1>
+        <p class="hero-subtitle">Regional chapter information and contact details</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="grid grid-3 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="members-count">-</div>
+          <div class="stat-label">Total Members</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="events-count">-</div>
+          <div class="stat-label">Events This Year</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="active-rate">-</div>
+          <div class="stat-label">Active Rate</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2 gap-6">
+        <div class="card">
+          <h3 class="card-title mb-4">Regional Leadership</h3>
+          <div id="leadership-list">
+            <div style="padding: var(--space-3); background: var(--surface); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
+              <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Regional President</h4>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm);">TBA</p>
+            </div>
+            <div style="padding: var(--space-3); background: var(--surface); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
+              <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Regional Secretary</h4>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm);">TBA</p>
+            </div>
+            <div style="padding: var(--space-3); background: var(--surface); border-radius: var(--radius-md);">
+              <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Regional Treasurer</h4>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm);">TBA</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title mb-4">Contact Information</h3>
+          <div id="contact-info">
+            <div style="margin-bottom: var(--space-3);">
+              <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">📍 Address</div>
+              <p id="region-address">Loading...</p>
+            </div>
+            <div style="margin-bottom: var(--space-3);">
+              <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">📞 Phone</div>
+              <p id="region-phone">Loading...</p>
+            </div>
+            <div>
+              <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">📧 Email</div>
+              <p id="region-email">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script>
+    // Map of Ghana regions with default information
+    const ghanaRegions = {
+      'greater-accra': 'Greater Accra',
+      'ashanti': 'Ashanti',
+      'central': 'Central',
+      'eastern': 'Eastern',
+      'northern': 'Northern',
+      'western': 'Western',
+      'volta': 'Volta',
+      'upper-east': 'Upper East',
+      'upper-west': 'Upper West',
+      'bono': 'Bono',
+      'bono-east': 'Bono East',
+      'ahafo': 'Ahafo',
+      'western-north': 'Western North',
+      'savannah': 'Savannah',
+      'north-east': 'North East',
+      'oti': 'Oti'
+    };
+
+    async function loadRegion() {
+      const params = new URLSearchParams(window.location.search);
+      const regionId = params.get('id');
+      
+      if (!regionId) {
+        document.getElementById('region-name').textContent = 'Region Not Found';
+        UIModule.showAlert('No region specified', 'error');
+        return;
+      }
+
+      try {
+        const db = FirebaseModule.db();
+        let regionData = null;
+        const regionName = ghanaRegions[regionId] || regionId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Try to load from Firestore
+        try {
+          const doc = await db.collection('regions').doc(regionId).get();
+          if (doc.exists) {
+            regionData = { id: doc.id, ...doc.data() };
+          }
+        } catch (firestoreError) {
+          console.warn('Could not load region from Firestore:', firestoreError);
+        }
+        
+        // If no data from Firestore, use default values
+        if (!regionData) {
+          regionData = {
+            name: regionName,
+            address: 'Contact national office for regional address',
+            phone: '+233 XX XXX XXXX',
+            email: `${regionId}@amcag.org.gh`
+          };
+        }
+        
+        // Update page with region information
+        document.getElementById('region-name').textContent = regionData.name || regionName;
+        
+        // Load member count
+        try {
+          const membersSnapshot = await db.collection('users')
+            .where('region', '==', regionData.name)
+            .get();
+          document.getElementById('members-count').textContent = membersSnapshot.size.toLocaleString();
+        } catch (error) {
+          document.getElementById('members-count').textContent = '-';
+        }
+        
+        // Load events count for this year
+        try {
+          const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+          const eventsSnapshot = await db.collection('events')
+            .where('region', '==', regionData.name)
+            .where('eventDate', '>=', startOfYear)
+            .get();
+          document.getElementById('events-count').textContent = eventsSnapshot.size;
+        } catch (error) {
+          document.getElementById('events-count').textContent = '-';
+        }
+        
+        // Calculate active rate
+        try {
+          const allMembers = await db.collection('users')
+            .where('region', '==', regionData.name)
+            .get();
+          const activeMembers = allMembers.docs.filter(doc => doc.data().status === 'active');
+          const rate = allMembers.size > 0 ? Math.round((activeMembers.length / allMembers.size) * 100) : 0;
+          document.getElementById('active-rate').textContent = rate + '%';
+        } catch (error) {
+          document.getElementById('active-rate').textContent = '-';
+        }
+        
+        // Update contact information
+        document.getElementById('region-address').textContent = regionData.address || 'TBA';
+        document.getElementById('region-phone').textContent = regionData.phone || 'TBA';
+        document.getElementById('region-email').textContent = regionData.email || 'TBA';
+        
+        // Load regional leadership if available
+        if (regionData.leadership) {
+          loadLeadership(regionData.leadership);
+        }
+        
+      } catch (error) {
+        console.error('Error loading region:', error);
+        
+        // Still show the region name even if there's an error
+        const regionName = ghanaRegions[regionId] || regionId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        document.getElementById('region-name').textContent = regionName + ' Region';
+        document.getElementById('region-address').textContent = 'Contact national office for information';
+        document.getElementById('region-phone').textContent = '+233 XX XXX XXXX';
+        document.getElementById('region-email').textContent = `${regionId}@amcag.org.gh`;
+      }
+    }
+    
+    function loadLeadership(leadership) {
+      const leadershipList = document.getElementById('leadership-list');
+      if (leadership && Array.isArray(leadership)) {
+        leadershipList.innerHTML = leadership.map(leader => `
+          <div style="padding: var(--space-3); background: var(--surface); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
+            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${leader.position}</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm);">${leader.name || 'TBA'}</p>
+          </div>
+        `).join('');
+      }
+    }
+    
+    loadRegion();
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

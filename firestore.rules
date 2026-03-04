@@ -1,0 +1,385 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check user role
+    function isRole(role) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+    
+    function hasAnyRole(roles) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+    }
+    
+    // Helper to check if user can approve members
+    function canApproveMembership() {
+      return request.auth != null && (
+        hasAnyRole(['super_admin', 'national_executive']) ||
+        (isRole('regional_executive') && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.canApproveMembership == true)
+      );
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null; // Allow registration
+      
+      // Allow updates by user themselves (own profile) or admins
+      allow update: if request.auth.uid == userId || 
+                       hasAnyRole(['super_admin', 'national_executive']) ||
+                       // Regional execs can update if approving members in their region
+                       (isRole('regional_executive') && 
+                        resource.data.status == 'pending' && 
+                        request.resource.data.status == 'active' &&
+                        canApproveMembership() &&
+                        resource.data.region == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.region);
+      
+      allow delete: if hasAnyRole(['super_admin']);
+    }
+    
+    // Members collection
+    match /members/{memberId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null; // Allow on registration
+      
+      // Allow updates by executives who can approve
+      allow update: if hasAnyRole(['super_admin', 'national_executive', 'regional_executive']) ||
+                       canApproveMembership();
+      
+      allow delete: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // Regions collection
+    match /regions/{regionId} {
+      allow read: if true; // Public read
+      
+      // Write access for national executives (for approval permissions)
+      allow write: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // Events collection
+    match /events/{eventId} {
+      allow read: if true; // Public read
+      allow create: if request.auth != null;
+      allow update, delete: if hasAnyRole(['super_admin', 'national_executive', 'regional_executive']);
+    }
+    
+    // Payments collection
+    match /payments/{paymentId} {
+      // Read: User can read their own payments, executives can read all
+      allow read: if request.auth != null && (
+        resource.data.uid == request.auth.uid ||
+        hasAnyRole(['super_admin', 'national_executive', 'regional_executive'])
+      );
+      
+      // Create: Members can create their own payments through Cloud Functions
+      // Direct creation is blocked - must use processDuesPayment function
+      allow create: if false; // Only Cloud Functions can create payments
+      
+      // Update: Only admins can update payments (for corrections/waivers)
+      allow update: if hasAnyRole(['super_admin', 'national_executive']) ||
+                       (isRole('regional_executive') && 
+                        resource.data.region == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.region &&
+                        request.resource.data.status == 'waived'); // Regional can waive
+      
+      allow delete: if hasAnyRole(['super_admin']);
+    }
+    
+    // Certificates collection (public read for verification)
+    match /certificates/{certId} {
+      allow read: if true; // Public verification
+      allow write: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // News and announcements (public read)
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if hasAnyRole(['super_admin', 'national_executive', 'regional_executive']);
+    }
+    
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // Gallery and videos (public read)
+    match /gallery/{photoId} {
+      allow read: if true;
+      allow write: if hasAnyRole(['super_admin', 'national_executive', 'regional_executive']);
+    }
+    
+    match /videos/{videoId} {
+      allow read: if true;
+      allow write: if hasAnyRole(['super_admin', 'national_executive', 'regional_executive']);
+    }
+    
+    // Leadership (public read)
+    match /leadership/{leaderId} {
+      allow read: if true;
+      allow write: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // Leadership Terms - Election tracking
+    match /leadership_terms/{termId} {
+      allow read: if request.auth != null; // All authenticated users can view terms
+      allow create: if hasAnyRole(['super_admin', 'national_executive']);
+      allow update: if hasAnyRole(['super_admin', 'national_executive']);
+      allow delete: if hasAnyRole(['super_admin']);
+    }
+    
+    // Committees collection
+    match /committees/{committeeId} {
+      allow read: if request.auth != null;
+      allow write: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // Dues collection
+    match /dues/{duesId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // Contributions collection
+    match /contributions/{contributionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // ===== SECURITY COMMAND CENTER COLLECTIONS =====
+    
+    // Security Events - Append-only audit log
+    match /security_events/{eventId} {
+      allow read: if hasAnyRole(['super_admin']);
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Security Alerts - System-generated alerts
+    match /security_alerts/{alertId} {
+      allow read: if hasAnyRole(['super_admin']);
+      allow create: if false; // Only Cloud Functions
+      allow update: if hasAnyRole(['super_admin']); // Allow ack/resolve
+      allow delete: if hasAnyRole(['super_admin']);
+    }
+    
+    // Security Profiles - Admin risk profiles
+    match /security_profiles/{profileId} {
+      allow read: if hasAnyRole(['super_admin']);
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Security Controls - Kill switches
+    match /security_controls/{controlId} {
+      allow read: if hasAnyRole(['super_admin']);
+      allow write: if hasAnyRole(['super_admin']); // Admins can block/unblock
+    }
+    
+    // Security Settings - Configurable thresholds
+    match /security_settings/{settingId} {
+      allow read: if hasAnyRole(['super_admin']);
+      allow write: if hasAnyRole(['super_admin']);
+    }
+    
+    // Audit Logs - Comprehensive action logs
+    match /audit_logs/{logId} {
+      allow read: if hasAnyRole(['super_admin', 'national_executive']);
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Admin Security - Rate limiting data
+    match /admin_security/{adminId} {
+      allow read: if hasAnyRole(['super_admin']);
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Notifications - User notifications
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && 
+                     resource.data.uid == request.auth.uid;
+      allow create: if false; // Only Cloud Functions
+      allow update: if request.auth != null && 
+                       resource.data.uid == request.auth.uid; // Allow marking as read
+      allow delete: if request.auth != null && 
+                       resource.data.uid == request.auth.uid;
+    }
+    
+    // System Logs - Automated system logs (cron jobs, scheduled tasks)
+    match /system_logs/{logId} {
+      allow read: if hasAnyRole(['super_admin', 'national_executive']);
+      allow write: if false; // Only Cloud Functions and scheduled tasks
+    }
+    
+    // Waiver Requests - Member waiver requests for overdue dues
+    match /waiver_requests/{requestId} {
+      // Read: Members can read their own requests, regional execs can read requests from their region, national execs can read all
+      allow read: if request.auth != null && (
+        resource.data.memberUid == request.auth.uid ||
+        (isRole('regional_executive') && 
+         resource.data.region == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.region) ||
+        hasAnyRole(['super_admin', 'national_executive'])
+      );
+      
+      // Create: Members can create their own waiver requests
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.memberUid &&
+                       request.resource.data.status == 'pending';
+      
+      // Update: Only Cloud Functions can update (review approval/rejection)
+      allow update: if false; // Must use reviewWaiverRequest Cloud Function
+      
+      allow delete: if hasAnyRole(['super_admin']);
+    }
+    
+    // Suspensions - User and regional suspensions (Super Admin only)
+    match /suspensions/{suspensionId} {
+      // Read: Super admins can read all, users can read their own suspensions
+      allow read: if request.auth != null && (
+        hasAnyRole(['super_admin', 'national_executive']) ||
+        resource.data.targetUid == request.auth.uid
+      );
+      
+      // Write: Only Cloud Functions can create/update suspensions
+      allow create: if false; // Must use suspendUser/suspendRegion Cloud Functions
+      allow update: if false; // Must use unsuspendUser/unsuspendRegion Cloud Functions
+      
+      allow delete: if hasAnyRole(['super_admin']);
+    }
+    
+    // ===== DONATION SYSTEM COLLECTIONS =====
+    
+    // Donations - Monetary and material donations
+    match /donations/{donationId} {
+      // Read: Donors can read their own donations, regional execs can read donations from their region, national execs can read all
+      // Public visibility donations can be read by anyone when visibility is public
+      allow read: if request.auth != null && (
+        resource.data.donorId == request.auth.uid ||
+        (isRole('regional_executive') && 
+         resource.data.donorRegion == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.region) ||
+        hasAnyRole(['super_admin', 'national_executive']) ||
+        (resource.data.visibility == 'public' && resource.data.status in ['confirmed', 'distributed']) ||
+        (resource.data.visibility == 'members_only' && resource.data.status in ['confirmed', 'distributed'])
+      );
+      
+      // Create: Only through submitDonation Cloud Function
+      allow create: if false; // Must use submitDonation callable function
+      
+      // Update: Only Cloud Functions can update (for confirmation and distribution)
+      allow update: if false; // Must use confirmDonationReceipt or recordDonationDistribution functions
+      
+      allow delete: if hasAnyRole(['super_admin']);
+    }
+    
+    // Donation Campaigns - Fundraising campaigns
+    match /donation_campaigns/{campaignId} {
+      // Read: Public campaigns are readable by all, restricted campaigns by authenticated users
+      allow read: if (resource.data.visibility == 'public') || 
+                     (request.auth != null && resource.data.visibility == 'members_only') ||
+                     (request.auth != null && hasAnyRole(['super_admin', 'national_executive', 'regional_executive']));
+      
+      // Create: National executives can create campaigns
+      allow create: if hasAnyRole(['super_admin', 'national_executive']);
+      
+      // Update: Campaign creators and national executives can update
+      allow update: if hasAnyRole(['super_admin', 'national_executive']) ||
+                       (request.auth != null && resource.data.createdBy == request.auth.uid);
+      
+      allow delete: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+    
+    // Distribution Records - Photos and details of donation distributions
+    match /distributions/{distributionId} {
+      // Read: Same visibility as donations
+      allow read: if request.auth != null && (
+        resource.data.donorId == request.auth.uid ||
+        hasAnyRole(['super_admin', 'national_executive', 'regional_executive']) ||
+        (resource.data.visibility == 'public') ||
+        (resource.data.visibility == 'members_only')
+      );
+      
+      // Create: Only Cloud Functions can create distribution records
+      allow create: if false; // Must use recordDonationDistribution function
+      
+      // Update: Regional and national execs can update distributions in their region
+      allow update: if hasAnyRole(['super_admin', 'national_executive']) ||
+                       (isRole('regional_executive') && 
+                        resource.data.region == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.region);
+      
+      allow delete: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+
+    // ===== MEETINGS COLLECTION =====
+    match /meetings/{meetingId} {
+      // Read rules based on visibility
+      allow read: if isAuthenticated() && (
+        // Public meetings
+        resource.data.visibility == 'public' ||
+        // Members-only meetings
+        (resource.data.visibility == 'members' && isAuthenticated()) ||
+        // Executives-only meetings
+        (resource.data.visibility == 'executives' && hasAnyRole(['regional_secretary', 'national_executive', 'super_admin'])) ||
+        // National meetings - national executives only
+        (resource.data.type == 'national' && hasRole('national_executive')) ||
+        // Regional meetings - same region or national exec
+        (resource.data.type == 'regional' && (
+          isSameRegion(resource.data.region) || 
+          hasAnyRole(['national_executive', 'super_admin'])
+        )) ||
+        // Meeting host
+        resource.data.hostUid == request.auth.uid
+      );
+      
+      // Create: Only through Cloud Function
+      allow create: if false;
+      
+      // Update: Only host, regional secretary, or national exec
+      allow update: if isAuthenticated() && (
+        resource.data.hostUid == request.auth.uid ||
+        (hasRole('regional_secretary') && resource.data.type == 'regional' && isSameRegion(resource.data.region)) ||
+        hasAnyRole(['national_executive', 'super_admin'])
+      );
+      
+      // Delete: Only host or national exec
+      allow delete: if isAuthenticated() && (
+        resource.data.hostUid == request.auth.uid ||
+        hasAnyRole(['national_executive', 'super_admin'])
+      );
+    }
+
+    // ===== MEETING ATTENDANCE COLLECTION =====
+    match /meeting_attendance/{attendanceId} {
+      // Read: Meeting host, attendees, and admins
+      allow read: if isAuthenticated();
+      
+      // Create: Authenticated users can track their own attendance
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Update/Delete: Only admins
+      allow update, delete: if hasAnyRole(['national_executive', 'super_admin']);
+    }
+
+    // ===== MEETING NOTES COLLECTION =====
+    match /meeting_notes/{noteId} {
+      // Read: Meeting participants and admins
+      allow read: if isAuthenticated();
+      
+      // Create: Authenticated users can create notes
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Update: Only note creator or admins
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasAnyRole(['national_executive', 'super_admin'])
+      );
+      
+      // Delete: Only note creator or admins
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        hasAnyRole(['national_executive', 'super_admin'])
+      );
+    }
+  }
+}

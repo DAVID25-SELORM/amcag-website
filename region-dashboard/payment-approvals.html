@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Approvals | AMCAG Regional Dashboard</title>
+  
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/region-dashboard/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Regional</span>
+      </a>
+      
+      <ul class="navbar-menu" style="margin-left: auto;">
+        <li><a href="/region-dashboard/index.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/region-dashboard/payment-approvals.html" class="navbar-link active">Payments</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Header -->
+  <section class="section-sm" style="background: var(--gradient-primary); color: white;">
+    <div class="container">
+      <h1 style="font-family: var(--font-display); font-size: var(--text-5xl); font-weight: var(--font-bold); margin-bottom: var(--space-2);">
+        💳 Payment Approvals
+      </h1>
+      <p style="font-size: var(--text-xl); opacity: 0.95;">
+        Review and approve pending manual payments
+      </p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="section">
+    <div class="container">
+      
+      <!-- Stats -->
+      <div class="grid grid-3 gap-4 mb-6">
+        <div class="card">
+          <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-warning);" id="pendingCount">0</div>
+          <div style="color: var(--text-secondary); margin-top: var(--space-1);">Pending Approval</div>
+        </div>
+        <div class="card">
+          <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-success);" id="approvedCount">0</div>
+          <div style="color: var(--text-secondary); margin-top: var(--space-1);">Approved This Month</div>
+        </div>
+        <div class="card">
+          <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-primary);">GHS <span id="totalPending">0.00</span></div>
+          <div style="color: var(--text-secondary); margin-top: var(--space-1);">Total Pending Amount</div>
+        </div>
+      </div>
+
+      <!-- Pending Payments -->
+      <div class="card mb-6">
+        <h3 class="card-title mb-4">Pending Payments</h3>
+        
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Month/Year</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reference</th>
+                <th>Date Requested</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pendingPaymentsTable">
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 3rem;">
+                  Loading pending payments...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recently Processed -->
+      <div class="card">
+        <h3 class="card-title mb-4">Recently Processed</h3>
+        
+        <div class="table-container">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Month/Year</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Processed By</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="processedPaymentsTable">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem;">
+                  Loading recent payments...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    window.AuthModule.requireAnyRole(['regional_executive', 'national_executive', 'super_admin']);
+
+    let currentUserData = null;
+    let approveManualPaymentFunction = null;
+
+    // Initialize Cloud Functions
+    firebase.auth().onAuthStateChanged(user => {
+      if (user && !approveManualPaymentFunction) {
+        const functions = firebase.functions();
+        approveManualPaymentFunction = functions.httpsCallable('approveManualPayment');
+      }
+    });
+
+    // Load data
+    async function loadPayments() {
+      try {
+        UIModule.showLoader('Loading payments...');
+        
+        const db = firebase.firestore();
+        const user = firebase.auth().currentUser;
+        
+        // Get current user data
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        currentUserData = userDoc.data();
+
+        // Build query based on role
+        let pendingQuery = db.collection('payments')
+          .where('type', '==', 'monthly_dues')
+          .where('status', '==', 'pending')
+          .orderBy('createdAt', 'desc');
+
+        // Regional executives see only their region
+        if (currentUserData.role === 'regional_executive') {
+          pendingQuery = pendingQuery.where('region', '==', currentUserData.region);
+        }
+
+        const pendingSnapshot = await pendingQuery.get();
+        const pendingPayments = pendingSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Get recently processed (last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        let processedQuery = db.collection('payments')
+          .where('type', '==', 'monthly_dues')
+          .where('status', 'in', ['paid', 'rejected'])
+          .where('approvedAt', '>=', firebase.firestore.Timestamp.fromDate(thirtyDaysAgo))
+          .orderBy('approvedAt', 'desc')
+          .limit(20);
+
+        if (currentUserData.role === 'regional_executive') {
+          processedQuery = processedQuery.where('region', '==', currentUserData.region);
+        }
+
+        const processedSnapshot = await processedQuery.get();
+        const processedPayments = processedSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Update stats
+        updateStats(pendingPayments, processedPayments);
+
+        // Render tables
+        renderPendingPayments(pendingPayments);
+        renderProcessedPayments(processedPayments);
+
+        UIModule.hideLoader();
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading payments:', error);
+        UIModule.showAlert('Error loading payments: ' + error.message, 'error');
+      }
+    }
+
+    // Update statistics
+    function updateStats(pending, processed) {
+      const pendingCount = pending.length;
+      const approvedCount = processed.filter(p => p.status === 'paid').length;
+      const totalPending = pending.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      document.getElementById('pendingCount').textContent = pendingCount;
+      document.getElementById('approvedCount').textContent = approvedCount;
+      document.getElementById('totalPending').textContent = totalPending.toFixed(2);
+    }
+
+    // Render pending payments
+    function renderPendingPayments(payments) {
+      const tbody = document.getElementById('pendingPaymentsTable');
+      
+      if (payments.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+              ✅ No pending payments
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = payments.map(payment => {
+        const createdDate = payment.createdAt ? 
+          new Date(payment.createdAt.toDate()).toLocaleDateString() : 'N/A';
+
+        return `
+          <tr>
+            <td>
+              <strong>${payment.memberName || 'Unknown'}</strong><br>
+              <span style="font-size: var(--text-xs); color: var(--text-secondary);">${payment.memberId || 'N/A'}</span>
+            </td>
+            <td>${getMonthName(payment.month)} ${payment.year}</td>
+            <td style="font-weight: 600;">GHS ${payment.amount.toFixed(2)}</td>
+            <td>
+              ${payment.paymentMethod === 'bank_transfer' ? '🏦 Bank Transfer' : '💵 Cash'}
+            </td>
+            <td>${payment.transferReference || payment.notes || '-'}</td>
+            <td>${createdDate}</td>
+            <td>
+              <button onclick="approvePayment('${payment.id}')" class="btn btn-sm btn-primary" style="margin-right: 8px;">
+                ✅ Approve
+              </button>
+              <button onclick="rejectPayment('${payment.id}')" class="btn btn-sm btn-outline" style="color: var(--color-error);">
+                ❌ Reject
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Render processed payments
+    function renderProcessedPayments(payments) {
+      const tbody = document.getElementById('processedPaymentsTable');
+      
+      if (payments.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+              No recent processed payments
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = payments.map(payment => {
+        const statusBadge = payment.status === 'paid' ? 
+          '<span class="badge badge-success">Approved</span>' :
+          '<span class="badge badge-error">Rejected</span>';
+
+        const processedDate = payment.approvedAt ? 
+          new Date(payment.approvedAt.toDate()).toLocaleDateString() : 'N/A';
+
+        return `
+          <tr>
+            <td>${payment.memberName || 'Unknown'}</td>
+            <td>${getMonthName(payment.month)} ${payment.year}</td>
+            <td>GHS ${payment.amount.toFixed(2)}</td>
+            <td>${statusBadge}</td>
+            <td>${payment.approvedByName || 'System'}</td>
+            <td>${processedDate}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Approve payment
+    async function approvePayment(paymentId) {
+      if (!confirm('Approve this payment?')) return;
+
+      try {
+        UIModule.showLoader('Approving payment...');
+
+        const result = await approveManualPaymentFunction({
+          paymentIds: [paymentId],
+          action: 'approve'
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert('✅ Payment approved successfully!', 'success');
+          loadPayments();
+        } else {
+          UIModule.showAlert('Failed to approve payment', 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Approval error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Reject payment
+    async function rejectPayment(paymentId) {
+      if (!confirm('Reject this payment? This action cannot be undone.')) return;
+
+      try {
+        UIModule.showLoader('Rejecting payment...');
+
+        const result = await approveManualPaymentFunction({
+          paymentIds: [paymentId],
+          action: 'reject'
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert('Payment rejected', 'warning');
+          loadPayments();
+        } else {
+          UIModule.showAlert('Failed to reject payment', 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Rejection error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Helper function
+    function getMonthName(month) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[month - 1] || month;
+    }
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('darkMode', isDark);
+      document.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      const darkMode = localStorage.getItem('darkMode') === 'true';
+      if (darkMode) {
+        document.body.classList.add('dark-mode');
+        document.querySelector('.theme-icon').textContent = '☀️';
+      }
+    });
+
+    AuthModule.onAuthStateChanged((user) => {
+      if (user) {
+        loadPayments();
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

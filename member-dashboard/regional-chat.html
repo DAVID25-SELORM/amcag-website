@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regional Chat | AMCAG</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    .chat-container {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: var(--space-4);
+      height: calc(100vh - 200px);
+    }
+    
+    .chat-sidebar {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+    }
+    
+    .chat-tab {
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      margin-bottom: var(--space-2);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--surface-variant);
+    }
+    
+    .chat-tab:hover {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+    
+    .chat-tab.active {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+    }
+    
+    .chat-tab-icon {
+      font-size: 1.5rem;
+    }
+    
+    .chat-main {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+    
+    .chat-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-color);
+      background: var(--primary-container);
+    }
+    
+    .chat-header h2 {
+      margin: 0;
+      font-size: var(--text-xl);
+      color: var(--on-primary-container);
+    }
+    
+    .chat-header p {
+      margin: 0.25rem 0 0 0;
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+    
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      background: var(--surface-variant);
+    }
+    
+    .message {
+      display: flex;
+      gap: var(--space-3);
+      animation: messageSlideIn 0.3s ease;
+    }
+    
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .message-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    
+    .message-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .message-content {
+      flex: 1;
+    }
+    
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-1);
+    }
+    
+    .message-sender {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .message-time {
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+    }
+    
+    .message-role {
+      font-size: var(--text-xs);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+    
+    .message-text {
+      background: white;
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      word-wrap: break-word;
+    }
+    
+    .message-attachment {
+      margin-top: var(--space-2);
+      padding: var(--space-2);
+      background: var(--surface-variant);
+      border-radius: var(--radius-md);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .message-attachment:hover {
+      background: var(--primary-container);
+    }
+    
+    .message-attachment img {
+      max-width: 300px;
+      max-height: 300px;
+      border-radius: var(--radius-md);
+    }
+    
+    .message-read-receipt {
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+      margin-top: var(--space-1);
+    }
+    
+    .chat-input-area {
+      padding: var(--space-4);
+      border-top: 1px solid var(--border-color);
+      background: white;
+    }
+    
+    .chat-input-wrapper {
+      display: flex;
+      gap: var(--space-2);
+      align-items: flex-end;
+    }
+    
+    .chat-input {
+      flex: 1;
+      min-height: 60px;
+      max-height: 150px;
+      padding: var(--space-3);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      resize: vertical;
+      font-family: inherit;
+      font-size: var(--text-base);
+    }
+    
+    .chat-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .chat-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+    
+    .chat-action-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface-variant);
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      transition: all 0.2s ease;
+    }
+    
+    .chat-action-btn:hover {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+    
+    .chat-send-btn {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .chat-send-btn:hover {
+      background: var(--primary-dark);
+    }
+    
+    .chat-send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .announcement {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      border-left: 4px solid var(--primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .announcement-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+    }
+    
+    .announcement-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    
+    .announcement-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .announcement-meta {
+      flex: 1;
+    }
+    
+    .announcement-author {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    
+    .announcement-date {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+    
+    .announcement-badge {
+      background: var(--error-container);
+      color: var(--on-error-container);
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: 600;
+    }
+    
+    .announcement-content {
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin-bottom: var(--space-3);
+    }
+    
+    .announcement-read-count {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+    
+    .typing-indicator {
+      padding: var(--space-2);
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+    
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: var(--space-6);
+    }
+    
+    .empty-icon {
+      font-size: 4rem;
+      margin-bottom: var(--space-4);
+      opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+      .chat-container {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      
+      .chat-sidebar {
+        display: none;
+      }
+      
+      .chat-sidebar.mobile-visible {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        z-index: 1000;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      
+      <ul class="navbar-menu" style="margin-left: auto;">
+        <li><a href="/member-dashboard.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
+        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== HEADER START ===== -->
+  <section class="section-sm bg-surface">
+    <div class="container">
+      <h1 style="font-family: var(--font-display); font-size: var(--text-4xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">
+        Regional Chat
+      </h1>
+      <p style="color: var(--text-secondary); font-size: var(--text-lg);">
+        Connect with members and executives in your region
+      </p>
+    </div>
+  </section>
+  <!-- ===== HEADER END ===== -->
+
+  <!-- ===== CHAT CONTAINER START ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="chat-container">
+        <!-- Sidebar -->
+        <div class="chat-sidebar">
+          <h3 style="margin-bottom: var(--space-4); font-size: var(--text-lg);">Channels</h3>
+          
+          <div class="chat-tab active" data-tab="group-chat">
+            <span class="chat-tab-icon">💬</span>
+            <div>
+              <div style="font-weight: 600;">Group Chat</div>
+              <div style="font-size: var(--text-xs); color: var(--text-secondary);">Regional discussions</div>
+            </div>
+          </div>
+          
+          <div class="chat-tab" data-tab="announcements">
+            <span class="chat-tab-icon">📢</span>
+            <div>
+              <div style="font-weight: 600;">Announcements</div>
+              <div style="font-size: var(--text-xs); color: var(--text-secondary);">Official updates</div>
+            </div>
+          </div>
+          
+          <div class="chat-tab" data-tab="national-chat" style="display: none;" id="national-chat-tab">
+            <span class="chat-tab-icon">🏛️</span>
+            <div>
+              <div style="font-weight: 600;">National Chat</div>
+              <div style="font-size: var(--text-xs); color: var(--text-secondary);">Executives only</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+          <!-- Group Chat View -->
+          <div id="group-chat-view" class="chat-view">
+            <div class="chat-header">
+              <h2><span id="region-name">Regional</span> Group Chat</h2>
+              <p>Open discussion for all members and executives in your region</p>
+            </div>
+            
+            <div class="chat-messages" id="group-chat-messages">
+              <div class="empty-state">
+                <div class="empty-icon">💬</div>
+                <h3>No messages yet</h3>
+                <p>Start the conversation by sending a message below</p>
+              </div>
+            </div>
+            
+            <div id="typing-indicator-group" class="typing-indicator" style="display: none;">
+              Someone is typing...
+            </div>
+            
+            <div class="chat-input-area">
+              <div class="chat-input-wrapper">
+                <textarea 
+                  id="group-chat-input" 
+                  class="chat-input" 
+                  placeholder="Type your message..."
+                  rows="2"
+                ></textarea>
+                
+                <div class="chat-actions">
+                  <input type="file" id="group-chat-file" style="display: none;" accept="image/*,.pdf,.doc,.docx">
+                  <button class="chat-action-btn" onclick="document.getElementById('group-chat-file').click()" title="Attach file">
+                    📎
+                  </button>
+                  <button class="chat-action-btn chat-send-btn" id="group-chat-send" onclick="sendGroupMessage()">
+                    ➤
+                  </button>
+                </div>
+              </div>
+              <div id="group-file-preview" style="margin-top: var(--space-2); display: none;">
+                <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--surface-variant); border-radius: var(--radius-md);">
+                  <span id="group-file-name"></span>
+                  <button onclick="clearGroupFileAttachment()" style="margin-left: auto; cursor: pointer; background: none; border: none;">❌</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Announcements View -->
+          <div id="announcements-view" class="chat-view" style="display: none;">
+            <div class="chat-header">
+              <h2><span id="region-name-announcements">Regional</span> Announcements</h2>
+              <p>Official announcements from regional and national executives</p>
+            </div>
+            
+            <div class="chat-messages" id="announcements-messages">
+              <div class="empty-state">
+                <div class="empty-icon">📢</div>
+                <h3>No announcements yet</h3>
+                <p>Executives will post official updates here</p>
+              </div>
+            </div>
+            
+            <!-- Only show input for executives -->
+            <div class="chat-input-area" id="announcement-input-area" style="display: none;">
+              <div class="chat-input-wrapper">
+                <textarea 
+                  id="announcement-input" 
+                  class="chat-input" 
+                  placeholder="Type your announcement..."
+                  rows="2"
+                ></textarea>
+                
+                <div class="chat-actions">
+                  <input type="file" id="announcement-file" style="display: none;" accept="image/*,.pdf,.doc,.docx">
+                  <button class="chat-action-btn" onclick="document.getElementById('announcement-file').click()" title="Attach file">
+                    📎
+                  </button>
+                  <button class="chat-action-btn chat-send-btn" onclick="sendAnnouncement()">
+                    ➤
+                  </button>
+                </div>
+              </div>
+              <div id="announcement-file-preview" style="margin-top: var(--space-2); display: none;">
+                <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--surface-variant); border-radius: var(--radius-md);">
+                  <span id="announcement-file-name"></span>
+                  <button onclick="clearAnnouncementFileAttachment()" style="margin-left: auto; cursor: pointer; background: none; border: none;">❌</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- National Chat View (executives only) -->
+          <div id="national-chat-view" class="chat-view" style="display: none;">
+            <div class="chat-header">
+              <h2>National Executives Chat</h2>
+              <p>Private discussion for national and regional executives</p>
+            </div>
+            
+            <div class="chat-messages" id="national-chat-messages">
+              <div class="empty-state">
+                <div class="empty-icon">🏛️</div>
+                <h3>No messages yet</h3>
+                <p>Start the conversation by sending a message below</p>
+              </div>
+            </div>
+            
+            <div id="typing-indicator-national" class="typing-indicator" style="display: none;">
+              Someone is typing...
+            </div>
+            
+            <div class="chat-input-area">
+              <div class="chat-input-wrapper">
+                <textarea 
+                  id="national-chat-input" 
+                  class="chat-input" 
+                  placeholder="Type your message..."
+                  rows="2"
+                ></textarea>
+                
+                <div class="chat-actions">
+                  <input type="file" id="national-chat-file" style="display: none;" accept="image/*,.pdf,.doc,.docx">
+                  <button class="chat-action-btn" onclick="document.getElementById('national-chat-file').click()" title="Attach file">
+                    📎
+                  </button>
+                  <button class="chat-action-btn chat-send-btn" onclick="sendNationalMessage()">
+                    ➤
+                  </button>
+                </div>
+              </div>
+              <div id="national-file-preview" style="margin-top: var(--space-2); display: none;">
+                <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--surface-variant); border-radius: var(--radius-md);">
+                  <span id="national-file-name"></span>
+                  <button onclick="clearNationalFileAttachment()" style="margin-left: auto; cursor: pointer; background: none; border: none;">❌</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== CHAT CONTAINER END ===== -->
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  
+  <!-- App Scripts -->
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+  
+  <script>
+    // ===== GLOBAL STATE =====
+    let currentUser = null;
+    let currentRegion = '';
+    let currentRole = '';
+    let activeTab = 'group-chat';
+    let groupChatListener = null;
+    let announcementsListener = null;
+    let nationalChatListener = null;
+    let selectedGroupFile = null;
+    let selectedAnnouncementFile = null;
+    let selectedNationalFile = null;
+    
+    // ===== INITIALIZE =====
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication
+      AuthModule.onAuthStateChanged((user) => {
+        if (!user) {
+          window.location.href = '/membership.html';
+          return;
+        }
+        
+        currentUser = user;
+        
+        if (user.profile) {
+          currentRegion = user.profile.region || '';
+          currentRole = user.profile.role || 'member';
+          
+          // Update region name in UI
+          document.getElementById('region-name').textContent = currentRegion;
+          document.getElementById('region-name-announcements').textContent = currentRegion;
+          
+          // Show national chat tab for executives
+          if (currentRole === 'super_admin' || currentRole === 'national_executive' || currentRole === 'regional_executive') {
+            document.getElementById('national-chat-tab').style.display = 'flex';
+            document.getElementById('announcement-input-area').style.display = 'block';
+          }
+          
+          // Initialize chat
+          initializeChat();
+        }
+      });
+      
+      // Tab switching
+      document.querySelectorAll('.chat-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          switchTab(this.dataset.tab);
+        });
+      });
+      
+      // File upload handlers
+      document.getElementById('group-chat-file').addEventListener('change', handleGroupFileSelect);
+      document.getElementById('announcement-file').addEventListener('change', handleAnnouncementFileSelect);
+      document.getElementById('national-chat-file').addEventListener('change', handleNationalFileSelect);
+      
+      // Enter to send (Shift+Enter for new line)
+      document.getElementById('group-chat-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendGroupMessage();
+        }
+      });
+      
+      document.getElementById('announcement-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendAnnouncement();
+        }
+      });
+      
+      document.getElementById('national-chat-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendNationalMessage();
+        }
+      });
+    });
+    
+    // ===== INITIALIZE CHAT =====
+    function initializeChat() {
+      loadGroupChat();
+      loadAnnouncements();
+      if (currentRole === 'super_admin' || currentRole === 'national_executive' || currentRole === 'regional_executive') {
+        loadNationalChat();
+      }
+    }
+    
+    // ===== TAB SWITCHING =====
+    function switchTab(tabName) {
+      activeTab = tabName;
+      
+      // Update tab styles
+      document.querySelectorAll('.chat-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+      
+      // Show appropriate view
+      document.querySelectorAll('.chat-view').forEach(view => {
+        view.style.display = 'none';
+      });
+      document.getElementById(`${tabName}-view`).style.display = 'flex';
+    }
+    
+    // ===== LOAD GROUP CHAT =====
+    function loadGroupChat() {
+      const database = firebase.database();
+      const chatRef = database.ref(`regional-chats/${currentRegion}/messages`);
+      
+      // Remove previous listener
+      if (groupChatListener) {
+        chatRef.off('child_added', groupChatListener);
+      }
+      
+      // Listen for new messages
+      groupChatListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        renderGroupMessage(message);
+        
+        // Mark as read
+        markMessageAsRead(snapshot.key, currentRegion, 'group');
+      });
+      
+      // Clear empty state
+      const messagesContainer = document.getElementById('group-chat-messages');
+      const emptyState = messagesContainer.querySelector('.empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+    }
+    
+    // ===== RENDER GROUP MESSAGE =====
+    function renderGroupMessage(message) {
+      const messagesContainer = document.getElementById('group-chat-messages');
+      
+      const messageEl = document.createElement('div');
+      messageEl.className = 'message';
+      
+      const initials = message.senderName ? message.senderName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+      
+      messageEl.innerHTML = `
+        <div class="message-avatar">
+          ${message.senderPhoto ? `<img src="${message.senderPhoto}" alt="${message.senderName}">` : initials}
+        </div>
+        <div class="message-content">
+          <div class="message-header">
+            <span class="message-sender">${message.senderName || 'Unknown'}</span>
+            ${message.senderRole !== 'member' ? `<span class="message-role">${formatRole(message.senderRole)}</span>` : ''}
+            <span class="message-time">${formatTimestamp(message.timestamp)}</span>
+          </div>
+          <div class="message-text">${escapeHtml(message.text)}</div>
+          ${message.fileUrl ? renderAttachment(message) : ''}
+          ${message.readBy ? `<div class="message-read-receipt">✓✓ Read by ${Object.keys(message.readBy).length} ${Object.keys(message.readBy).length === 1 ? 'person' : 'people'}</div>` : ''}
+        </div>
+      `;
+      
+      messagesContainer.appendChild(messageEl);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    // ===== SEND GROUP MESSAGE =====
+    async function sendGroupMessage() {
+      const input = document.getElementById('group-chat-input');
+      const text = input.value.trim();
+      
+      if (!text && !selectedGroupFile) {
+        return;
+      }
+      
+      const sendBtn = document.getElementById('group-chat-send');
+      sendBtn.disabled = true;
+      
+      try {
+        let fileUrl = '';
+        let fileName = '';
+        let fileType = '';
+        
+        // Upload file if selected
+        if (selectedGroupFile) {
+          const uploadResult = await uploadChatFile(selectedGroupFile, currentRegion, 'group');
+          fileUrl = uploadResult.url;
+          fileName = uploadResult.name;
+          fileType = uploadResult.type;
+        }
+        
+        // Create message
+        const database = firebase.database();
+        const chatRef = database.ref(`regional-chats/${currentRegion}/messages`);
+        
+        await chatRef.push({
+          senderId: currentUser.uid,
+          senderName: currentUser.profile.fullName,
+          senderPhoto: currentUser.profile.profilePictureUrl || '',
+          senderRole: currentRole,
+          text: text,
+          fileUrl: fileUrl,
+          fileName: fileName,
+          fileType: fileType,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          readBy: {}
+        });
+        
+        // Clear input
+        input.value = '';
+        clearGroupFileAttachment();
+        
+      } catch (error) {
+        console.error('Error sending message:', error);
+        UIModule.showAlert('Failed to send message: ' + error.message, 'error');
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+    
+    // ===== LOAD ANNOUNCEMENTS =====
+    function loadAnnouncements() {
+      const database = firebase.database();
+      const announcementsRef = database.ref(`regional-announcements/${currentRegion}/posts`);
+      
+      // Remove previous listener
+      if (announcementsListener) {
+        announcementsRef.off('child_added', announcementsListener);
+      }
+      
+      // Listen for new announcements
+      announcementsListener = announcementsRef.limitToLast(20).on('child_added', (snapshot) => {
+        const announcement = snapshot.val();
+        renderAnnouncement(announcement);
+        
+        // Mark as read
+        markAnnouncementAsRead(snapshot.key, currentRegion);
+      });
+      
+      // Clear empty state
+      const messagesContainer = document.getElementById('announcements-messages');
+      const emptyState = messagesContainer.querySelector('.empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+    }
+    
+    // ===== RENDER ANNOUNCEMENT =====
+    function renderAnnouncement(announcement) {
+      const messagesContainer = document.getElementById('announcements-messages');
+      
+      const announcementEl = document.createElement('div');
+      announcementEl.className = 'announcement';
+      
+      const initials = announcement.authorName ? announcement.authorName.split(' ').map(n => n[0]).join('').toUpperCase() : 'A';
+      
+      announcementEl.innerHTML = `
+        <div class="announcement-header">
+          <div class="announcement-avatar">
+            ${announcement.authorPhoto ? `<img src="${announcement.authorPhoto}" alt="${announcement.authorName}">` : initials}
+          </div>
+          <div class="announcement-meta">
+            <div class="announcement-author">${announcement.authorName || 'Unknown'}</div>
+            <div class="announcement-date">${formatTimestamp(announcement.timestamp)}</div>
+          </div>
+          <span class="announcement-badge">ANNOUNCEMENT</span>
+        </div>
+        <div class="announcement-content">${escapeHtml(announcement.text)}</div>
+        ${announcement.fileUrl ? renderAttachment(announcement) : ''}
+        ${announcement.readBy ? `<div class="announcement-read-count">👁️ ${Object.keys(announcement.readBy).length} ${Object.keys(announcement.readBy).length === 1 ? 'person has' : 'people have'} read this</div>` : ''}
+      `;
+      
+      messagesContainer.appendChild(announcementEl);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    // ===== SEND ANNOUNCEMENT =====
+    async function sendAnnouncement() {
+      const input = document.getElementById('announcement-input');
+      const text = input.value.trim();
+      
+      if (!text && !selectedAnnouncementFile) {
+        return;
+      }
+      
+      try {
+        let fileUrl = '';
+        let fileName = '';
+        let fileType = '';
+        
+        // Upload file if selected
+        if (selectedAnnouncementFile) {
+          const uploadResult = await uploadChatFile(selectedAnnouncementFile, currentRegion, 'announcement');
+          fileUrl = uploadResult.url;
+          fileName = uploadResult.name;
+          fileType = uploadResult.type;
+        }
+        
+        // Create announcement
+        const database = firebase.database();
+        const announcementsRef = database.ref(`regional-announcements/${currentRegion}/posts`);
+        
+        await announcementsRef.push({
+          authorId: currentUser.uid,
+          authorName: currentUser.profile.fullName,
+          authorPhoto: currentUser.profile.profilePictureUrl || '',
+          authorRole: currentRole,
+          text: text,
+          fileUrl: fileUrl,
+          fileName: fileName,
+          fileType: fileType,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          readBy: {}
+        });
+        
+        // Clear input
+        input.value = '';
+        clearAnnouncementFileAttachment();
+        
+        UIModule.showAlert('Announcement posted successfully!', 'success');
+        
+      } catch (error) {
+        console.error('Error sending announcement:', error);
+        UIModule.showAlert('Failed to post announcement: ' + error.message, 'error');
+      }
+    }
+    
+    // ===== LOAD NATIONAL CHAT =====
+    function loadNationalChat() {
+      const database = firebase.database();
+      const chatRef = database.ref('national-chat/messages');
+      
+      // Remove previous listener
+      if (nationalChatListener) {
+        chatRef.off('child_added', nationalChatListener);
+      }
+      
+      // Listen for new messages
+      nationalChatListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        renderNationalMessage(message);
+        
+        // Mark as read
+        markMessageAsRead(snapshot.key, 'national', 'national');
+      });
+      
+      // Clear empty state
+      const messagesContainer = document.getElementById('national-chat-messages');
+      const emptyState = messagesContainer.querySelector('.empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+    }
+    
+    // ===== RENDER NATIONAL MESSAGE =====
+    function renderNationalMessage(message) {
+      const messagesContainer = document.getElementById('national-chat-messages');
+      
+      const messageEl = document.createElement('div');
+      messageEl.className = 'message';
+      
+      const initials = message.senderName ? message.senderName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+      
+      messageEl.innerHTML = `
+        <div class="message-avatar">
+          ${message.senderPhoto ? `<img src="${message.senderPhoto}" alt="${message.senderName}">` : initials}
+        </div>
+        <div class="message-content">
+          <div class="message-header">
+            <span class="message-sender">${message.senderName || 'Unknown'}</span>
+            <span class="message-role">${formatRole(message.senderRole)}</span>
+            <span class="message-time">${formatTimestamp(message.timestamp)}</span>
+          </div>
+          <div class="message-text">${escapeHtml(message.text)}</div>
+          ${message.fileUrl ? renderAttachment(message) : ''}
+          ${message.readBy ? `<div class="message-read-receipt">✓✓ Read by ${Object.keys(message.readBy).length} ${Object.keys(message.readBy).length === 1 ? 'person' : 'people'}</div>` : ''}
+        </div>
+      `;
+      
+      messagesContainer.appendChild(messageEl);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    // ===== SEND NATIONAL MESSAGE =====
+    async function sendNationalMessage() {
+      const input = document.getElementById('national-chat-input');
+      const text = input.value.trim();
+      
+      if (!text && !selectedNationalFile) {
+        return;
+      }
+      
+      try {
+        let fileUrl = '';
+        let fileName = '';
+        let fileType = '';
+        
+        // Upload file if selected
+        if (selectedNationalFile) {
+          const uploadResult = await uploadChatFile(selectedNationalFile, 'national', 'national');
+          fileUrl = uploadResult.url;
+          fileName = uploadResult.name;
+          fileType = uploadResult.type;
+        }
+        
+        // Create message
+        const database = firebase.database();
+        const chatRef = database.ref('national-chat/messages');
+        
+        await chatRef.push({
+          senderId: currentUser.uid,
+          senderName: currentUser.profile.fullName,
+          senderPhoto: currentUser.profile.profilePictureUrl || '',
+          senderRole: currentRole,
+          text: text,
+          fileUrl: fileUrl,
+          fileName: fileName,
+          fileType: fileType,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+          readBy: {}
+        });
+        
+        // Clear input
+        input.value = '';
+        clearNationalFileAttachment();
+        
+      } catch (error) {
+        console.error('Error sending message:', error);
+        UIModule.showAlert('Failed to send message: ' + error.message, 'error');
+      }
+    }
+    
+    // ===== FILE UPLOAD =====
+    async function uploadChatFile(file, region, chatType) {
+      const storage = firebase.storage();
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_${file.name}`;
+      const path = `chat-attachments/${region}/${chatType}/${fileName}`;
+      const storageRef = storage.ref(path);
+      
+      await storageRef.put(file);
+      const url = await storageRef.getDownloadURL();
+      
+      return {
+        url: url,
+        name: file.name,
+        type: file.type
+      };
+    }
+    
+    // ===== FILE SELECTION HANDLERS =====
+    function handleGroupFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // Validate file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+          UIModule.showAlert('File size must be less than 10MB', 'error');
+          return;
+        }
+        
+        selectedGroupFile = file;
+        document.getElementById('group-file-name').textContent = file.name;
+        document.getElementById('group-file-preview').style.display = 'block';
+      }
+    }
+    
+    function handleAnnouncementFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // Validate file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+          UIModule.showAlert('File size must be less than 10MB', 'error');
+          return;
+        }
+        
+        selectedAnnouncementFile = file;
+        document.getElementById('announcement-file-name').textContent = file.name;
+        document.getElementById('announcement-file-preview').style.display = 'block';
+      }
+    }
+    
+    function handleNationalFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // Validate file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+          UIModule.showAlert('File size must be less than 10MB', 'error');
+          return;
+        }
+        
+        selectedNationalFile = file;
+        document.getElementById('national-file-name').textContent = file.name;
+        document.getElementById('national-file-preview').style.display = 'block';
+      }
+    }
+    
+    function clearGroupFileAttachment() {
+      selectedGroupFile = null;
+      document.getElementById('group-chat-file').value = '';
+      document.getElementById('group-file-preview').style.display = 'none';
+    }
+    
+    function clearAnnouncementFileAttachment() {
+      selectedAnnouncementFile = null;
+      document.getElementById('announcement-file').value = '';
+      document.getElementById('announcement-file-preview').style.display = 'none';
+    }
+    
+    function clearNationalFileAttachment() {
+      selectedNationalFile = null;
+      document.getElementById('national-chat-file').value = '';
+      document.getElementById('national-file-preview').style.display = 'none';
+    }
+    
+    // ===== MARK AS READ =====
+    function markMessageAsRead(messageId, region, chatType) {
+      const database = firebase.database();
+      let ref;
+      
+      if (chatType === 'national') {
+        ref = database.ref(`national-chat/messages/${messageId}/readBy/${currentUser.uid}`);
+      } else {
+        ref = database.ref(`regional-chats/${region}/messages/${messageId}/readBy/${currentUser.uid}`);
+      }
+      
+      ref.set(true);
+    }
+    
+    function markAnnouncementAsRead(announcementId, region) {
+      const database = firebase.database();
+      const ref = database.ref(`regional-announcements/${region}/posts/${announcementId}/readBy/${currentUser.uid}`);
+      ref.set(true);
+    }
+    
+    // ===== UTILITY FUNCTIONS =====
+    function renderAttachment(message) {
+      if (!message.fileUrl) return '';
+      
+      if (message.fileType && message.fileType.startsWith('image/')) {
+        return `
+          <div class="message-attachment">
+            <img src="${message.fileUrl}" alt="${message.fileName || 'Attachment'}" onclick="window.open('${message.fileUrl}', '_blank')">
+          </div>
+        `;
+      } else {
+        return `
+          <div class="message-attachment" onclick="window.open('${message.fileUrl}', '_blank')">
+            📎 ${message.fileName || 'Attachment'}
+          </div>
+        `;
+      }
+    }
+    
+    function formatRole(role) {
+      const roleMap = {
+        'super_admin': 'Super Admin',
+        'national_executive': 'National Executive',
+        'regional_executive': 'Regional Executive',
+        'member': 'Member'
+      };
+      return roleMap[role] || role;
+    }
+    
+    function formatTimestamp(timestamp) {
+      if (!timestamp) return '';
+      
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      
+      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+    
+    function signOut() {
+      AuthModule.signOut();
+    }
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Receipt | AMCAG</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  
+  <style>
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      
+      body {
+        margin: 0;
+        padding: 20px;
+      }
+      
+      .receipt-container {
+        box-shadow: none !important;
+        border: 1px solid #000 !important;
+      }
+    }
+    
+    .receipt-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: white;
+      padding: 3rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    
+    .receipt-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--color-primary-40);
+    }
+    
+    .receipt-logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+    }
+    
+    .receipt-title {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--color-primary-40);
+      margin-bottom: 0.5rem;
+    }
+    
+    .receipt-subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+    
+    .receipt-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    
+    .receipt-info-item {
+      padding: 0.5rem 0;
+    }
+    
+    .receipt-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+    }
+    
+    .receipt-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .receipt-amount-box {
+      background: var(--color-primary-99);
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+      margin: 2rem 0;
+      border: 2px dashed var(--color-primary-40);
+    }
+    
+    .receipt-amount-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    
+    .receipt-amount {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--color-primary-40);
+    }
+    
+    .receipt-footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    
+    .receipt-status-badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    
+    .status-paid {
+      background: var(--color-success-90);
+      color: var(--color-success-10);
+    }
+    
+    .status-pending {
+      background: var(--color-warning-90);
+      color: var(--color-warning-10);
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align: center; padding: 1rem; background: var(--color-primary-99);">
+    <button onclick="window.print()" class="btn btn-primary">🖨️ Print / Download PDF</button>
+    <button onclick="window.close()" class="btn btn-outline">✖️ Close</button>
+  </div>
+  
+  <div class="receipt-container" id="receipt-container">
+    <div class="receipt-header">
+      <img src="/images/logo.jpg" alt="AMCAG Logo" class="receipt-logo">
+      <div class="receipt-title">PAYMENT RECEIPT</div>
+      <div class="receipt-subtitle">Association of Medicine Counter Assistants of Ghana</div>
+    </div>
+    
+    <div style="text-align: center; margin: 1rem 0;">
+      <span class="receipt-status-badge status-paid" id="status-badge">PAID</span>
+    </div>
+    
+    <div class="receipt-info-grid">
+      <div class="receipt-info-item">
+        <div class="receipt-label">Receipt Number</div>
+        <div class="receipt-value" id="receipt-number">-</div>
+      </div>
+      
+      <div class="receipt-info-item">
+        <div class="receipt-label">Payment Date</div>
+        <div class="receipt-value" id="payment-date">-</div>
+      </div>
+      
+      <div class="receipt-info-item">
+        <div class="receipt-label">Member Name</div>
+        <div class="receipt-value" id="member-name">-</div>
+      </div>
+      
+      <div class="receipt-info-item">
+        <div class="receipt-label">Member ID</div>
+        <div class="receipt-value" id="member-id">-</div>
+      </div>
+      
+      <div class="receipt-info-item">
+        <div class="receipt-label">Region</div>
+        <div class="receipt-value" id="region">-</div>
+      </div>
+      
+      <div class="receipt-info-item">
+        <div class="receipt-label">Payment Method</div>
+        <div class="receipt-value" id="payment-method">-</div>
+      </div>
+      
+      <div class="receipt-info-item">
+        <div class="receipt-label">Payment Period</div>
+        <div class="receipt-value" id="payment-period">-</div>
+      </div>
+      
+      <div class="receipt-info-item">
+        <div class="receipt-label">Transaction Reference</div>
+        <div class="receipt-value" id="transaction-ref">-</div>
+      </div>
+    </div>
+    
+    <div class="receipt-amount-box">
+      <div class="receipt-amount-label">Amount Paid</div>
+      <div class="receipt-amount" id="amount">GHS 0.00</div>
+    </div>
+    
+    <div class="receipt-footer">
+      <p><strong>Thank you for your payment!</strong></p>
+      <p>This is an official receipt from AMCAG. For inquiries, contact us at info@amcag.org</p>
+      <p style="margin-top: 1rem; font-size: 0.75rem;">Generated on <span id="generated-date"></span></p>
+    </div>
+  </div>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  
+  <script>
+    // Get payment ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentId = urlParams.get('id');
+    
+    if (!paymentId) {
+      alert('No payment ID provided');
+      window.close();
+    }
+    
+    // Load payment data
+    async function loadReceipt() {
+      try {
+        const db = firebase.firestore();
+        const paymentDoc = await db.collection('payments').doc(paymentId).get();
+        
+        if (!paymentDoc.exists) {
+          alert('Payment not found');
+          window.close();
+          return;
+        }
+        
+        const payment = paymentDoc.data();
+        
+        // Populate receipt
+        document.getElementById('receipt-number').textContent = paymentId.substring(0, 12).toUpperCase();
+        document.getElementById('payment-date').textContent = payment.paymentDate ? 
+          new Date(payment.paymentDate.toDate()).toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
+          }) : 
+          '-';
+        
+        document.getElementById('member-name').textContent = payment.memberName || '-';
+        document.getElementById('member-id').textContent = payment.memberId || 'Pending';
+        document.getElementById('region').textContent = payment.region || '-';
+        document.getElementById('payment-method').textContent = formatPaymentMethod(payment.paymentMethod);
+        document.getElementById('payment-period').textContent = payment.month && payment.year ? 
+          `${getMonthName(payment.month)} ${payment.year}` : 
+          '-';
+        document.getElementById('transaction-ref').textContent = payment.paystackReference || payment.transferReference || paymentId.substring(0, 16);
+        document.getElementById('amount').textContent = `GHS ${(payment.amount || 0).toFixed(2)}`;
+        
+        // Status badge
+        const statusBadge = document.getElementById('status-badge');
+        if (payment.status === 'paid') {
+          statusBadge.textContent = 'PAID';
+          statusBadge.className = 'receipt-status-badge status-paid';
+        } else {
+          statusBadge.textContent = 'PENDING';
+          statusBadge.className = 'receipt-status-badge status-pending';
+        }
+        
+        // Generated date
+        document.getElementById('generated-date').textContent = new Date().toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+      } catch (error) {
+        console.error('Error loading receipt:', error);
+        alert('Failed to load receipt');
+      }
+    }
+    
+    function formatPaymentMethod(method) {
+      const methods = {
+        'paystack': 'Paystack (Card/MoMo)',
+        'bank_transfer': 'Bank Transfer',
+        'cash': 'Cash',
+        'momo': 'Mobile Money'
+      };
+      return methods[method] || method;
+    }
+    
+    function getMonthName(month) {
+      const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      return months[month - 1] || month;
+    }
+    
+    // Wait for Firebase to initialize
+    const checkFirebase = setInterval(() => {
+      if (firebase.apps && firebase.apps.length > 0) {
+        clearInterval(checkFirebase);
+        loadReceipt();
+      }
+    }, 100);
+    
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      clearInterval(checkFirebase);
+    }, 5000);
+  </script>
+</body>
+</html>

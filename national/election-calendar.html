@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Election Calendar | AMCAG National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/member-approval.html" class="dashboard-nav-item">
+          <span>✅</span> Approve Members
+        </a>
+        <a href="/national/dues-management.html" class="dashboard-nav-item">
+          <span>💰</span> Dues Management
+        </a>
+        <a href="/national/election-calendar.html" class="dashboard-nav-item active">
+          <span>📅</span> Election Calendar
+        </a>
+        <a href="/national/regional-permissions.html" class="dashboard-nav-item">
+          <span>🔐</span> Regional Permissions
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Election Calendar & Term Tracking</h1>
+          <p class="dashboard-subtitle">4-year term management for all leadership positions</p>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="openAddTermModal()">➕ Add New Term</button>
+        </div>
+      </div>
+
+      <!-- Statistics Grid -->
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="activeTerms">0</div>
+          <div class="stat-label">Active Terms</div>
+        </div>
+        <div class="stat-card" style="background: var(--color-warning-container);">
+          <div class="stat-value" style="color: var(--color-warning);" id="expiringSoon">0</div>
+          <div class="stat-label">Expiring Within 90 Days</div>
+        </div>
+        <div class="stat-card" style="background: var(--color-error-container);">
+          <div class="stat-value" style="color: var(--color-error);" id="expired">0</div>
+          <div class="stat-label">Expired Terms</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="nextElection">-</div>
+          <div class="stat-label">Next Election Due</div>
+        </div>
+      </div>
+
+      <!-- Urgent Alerts -->
+      <div id="urgentAlerts"></div>
+
+      <!-- Filters -->
+      <div class="card mb-4">
+        <div class="grid grid-4 gap-4">
+          <div class="form-group">
+            <label class="form-label">Filter by Status</label>
+            <select id="statusFilter" class="form-input" onchange="applyFilters()">
+              <option value="">All Terms</option>
+              <option value="active">Active</option>
+              <option value="expiring">Expiring Soon (90 days)</option>
+              <option value="expired">Expired</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Filter by Level</label>
+            <select id="levelFilter" class="form-input" onchange="applyFilters()">
+              <option value="">All Levels</option>
+              <option value="national">National Executives</option>
+              <option value="regional">Regional Executives</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Filter by Region</label>
+            <select id="regionFilter" class="form-input" onchange="applyFilters()">
+              <option value="">All Regions</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Search Position/Name</label>
+            <input type="text" id="searchInput" class="form-input" placeholder="Search..." oninput="applyFilters()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Terms Table -->
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">Leadership Terms</h3>
+          <div>
+            <span id="termCount" style="color: var(--text-secondary);">0 terms</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Position</th>
+                <th>Incumbent</th>
+                <th>Level</th>
+                <th>Region</th>
+                <th>Term Start</th>
+                <th>Term End</th>
+                <th>Days Remaining</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="termsTableBody">
+              <tr>
+                <td colspan="9" style="text-align: center; padding: 2rem;">
+                  Loading terms...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Term Modal -->
+  <div id="addTermModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Add New Leadership Term</h3>
+        <button class="modal-close" onclick="closeAddTermModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="addTermForm">
+          <div class="form-group">
+            <label class="form-label required">Position Title</label>
+            <input type="text" id="positionTitle" class="form-input" placeholder="e.g., National President" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Level</label>
+            <select id="level" class="form-input" required onchange="toggleRegionField()">
+              <option value="">Select level...</option>
+              <option value="national">National Executive</option>
+              <option value="regional">Regional Executive</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="regionFieldGroup" style="display: none;">
+            <label class="form-label required">Region</label>
+            <select id="regionSelect" class="form-input">
+              <option value="">Select region...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Incumbent Name</label>
+            <input type="text" id="incumbentName" class="form-input" placeholder="Full name of person elected" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Incumbent UID (Optional)</label>
+            <input type="text" id="incumbentUid" class="form-input" placeholder="User ID if in system">
+            <small style="color: var(--text-secondary);">Leave blank if person not yet registered</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Term Start Date</label>
+            <input type="date" id="termStart" class="form-input" required>
+          </div>
+
+          <div class="alert alert-info" style="margin-top: 1rem;">
+            <p><strong>Note:</strong> Term end date will be automatically set to 4 years from start date.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea id="termNotes" class="form-input" rows="3" placeholder="Optional notes about this term..."></textarea>
+          </div>
+
+          <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary flex-1">Add Term</button>
+            <button type="button" class="btn btn-secondary flex-1" onclick="closeAddTermModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Term Details Modal -->
+  <div id="termModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Term Details</h3>
+        <button class="modal-close" onclick="closeTermModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid grid-2 gap-4 mb-4">
+          <div>
+            <strong>Position:</strong> <span id="modalPosition"></span>
+          </div>
+          <div>
+            <strong>Incumbent:</strong> <span id="modalIncumbent"></span>
+          </div>
+          <div>
+            <strong>Level:</strong> <span id="modalLevel"></span>
+          </div>
+          <div>
+            <strong>Region:</strong> <span id="modalRegion"></span>
+          </div>
+          <div>
+            <strong>Term Start:</strong> <span id="modalStartDate"></span>
+          </div>
+          <div>
+            <strong>Term End:</strong> <span id="modalEndDate"></span>
+          </div>
+          <div>
+            <strong>Days Remaining:</strong> <span id="modalDaysRemaining"></span>
+          </div>
+          <div>
+            <strong>Status:</strong> <span id="modalStatus"></span>
+          </div>
+        </div>
+
+        <div class="mb-4" id="modalNotesSection" style="display: none;">
+          <strong>Notes:</strong>
+          <p id="modalNotes" style="margin-top: 0.5rem; color: var(--text-secondary);"></p>
+        </div>
+
+        <h4 style="margin-bottom: 1rem;">Notifications Sent</h4>
+        <div class="table-container">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Date Sent</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="modalNotificationsBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-error" onclick="confirmEndTerm()">End Term Early</button>
+        <button class="btn btn-secondary" onclick="closeTermModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    const TERM_LENGTH_YEARS = 4;
+    const WARNING_DAYS = 90; // Start showing warnings 90 days before expiration
+    let currentUser = null;
+    let allTerms = [];
+    let regions = [];
+    let selectedTerm = null;
+
+    // Calculate days between dates
+    function daysBetween(date1, date2) {
+      const oneDay = 24 * 60 * 60 * 1000;
+      return Math.round((date2 - date1) / oneDay);
+    }
+
+    // Get term status
+    function getTermStatus(termEndDate) {
+      const now = new Date();
+      const endDate = termEndDate.toDate ? termEndDate.toDate() : new Date(termEndDate);
+      const daysRemaining = daysBetween(now, endDate);
+
+      if (daysRemaining < 0) {
+        return { status: 'expired', label: 'Expired', class: 'badge-error', daysRemaining };
+      } else if (daysRemaining <= WARNING_DAYS) {
+        return { status: 'expiring', label: 'Expiring Soon', class: 'badge-warning', daysRemaining };
+      } else {
+        return { status: 'active', label: 'Active', class: 'badge-success', daysRemaining };
+      }
+    }
+
+    // Load all data
+    async function loadAllData() {
+      try {
+        UIModule.showLoader('Loading election data...');
+        
+        const db = firebase.firestore();
+
+        // Load terms
+        const termsSnapshot = await db.collection('leadership_terms')
+          .orderBy('termEndDate', 'asc')
+          .get();
+
+        allTerms = termsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Load regions for filter
+        const regionsSnapshot = await db.collection('regions').get();
+        regions = regionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Populate region filters
+        const regionFilter = document.getElementById('regionFilter');
+        const regionSelect = document.getElementById('regionSelect');
+        
+        regions.forEach(region => {
+          const filterOption = document.createElement('option');
+          filterOption.value = region.name;
+          filterOption.textContent = region.name;
+          regionFilter.appendChild(filterOption);
+
+          const selectOption = document.createElement('option');
+          selectOption.value = region.name;
+          selectOption.textContent = region.name;
+          regionSelect.appendChild(selectOption);
+        });
+
+        calculateStatistics();
+        showUrgentAlerts();
+        applyFilters();
+
+        UIModule.hideLoader();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading data:', error);
+        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+      }
+    }
+
+    // Calculate statistics
+    function calculateStatistics() {
+      const now = new Date();
+      let activeCount = 0;
+      let expiringCount = 0;
+      let expiredCount = 0;
+      let nextElectionDate = null;
+
+      allTerms.forEach(term => {
+        const status = getTermStatus(term.termEndDate);
+        
+        if (status.status === 'active') activeCount++;
+        if (status.status === 'expiring') expiringCount++;
+        if (status.status === 'expired') expiredCount++;
+
+        // Find next election (closest end date in future)
+        const endDate = term.termEndDate.toDate ? term.termEndDate.toDate() : new Date(term.termEndDate);
+        if (endDate >= now && (!nextElectionDate || endDate < nextElectionDate)) {
+          nextElectionDate = endDate;
+        }
+      });
+
+      document.getElementById('activeTerms').textContent = activeCount;
+      document.getElementById('expiringSoon').textContent = expiringCount;
+      document.getElementById('expired').textContent = expiredCount;
+      
+      if (nextElectionDate) {
+        const daysUntil = daysBetween(now, nextElectionDate);
+        document.getElementById('nextElection').textContent = daysUntil > 0 ? 
+          `${daysUntil} days` : 'Overdue';
+      } else {
+        document.getElementById('nextElection').textContent = 'None';
+      }
+    }
+
+    // Show urgent alerts
+    function showUrgentAlerts() {
+      const alertsDiv = document.getElementById('urgentAlerts');
+      const expiredTerms = allTerms.filter(term => {
+        const status = getTermStatus(term.termEndDate);
+        return status.status === 'expired';
+      });
+
+      const expiringTerms = allTerms.filter(term => {
+        const status = getTermStatus(term.termEndDate);
+        return status.status === 'expiring' && status.daysRemaining <= 30;
+      });
+
+      if (expiredTerms.length === 0 && expiringTerms.length === 0) {
+        alertsDiv.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+
+      if (expiredTerms.length > 0) {
+        html += `
+          <div class="alert alert-error mb-4">
+            <h4 style="margin-bottom: 0.5rem;">🚨 ${expiredTerms.length} Expired Term(s)</h4>
+            <p style="margin-bottom: 0.5rem;">The following positions have expired terms and need immediate elections:</p>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+              ${expiredTerms.slice(0, 5).map(term => `
+                <li><strong>${term.positionTitle}</strong> - Expired ${Math.abs(getTermStatus(term.termEndDate).daysRemaining)} days ago</li>
+              `).join('')}
+              ${expiredTerms.length > 5 ? `<li>...and ${expiredTerms.length - 5} more</li>` : ''}
+            </ul>
+          </div>
+        `;
+      }
+
+      if (expiringTerms.length > 0) {
+        html += `
+          <div class="alert alert-warning mb-4">
+            <h4 style="margin-bottom: 0.5rem;">⚠️ ${expiringTerms.length} Term(s) Expiring Within 30 Days</h4>
+            <p style="margin-bottom: 0.5rem;">Schedule elections for these positions:</p>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+              ${expiringTerms.slice(0, 5).map(term => `
+                <li><strong>${term.positionTitle}</strong> - ${getTermStatus(term.termEndDate).daysRemaining} days remaining</li>
+              `).join('')}
+              ${expiringTerms.length > 5 ? `<li>...and ${expiringTerms.length - 5} more</li>` : ''}
+            </ul>
+          </div>
+        `;
+      }
+
+      alertsDiv.innerHTML = html;
+    }
+
+    // Apply filters
+    function applyFilters() {
+      const statusFilter = document.getElementById('statusFilter').value;
+      const levelFilter = document.getElementById('levelFilter').value;
+      const regionFilter = document.getElementById('regionFilter').value;
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+      let filteredTerms = allTerms.filter(term => {
+        // Status filter
+        if (statusFilter) {
+          const status = getTermStatus(term.termEndDate);
+          if (statusFilter !== status.status) {
+            return false;
+          }
+        }
+
+        // Level filter
+        if (levelFilter && term.level !== levelFilter) {
+          return false;
+        }
+
+        // Region filter
+        if (regionFilter && term.region !== regionFilter) {
+          return false;
+        }
+
+        // Search filter
+        if (searchTerm) {
+          const searchableText = `${term.positionTitle || ''} ${term.incumbentName || ''} ${term.level || ''} ${term.region || ''}`.toLowerCase();
+          if (!searchableText.includes(searchTerm)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      renderTermsTable(filteredTerms);
+    }
+
+    // Render terms table
+    function renderTermsTable(terms) {
+      const tbody = document.getElementById('termsTableBody');
+      document.getElementById('termCount').textContent = `${terms.length} terms`;
+
+      if (terms.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+              No terms found
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = terms.map(term => {
+        const status = getTermStatus(term.termEndDate);
+        const startDate = term.termStartDate.toDate ? 
+          term.termStartDate.toDate().toLocaleDateString() : 
+          new Date(term.termStartDate).toLocaleDateString();
+        const endDate = term.termEndDate.toDate ? 
+          term.termEndDate.toDate().toLocaleDateString() : 
+          new Date(term.termEndDate).toLocaleDateString();
+
+        const daysText = status.daysRemaining >= 0 ? 
+          `${status.daysRemaining} days` : 
+          `${Math.abs(status.daysRemaining)} days ago`;
+
+        return `
+          <tr>
+            <td><strong>${term.positionTitle}</strong></td>
+            <td>${term.incumbentName}</td>
+            <td><span class="badge badge-secondary">${term.level === 'national' ? 'National' : 'Regional'}</span></td>
+            <td>${term.region || 'N/A'}</td>
+            <td>${startDate}</td>
+            <td>${endDate}</td>
+            <td style="font-weight: 600; color: ${status.status === 'expired' ? 'var(--color-error)' : status.status === 'expiring' ? 'var(--color-warning)' : 'inherit'};">
+              ${daysText}
+            </td>
+            <td><span class="badge ${status.class}">${status.label}</span></td>
+            <td>
+              <button class="btn btn-sm btn-secondary" onclick='viewTermDetails(${JSON.stringify(term).replace(/'/g, "&apos;")})'>
+                View
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // View term details
+    function viewTermDetails(term) {
+      selectedTerm = term;
+      const status = getTermStatus(term.termEndDate);
+
+      document.getElementById('modalPosition').textContent = term.positionTitle;
+      document.getElementById('modalIncumbent').textContent = term.incumbentName;
+      document.getElementById('modalLevel').textContent = term.level === 'national' ? 'National' : 'Regional';
+      document.getElementById('modalRegion').textContent = term.region || 'N/A';
+      
+      const startDate = term.termStartDate.toDate ? 
+        term.termStartDate.toDate().toLocaleDateString() : 
+        new Date(term.termStartDate).toLocaleDateString();
+      const endDate = term.termEndDate.toDate ? 
+        term.termEndDate.toDate().toLocaleDateString() : 
+        new Date(term.termEndDate).toLocaleDateString();
+
+      document.getElementById('modalStartDate').textContent = startDate;
+      document.getElementById('modalEndDate').textContent = endDate;
+
+      const daysText = status.daysRemaining >= 0 ? 
+        `${status.daysRemaining} days` : 
+        `Expired ${Math.abs(status.daysRemaining)} days ago`;
+      document.getElementById('modalDaysRemaining').textContent = daysText;
+
+      const statusBadge = `<span class="badge ${status.class}">${status.label}</span>`;
+      document.getElementById('modalStatus').innerHTML = statusBadge;
+
+      // Notes
+      if (term.notes) {
+        document.getElementById('modalNotesSection').style.display = 'block';
+        document.getElementById('modalNotes').textContent = term.notes;
+      } else {
+        document.getElementById('modalNotesSection').style.display = 'none';
+      }
+
+      // Notifications
+      const notificationsBody = document.getElementById('modalNotificationsBody');
+      const notifications = [
+        { type: '90-Day Reminder', sent: term.notification90DaySent, date: term.notification90DayDate },
+        { type: '60-Day Reminder', sent: term.notification60DaySent, date: term.notification60DayDate },
+        { type: '30-Day Reminder', sent: term.notification30DaySent, date: term.notification30DayDate }
+      ];
+
+      notificationsBody.innerHTML = notifications.map(notif => `
+        <tr>
+          <td>${notif.type}</td>
+          <td>${notif.date ? new Date(notif.date.toDate()).toLocaleDateString() : 'Not sent'}</td>
+          <td>
+            ${notif.sent ? 
+              '<span class="badge badge-success">Sent</span>' : 
+              '<span class="badge badge-secondary">Pending</span>'}
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('termModal').style.display = 'flex';
+    }
+
+    function closeTermModal() {
+      document.getElementById('termModal').style.display = 'none';
+      selectedTerm = null;
+    }
+
+    function confirmEndTerm() {
+      if (!selectedTerm) return;
+      
+      if (confirm(`End term early for ${selectedTerm.positionTitle}?\n\nThis will mark the term as completed and require a new election.`)) {
+        endTermEarly(selectedTerm.id);
+      }
+    }
+
+    async function endTermEarly(termId) {
+      try {
+        UIModule.showLoader('Ending term...');
+        
+        const db = firebase.firestore();
+        await db.collection('leadership_terms').doc(termId).update({
+          termEndDate: firebase.firestore.Timestamp.now(),
+          endedEarly: true,
+          endedEarlyBy: currentUser.uid,
+          endedEarlyAt: firebase.firestore.Timestamp.now()
+        });
+
+        UIModule.hideLoader();
+        UIModule.showAlert('Term ended successfully', 'success');
+        closeTermModal();
+        loadAllData();
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error ending term:', error);
+        UIModule.showAlert('Error ending term: ' + error.message, 'error');
+      }
+    }
+
+    // Add term modal
+    function openAddTermModal() {
+      document.getElementById('addTermForm').reset();
+      document.getElementById('regionFieldGroup').style.display = 'none';
+      document.getElementById('addTermModal').style.display = 'flex';
+    }
+
+    function closeAddTermModal() {
+      document.getElementById('addTermModal').style.display = 'none';
+    }
+
+    function toggleRegionField() {
+      const level = document.getElementById('level').value;
+      const regionGroup = document.getElementById('regionFieldGroup');
+      const regionSelect = document.getElementById('regionSelect');
+      
+      if (level === 'regional') {
+        regionGroup.style.display = 'block';
+        regionSelect.required = true;
+      } else {
+        regionGroup.style.display = 'none';
+        regionSelect.required = false;
+        regionSelect.value = '';
+      }
+    }
+
+    // Form submission
+    document.getElementById('addTermForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const positionTitle = document.getElementById('positionTitle').value.trim();
+      const level = document.getElementById('level').value;
+      const region = level === 'regional' ? document.getElementById('regionSelect').value : null;
+      const incumbentName = document.getElementById('incumbentName').value.trim();
+      const incumbentUid = document.getElementById('incumbentUid').value.trim() || null;
+      const termStart = document.getElementById('termStart').value;
+      const notes = document.getElementById('termNotes').value.trim();
+
+      if (!positionTitle || !level || !incumbentName || !termStart) {
+        UIModule.showAlert('Please fill in all required fields', 'error');
+        return;
+      }
+
+      if (level === 'regional' && !region) {
+        UIModule.showAlert('Please select a region', 'error');
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Adding term...');
+        
+        const db = firebase.firestore();
+        const startDate = new Date(termStart);
+        const endDate = new Date(startDate);
+        endDate.setFullYear(endDate.getFullYear() + TERM_LENGTH_YEARS);
+
+        await db.collection('leadership_terms').add({
+          positionTitle: positionTitle,
+          level: level,
+          region: region,
+          incumbentName: incumbentName,
+          incumbentUid: incumbentUid,
+          termStartDate: firebase.firestore.Timestamp.fromDate(startDate),
+          termEndDate: firebase.firestore.Timestamp.fromDate(endDate),
+          notes: notes || null,
+          notification90DaySent: false,
+          notification60DaySent: false,
+          notification30DaySent: false,
+          createdAt: firebase.firestore.Timestamp.now(),
+          createdBy: currentUser.uid
+        });
+
+        // Create audit log
+        await db.collection('audit_logs').add({
+          action: 'leadership_term_added',
+          performedBy: currentUser.uid,
+          performedByName: currentUser.displayName || currentUser.email,
+          details: {
+            positionTitle: positionTitle,
+            incumbentName: incumbentName,
+            termStart: termStart,
+            termEnd: endDate.toISOString(),
+            level: level,
+            region: region
+          },
+          timestamp: firebase.firestore.Timestamp.now()
+        });
+
+        UIModule.hideLoader();
+        UIModule.showAlert('Term added successfully', 'success');
+        closeAddTermModal();
+        loadAllData();
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error adding term:', error);
+        UIModule.showAlert('Error adding term: ' + error.message, 'error');
+      }
+    });
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    // Initialize
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      currentUser = user;
+      
+      const db = firebase.firestore();
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      
+      if (!userDoc.exists) {
+        UIModule.showAlert('User profile not found', 'error');
+        return;
+      }
+
+      const userData = userDoc.data();
+
+      // Check permissions
+      if (!userData.role || !['super_admin', 'national_executive'].includes(userData.role)) {
+        UIModule.showAlert('Access denied. National executive access required.', 'error');
+        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+        return;
+      }
+
+      loadAllData();
+    });
+
+    // Close modals when clicking outside
+    window.onclick = (event) => {
+      const termModal = document.getElementById('termModal');
+      const addTermModal = document.getElementById('addTermModal');
+      
+      if (event.target === termModal) {
+        closeTermModal();
+      }
+      if (event.target === addTermModal) {
+        closeAddTermModal();
+      }
+    };
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us | AMCAG</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ===== NAVBAR START ===== -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      
+      <button class="navbar-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      
+      <ul class="navbar-menu">
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><a href="/about.html" class="navbar-link">About</a></li>
+        <li><a href="/leadership.html" class="navbar-link">Leadership</a></li>
+        <li><a href="/events.html" class="navbar-link">Events</a></li>
+        <li><a href="/news.html" class="navbar-link">News</a></li>
+        <li><a href="/gallery.html" class="navbar-link">Gallery</a></li>
+        <li><a href="/regions.html" class="navbar-link">Regions</a></li>
+        <li><a href="/contact.html" class="navbar-link active">Contact</a></li>
+        <li><a href="/membership.html" class="navbar-cta">Member Portal</a></li>
+      </ul>
+    </div>
+  </nav>
+  <!-- ===== NAVBAR END ===== -->
+
+  <!-- ===== PAGE HERO START ===== -->
+  <section class="hero" style="padding: var(--space-10) 0 var(--space-8);">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">Contact Us</h1>
+        <p class="hero-subtitle">
+          Get in touch with AMCAG National Office
+        </p>
+      </div>
+    </div>
+  </section>
+  <!-- ===== PAGE HERO END ===== -->
+
+  <!-- ===== CONTACT SECTION START ===== -->
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="grid grid-2" style="gap: var(--space-8); align-items: start;">
+        <!-- Contact Form -->
+        <div class="card" style="padding: var(--space-6);">
+          <h2 style="font-family: var(--font-display); font-size: var(--text-3xl); font-weight: var(--font-bold); margin-bottom: var(--space-4);">
+            Send us a Message
+          </h2>
+          
+          <form id="contact-form">
+            <div class="form-group">
+              <label class="form-label required">Full Name</label>
+              <input type="text" class="form-input" id="name" required placeholder="John Doe">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label required">Email</label>
+              <input type="email" class="form-input" id="email" required placeholder="your@email.com">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-input" id="phone" placeholder="+233 XX XXX XXXX">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label required">Subject</label>
+              <select class="form-select" id="subject" required>
+                <option value="">Select a subject</option>
+                <option value="membership">Membership Inquiry</option>
+                <option value="events">Events & Training</option>
+                <option value="certificates">Certificates</option>
+                <option value="payments">Payments & Dues</option>
+                <option value="technical">Technical Support</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label required">Message</label>
+              <textarea class="form-textarea" id="message" required placeholder="How can we help you?"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Send Message</button>
+          </form>
+        </div>
+        
+        <!-- Contact Information -->
+        <div class="flex-col gap-4">
+          <!-- National Office -->
+          <div class="card">
+            <div class="card-icon primary">
+              <span>🏢</span>
+            </div>
+            <h3 class="card-title">National Office</h3>
+            <div class="card-body flex-col gap-2">
+              <div class="flex gap-2">
+                <span>📍</span>
+                <span>Accra, Ghana</span>
+              </div>
+              <div class="flex gap-2">
+                <span>📧</span>
+                <a href="mailto:info@amcag.org.gh" style="color: var(--color-primary-40);">info@amcag.org.gh</a>
+              </div>
+              <div class="flex gap-2">
+                <span>📞</span>
+                <span>+233 XX XXX XXXX</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Office Hours -->
+          <div class="card">
+            <div class="card-icon secondary">
+              <span>⏰</span>
+            </div>
+            <h3 class="card-title">Office Hours</h3>
+            <div class="card-body flex-col gap-2">
+              <div class="flex-between">
+                <span>Monday - Friday</span>
+                <span style="font-weight: var(--font-medium);">8:00 AM - 5:00 PM</span>
+              </div>
+              <div class="flex-between">
+                <span>Saturday</span>
+                <span style="font-weight: var(--font-medium);">9:00 AM - 2:00 PM</span>
+              </div>
+              <div class="flex-between">
+                <span>Sunday</span>
+                <span style="font-weight: var(--font-medium);">Closed</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Social Media -->
+          <div class="card">
+            <div class="card-icon success">
+              <span>🌐</span>
+            </div>
+            <h3 class="card-title">Connect With Us</h3>
+            <div class="card-body">
+              <p style="margin-bottom: var(--space-3);">Follow us on social media for updates and news</p>
+              <div class="flex gap-2">
+                <a href="#" class="social-link">f</a>
+                <a href="#" class="social-link">𝕏</a>
+                <a href="#" class="social-link">in</a>
+                <a href="#" class="social-link">📷</a>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Regional Offices -->
+          <div class="card">
+            <h3 class="card-title">Regional Offices</h3>
+            <p class="card-body">
+              For regional inquiries, visit our <a href="/regions.html" style="color: var(--color-primary-40); font-weight: var(--font-medium);">Regional Chapters</a> page to find your local office contact information.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== CONTACT SECTION END ===== -->
+
+  <!-- ===== FOOTER START ===== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>&copy; 2026 AMCAG. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+  <!-- ===== FOOTER END ===== -->
+
+  <!-- Firebase & Modules -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/ui.js"></script>
+  
+  <script>
+    document.getElementById('contact-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        subject: document.getElementById('subject').value,
+        message: document.getElementById('message').value,
+        timestamp: new Date()
+      };
+      
+      UIModule.showLoader('Sending message...');
+      
+      try {
+        // In production, this would save to Firestore
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        UIModule.hideLoader();
+        UIModule.showAlert('Message sent successfully! We will get back to you soon.', 'success');
+        
+        // Reset form
+        document.getElementById('contact-form').reset();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error sending message:', error);
+        UIModule.showAlert('Error sending message. Please try again.', 'error');
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

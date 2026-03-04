@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Gallery | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/index.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <ul class="navbar-menu">
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
+        <li><a href="/about.html" class="navbar-link">About</a></li>
+        <li><a href="/leadership.html" class="navbar-link">Leadership</a></li>
+        <li><a href="/events.html" class="navbar-link">Events</a></li>
+        <li><a href="/news.html" class="navbar-link">News</a></li>
+        <li><a href="/gallery.html" class="navbar-link active">Gallery</a></li>
+        <li><a href="/regions.html" class="navbar-link">Regions</a></li>
+        <li><a href="/contact.html" class="navbar-link">Contact</a></li>
+        <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button></li>
+        <li><a href="/membership.html" class="navbar-cta">Member Portal</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="hero" style="padding: var(--space-10) 0 var(--space-8);">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">Photo Gallery</h1>
+        <p class="hero-subtitle">Capturing moments from events, training sessions, and member activities</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-surface">
+    <div class="container">
+      <div class="grid grid-3 gap-4" id="gallery-grid">
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="height: 250px; background: var(--color-primary-95);"></div>
+          <div style="padding: var(--space-3);">
+            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Annual General Meeting 2025</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Accra • December 2025</p>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="height: 250px; background: var(--color-secondary-95);"></div>
+          <div style="padding: var(--space-3);">
+            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Regional Training Workshop</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Kumasi • November 2025</p>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="height: 250px; background: var(--color-success-bg);"></div>
+          <div style="padding: var(--space-3);">
+            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">Certificate Presentation</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm);">Takoradi • October 2025</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script>
+    // Sample gallery data
+    const sampleGallery = [
+      {
+        title: 'Annual General Meeting 2026',
+        location: 'Greater Accra',
+        imageUrl: 'https://via.placeholder.com/600x400/1A73E8/ffffff?text=AGM+2026',
+        createdAt: new Date('2026-02-15')
+      },
+      {
+        title: 'Regional Training Workshop',
+        location: 'Ashanti Region',
+        imageUrl: 'https://via.placeholder.com/600x400/34A853/ffffff?text=Training+Workshop',
+        createdAt: new Date('2026-01-20')
+      },
+      {
+        title: 'Community Outreach Program',
+        location: 'Central Region',
+        imageUrl: 'https://via.placeholder.com/600x400/FBBC04/ffffff?text=Outreach+Program',
+        createdAt: new Date('2026-01-10')
+      },
+      {
+        title: 'Leadership Summit',
+        location: 'Greater Accra',
+        imageUrl: 'https://via.placeholder.com/600x400/EA4335/ffffff?text=Leadership+Summit',
+        createdAt: new Date('2025-12-05')
+      },
+      {
+        title: 'Member Networking Event',
+        location: 'Eastern Region',
+        imageUrl: 'https://via.placeholder.com/600x400/1A73E8/ffffff?text=Networking+Event',
+        createdAt: new Date('2025-11-22')
+      },
+      {
+        title: 'Awards Ceremony 2025',
+        location: 'Greater Accra',
+        imageUrl: 'https://via.placeholder.com/600x400/34A853/ffffff?text=Awards+2025',
+        createdAt: new Date('2025-11-15')
+      }
+    ];
+
+    function renderGallery(photos) {
+      return photos.map(data => {
+        const date = data.createdAt instanceof Date ? data.createdAt : new Date(data.createdAt);
+        const location = data.location || data.region || '';
+        const formattedDate = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        
+        return `
+          <div class="card" style="padding: 0; overflow: hidden; cursor: pointer;" onclick="window.open('${data.imageUrl || ''}', '_blank')">
+            <div style="height: 250px; background: var(--color-primary-95); background-image: url('${data.imageUrl || data.thumbnailUrl || ''}'); background-size: cover; background-position: center;"></div>
+            <div style="padding: var(--space-3);">
+              <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${data.title || 'Untitled'}</h4>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm);">${location} • ${formattedDate}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadGallery() {
+      const galleryContainer = document.getElementById('gallery-grid');
+      
+      try {
+        const db = firebase.firestore();
+        let snapshot;
+        
+        try {
+          snapshot = await db.collection('gallery')
+            .orderBy('createdAt', 'desc')
+            .limit(24)
+            .get();
+        } catch (queryError) {
+          console.warn('Gallery query failed, trying without orderBy:', queryError);
+          snapshot = await db.collection('gallery').limit(24).get();
+        }
+        
+        if (snapshot.empty) {
+          console.log('Gallery collection is empty, showing sample photos');
+          galleryContainer.innerHTML = renderGallery(sampleGallery);
+          return;
+        }
+        
+        const photos = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt)
+          };
+        });
+        
+        galleryContainer.innerHTML = renderGallery(photos);
+        
+      } catch (error) {
+        console.error('Error loading gallery:', error);
+        console.log('Showing sample gallery due to error');
+        galleryContainer.innerHTML = renderGallery(sampleGallery);
+      }
+    }
+    
+    // Wait for Firebase App to be initialized before loading gallery
+    function waitForFirebase() {
+      if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+        loadGallery();
+      } else {
+        setTimeout(waitForFirebase, 50);
+      }
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForFirebase);
+    } else {
+      waitForFirebase();
+    }
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+  
+  <!-- Theme Toggle -->
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    }
+    
+    // Initialize theme
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      if (savedTheme === 'dark') {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) icon.textContent = '☀️';
+      }
+    })();
+  </script>
+</body>
+</html>

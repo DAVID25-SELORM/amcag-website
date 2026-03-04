@@ -1,0 +1,81 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Profile pictures (new users uploading during registration)
+    match /profile-pictures/{allPaths=**} {
+      allow read: if true; // Public read for profile pictures
+      allow write: if request.auth != null &&
+                      request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+                      request.resource.contentType.matches('image/.*'); // Only images
+    }
+    
+    // Media uploads (authenticated users, public read)
+    match /media/photos/{allPaths=**} {
+      allow read: if true; // Public read
+      allow write: if request.auth != null && 
+                      request.resource.size < 5 * 1024 * 1024 && // 5MB limit for photos
+                      request.resource.contentType.matches('image/.*'); // Only images
+    }
+    
+    match /media/videos/{allPaths=**} {
+      allow read: if true; // Public read
+      allow write: if request.auth != null && 
+                      request.resource.size < 100 * 1024 * 1024; // 100MB limit for videos
+    }
+    
+    // Profile pictures (legacy path)
+    match /profiles/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+                      (request.auth.uid == userId ||
+                       request.auth.token.role in ['super_admin', 'national_executive']);
+    }
+    
+    // Certificates (restricted write, public read for verification)
+    match /certificates/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+                      request.auth.token.role in ['super_admin', 'national_executive'];
+    }
+    
+    // Documents (authenticated read, admin write)
+    match /documents/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+                      request.auth.token.role in ['super_admin', 'national_executive'];
+    }
+    
+    // Donation receipts (PDF files)
+    match /donation-receipts/{donationId}/{allPaths=**} {
+      // Read: Donors can read their own receipts, regional/national execs can read all
+      allow read: if request.auth != null;
+      
+      // Write: Only Cloud Functions can create receipts
+      allow write: if request.auth != null &&
+                      request.auth.token.role in ['super_admin', 'national_executive', 'regional_executive'];
+    }
+    
+    // Distribution photos
+    match /distribution-photos/{donationId}/{allPaths=**} {
+      // Read: Public photos readable by all, others by authenticated users
+      allow read: if true; // Photos are usually public to show impact
+      
+      // Write: Regional and national execs can upload photos
+      allow write: if request.auth != null &&
+                      request.auth.token.role in ['super_admin', 'national_executive', 'regional_executive'] &&
+                      request.resource.size < 5 * 1024 * 1024 && // 5MB limit per photo
+                      request.resource.contentType.matches('image/.*'); // Only images
+    }
+    
+    // Chat attachments
+    match /chat-attachments/{region}/{chatType}/{allPaths=**} {
+      // Read: Authenticated users in the same region or executives
+      allow read: if request.auth != null;
+      
+      // Write: Authenticated users can upload attachments
+      allow write: if request.auth != null &&
+                      request.resource.size < 10 * 1024 * 1024; // 10MB limit
+    }
+  }
+}

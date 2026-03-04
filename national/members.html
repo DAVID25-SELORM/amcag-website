@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Members Management | AMCAG National Dashboard</title>
+  <link rel="icon" type="image/png" href="/images/logo.jpg">
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item active">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/member-approval.html" class="dashboard-nav-item">
+          <span>✅</span> Approve Members
+        </a>
+        <a href="/national/regional-permissions.html" class="dashboard-nav-item">
+          <span>🔐</span> Regional Permissions
+        </a>
+        <a href="/national/dues-management.html" class="dashboard-nav-item">
+          <span>💰</span> Dues Management
+        </a>
+        <a href="/national/election-calendar.html" class="dashboard-nav-item">
+          <span>📅</span> Election Calendar
+        </a>
+        <a href="/national/suspension-management.html" class="dashboard-nav-item">
+          <span>🚫</span> Suspension Management
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Members Management</h1>
+          <p class="dashboard-subtitle">Manage all AMCAG members nationwide</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-outline" onclick="exportMembersData()">Export Data</button>
+          <button class="btn btn-primary" onclick="addNewMember()">Add Member</button>
+        </div>
+      </div>
+
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value">15,243</div>
+          <div class="stat-label">Total Members</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">14,567</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">245</div>
+          <div class="stat-label">Pending Approval</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">431</div>
+          <div class="stat-label">Inactive</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title">All Members</h3>
+          <div class="flex gap-2">
+            <input type="text" class="form-input" placeholder="Search members..." style="width: 250px;">
+            <select class="form-input" style="width: auto;">
+              <option value="">All Regions</option>
+              <option value="Greater Accra">Greater Accra</option>
+              <option value="Ashanti">Ashanti</option>
+              <option value="Central">Central</option>
+              <option value="Eastern">Eastern</option>
+              <option value="Northern">Northern</option>
+              <option value="Western">Western</option>
+              <option value="Volta">Volta</option>
+              <option value="Upper East">Upper East</option>
+              <option value="Upper West">Upper West</option>
+              <option value="Bono">Bono</option>
+              <option value="Bono East">Bono East</option>
+              <option value="Ahafo">Ahafo</option>
+              <option value="Western North">Western North</option>
+              <option value="Savannah">Savannah</option>
+              <option value="North East">North East</option>
+              <option value="Oti">Oti</option>
+            </select>
+            <select class="form-input" style="width: auto;">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Member ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Region</th>
+                <th>Join Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                  <div style="display: inline-block;">
+                    <div style="margin-bottom: 1rem; font-size: 2rem;">⏳</div>
+                    <div>Loading members...</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button class="pagination-btn" disabled>Previous</button>
+          <button class="pagination-btn active">1</button>
+          <button class="pagination-btn">2</button>
+          <button class="pagination-btn">3</button>
+          <button class="pagination-btn">Next</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== RE-AUTHENTICATION MODAL (SECURITY LAYER 1) ===== -->
+  <div id="reauthModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 450px; width: 90%; margin: auto; position: relative; top: 50%; transform: translateY(-50%);">
+      <div style="padding: var(--space-6);">
+        <div style="text-align: center; margin-bottom: var(--space-4);">
+          <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #dc3545, #f08080); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-3); box-shadow: 0 4px 20px rgba(220, 53, 69, 0.3);">
+            <span style="font-size: var(--text-4xl);">🔐</span>
+          </div>
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: var(--space-2);">Verify Your Identity</h3>
+          <p style="color: var(--text-secondary); font-size: var(--text-sm);">For security, please confirm your password before resetting another user's password</p>
+        </div>
+        
+        <div style="background: #fff3cd; border: 1px solid #ffc107; border-left: 4px solid #ffc107; padding: var(--space-3); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
+          <p style="color: #856404; font-size: var(--text-sm); margin: 0;">
+            <strong>🛡️ Zero-Trust Security:</strong> All admin actions require re-authentication
+          </p>
+        </div>
+        
+        <form id="reauthForm">
+          <div class="form-group">
+            <label class="form-label required">Your Password</label>
+            <input type="password" id="adminPassword" class="form-input" placeholder="Enter your admin password" required autofocus>
+          </div>
+          
+          <div style="display: flex; gap: var(--space-2); margin-top: var(--space-5);">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">Verify & Continue</button>
+            <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeReauth()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PASSWORD RESET MODAL (SECURITY LAYER 2) ===== -->
+  <div id="resetModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 500px; width: 90%; margin: auto; position: relative; top: 50%; transform: translateY(-50%);">
+      <div style="padding: var(--space-6);">
+        <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: var(--space-2);">Reset User Password</h3>
+        <p style="color: var(--text-secondary); margin-bottom: var(--space-4);" id="resetUserName">Resetting password for user</p>
+        
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="password" id="newPassword" class="form-input" placeholder="Enter new password" style="flex: 1;">
+            <button class="btn btn-outline" onclick="generatePassword()" type="button">Generate</button>
+          </div>
+          <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">Minimum 6 characters. Auto-generated passwords include special characters.</small>
+        </div>
+        
+        <div id="generatedPasswordDisplay" style="display: none; margin-bottom: var(--space-4); padding: var(--space-3); background: var(--color-success-95); border: 1px solid var(--color-success); border-radius: var(--radius-md);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="display: block; margin-bottom: 0.25rem;">Generated Password:</strong>
+              <code id="generatedPasswordText" style="font-size: var(--text-lg); color: var(--color-success);"></code>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="copyPassword()" type="button">Copy</button>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-5);">
+          <button class="btn btn-primary" style="flex: 1;" onclick="confirmReset()">Confirm Reset</button>
+          <button class="btn btn-outline" style="flex: 1;" onclick="closeReset()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  
+  <!-- App Modules -->
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/router.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    // ===== DEFINE BUTTON FUNCTIONS IMMEDIATELY =====
+    // These must be available when the page loads for onclick handlers
+    window.exportMembersData = function() {
+      if (typeof exportMembersDataImpl === 'function') {
+        exportMembersDataImpl();
+      } else {
+        console.warn('Export function not yet initialized');
+      }
+    };
+    
+    window.addNewMember = function() {
+      window.location.href = '/membership.html';
+    };
+    
+    window.viewMember = function(uid) {
+      window.location.href = `/national/member-details.html?uid=${uid}`;
+    };
+    
+    // ===== FIREBASE FUNCTIONS INITIALIZATION =====
+    let fbFunctions;
+    let adminResetPassword;
+    
+    // Wait for Firebase to be completely initialized
+    function waitForFirebase(callback) {
+      if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+        callback();
+      } else {
+        setTimeout(() => waitForFirebase(callback), 50);
+      }
+    }
+    
+    // Initialize when Firebase is ready
+    waitForFirebase(function() {
+      console.log('✅ Firebase detected, setting up auth listener');
+      
+      firebase.auth().onAuthStateChanged(user => {
+        if (user && !fbFunctions) {
+          fbFunctions = firebase.functions();
+          adminResetPassword = fbFunctions.httpsCallable('adminResetPassword');
+          console.log('✅ Firebase Functions initialized');
+        }
+      });
+    });
+
+    // ===== ZERO-TRUST SECURITY VARIABLES =====
+    let selectedUid = null;
+    let selectedUserName = null;
+    let isReauthenticated = false;
+    let reauthTimestamp = 0;
+    const REAUTH_VALIDITY = 5 * 60 * 1000; // 5 minutes
+
+    // ===== MEMBERS DATA =====
+    let allMembers = [];
+    let filteredMembers = [];
+
+    // ===== RE-AUTHENTICATION MODAL LOGIC (SECURITY LAYER 1) =====
+    window.openResetModal = async (uid, userName) => {
+      if (!adminResetPassword) {
+        UIModule.showAlert('Firebase Functions not initialized. Please refresh the page.', 'error');
+        return;
+      }
+      
+      selectedUid = uid;
+      selectedUserName = userName;
+      
+      // Check if recent re-authentication exists
+      const now = Date.now();
+      if (isReauthenticated && (now - reauthTimestamp) < REAUTH_VALIDITY) {
+        // Re-auth still valid, proceed directly to password reset
+        showPasswordResetModal();
+      } else {
+        // Require re-authentication
+        isReauthenticated = false;
+        document.getElementById('reauthModal').style.display = 'flex';
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('adminPassword').focus();
+      }
+    };
+
+    window.closeReauth = () => {
+      document.getElementById('reauthModal').style.display = 'none';
+      selectedUid = null;
+      selectedUserName = null;
+    };
+
+    // Handle re-authentication form
+    document.getElementById('reauthForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const password = document.getElementById('adminPassword').value;
+      
+      if (!password) {
+        UIModule.showAlert('Please enter your password', 'error');
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Verifying your identity...');
+        
+        const auth = firebase.auth();
+        const user = auth.currentUser;
+        
+        if (!user) {
+          throw new Error('Not authenticated');
+        }
+
+        // Re-authenticate user
+        const credential = firebase.auth.EmailAuthProvider.credential(
+          user.email,
+          password
+        );
+        
+        await user.reauthenticateWithCredential(credential);
+        
+        UIModule.hideLoader();
+        
+        // Mark as re-authenticated
+        isReauthenticated = true;
+        reauthTimestamp = Date.now();
+        
+        // Close re-auth modal and show password reset modal
+        document.getElementById('reauthModal').style.display = 'none';
+        showPasswordResetModal();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Re-authentication error:', error);
+        
+        let errorMessage = 'Verification failed';
+        if (error.code === 'auth/wrong-password') {
+          errorMessage = 'Incorrect password. Please try again.';
+        } else if (error.code === 'auth/too-many-requests') {
+          errorMessage = 'Too many failed attempts. Please try again later.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        UIModule.showAlert(errorMessage, 'error');
+      }
+    });
+
+    // ===== PASSWORD RESET MODAL LOGIC (SECURITY LAYER 2) =====
+    function showPasswordResetModal() {
+      document.getElementById('resetUserName').textContent = `Resetting password for: ${selectedUserName}`;
+      document.getElementById('newPassword').value = '';
+      document.getElementById('generatedPasswordDisplay').style.display = 'none';
+      document.getElementById('resetModal').style.display = 'flex';
+    }
+
+    window.closeReset = () => {
+      document.getElementById('resetModal').style.display = 'none';
+      // Don't clear selectedUid/selectedUserName here in case of re-auth flow
+    };
+
+    window.generatePassword = () => {
+      // Generate strong password: 12 chars with mixed case, numbers, special chars
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+      let password = '';
+      for (let i = 0; i < 12; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+      
+      // Ensure it has at least one of each required type
+      if (!/[a-z]/.test(password)) password += 'a';
+      if (!/[A-Z]/.test(password)) password += 'A';
+      if (!/[0-9]/.test(password)) password += '1';
+      if (!/[!@#$%^&*]/.test(password)) password += '!';
+      
+      document.getElementById('newPassword').value = password;
+      document.getElementById('generatedPasswordText').textContent = password;
+      document.getElementById('generatedPasswordDisplay').style.display = 'block';
+    };
+
+    window.copyPassword = () => {
+      const password = document.getElementById('generatedPasswordText').textContent;
+      navigator.clipboard.writeText(password).then(() => {
+        UIModule.showAlert('✅ Password copied to clipboard!', 'success');
+      });
+    };
+
+    window.confirmReset = async () => {
+      const newPassword = document.getElementById('newPassword').value;
+
+      if (!newPassword) {
+        UIModule.showAlert('Please enter a new password', 'error');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        UIModule.showAlert('Password must be at least 6 characters', 'error');
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Resetting password with enterprise security checks...');
+
+        // ===== CALL FIREBASE CLOUD FUNCTION (WITH ALL SECURITY LAYERS) =====
+        const result = await adminResetPassword({
+          uid: selectedUid,
+          newPassword: newPassword
+        });
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          // Success - show comprehensive message
+          UIModule.showAlert(
+            `✅ Password reset successful!\n\n` +
+            `User: ${selectedUserName}\n` +
+            `Security: User must change password on next login\n` +
+            `Audit: Action logged with timestamp\n` +
+            `Alert: User notified of password change`,
+            'success'
+          );
+          
+          closeReset();
+          
+          // Clear selection
+          selectedUid = null;
+          selectedUserName = null;
+        } else {
+          UIModule.showAlert('❌ Reset failed: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Password reset error:', error);
+        
+        let errorMessage = 'Failed to reset password';
+        
+        // Handle specific Firebase error codes
+        if (error.code === 'unauthenticated') {
+          errorMessage = '🔒 You must be signed in as Super Admin';
+          isReauthenticated = false; // Force re-auth on next attempt
+        } else if (error.code === 'permission-denied') {
+          errorMessage = '🛡️ Only Super Admin can reset passwords';
+        } else if (error.code === 'resource-exhausted') {
+          errorMessage = '⏱️ Rate limit exceeded. Maximum 5 resets per hour.';
+        } else if (error.code === 'failed-precondition') {
+          errorMessage = '⏳ ' + (error.message || 'User password was recently reset. Please wait.');
+        } else if (error.code === 'not-found') {
+          errorMessage = '❌ User not found';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        UIModule.showAlert('❌ ' + errorMessage, 'error');
+      }
+    };
+
+    // ===== MEMBER MANAGEMENT =====
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    window.loadMembers = async function() {
+      try {
+        UIModule.showLoader('Loading members...');
+        
+        const db = firebase.firestore();
+        let snapshot;
+        
+        try {
+          // Try to load with ordering (requires index)
+          snapshot = await db.collection('users')
+            .orderBy('createdAt', 'desc')
+            .limit(1000)
+            .get();
+        } catch (indexError) {
+          // Fallback to unordered query if index doesn't exist
+          console.warn('createdAt index not found, loading without ordering:', indexError.message);
+          snapshot = await db.collection('users')
+            .limit(1000)
+            .get();
+        }
+        
+        allMembers = snapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data()
+        }));
+        
+        filteredMembers = [...allMembers];
+        renderMembers();
+        updateStats();
+        
+        UIModule.hideLoader();
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading members:', error);
+        UIModule.showAlert('Error loading members: ' + error.message, 'error');
+        
+        // Show error state in table
+        const tbody = document.querySelector('.table tbody');
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 3rem;">
+                <div style="color: var(--color-error);">
+                  <div style="font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
+                  <div style="font-weight: 600; margin-bottom: 0.5rem;">Failed to load members</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">${error.message}</div>
+                  <button class="btn btn-primary" style="margin-top: 1rem;" onclick="loadMembers()">Retry</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }
+      }
+    }
+
+    // ===== RENDER MEMBERS TABLE =====
+    function renderMembers() {
+      const tbody = document.querySelector('.table tbody');
+      
+      if (!tbody) {
+        console.error('Table tbody not found');
+        return;
+      }
+      
+      if (filteredMembers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No members found</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = filteredMembers.map(member => {
+        // Safely handle date conversion
+        let joinDate = 'N/A';
+        try {
+          if (member.createdAt) {
+            if (typeof member.createdAt.toDate === 'function') {
+              joinDate = new Date(member.createdAt.toDate()).toLocaleDateString();
+            } else if (member.createdAt instanceof Date) {
+              joinDate = member.createdAt.toLocaleDateString();
+            } else if (typeof member.createdAt === 'string' || typeof member.createdAt === 'number') {
+              joinDate = new Date(member.createdAt).toLocaleDateString();
+            }
+          }
+        } catch (e) {
+          console.warn('Error parsing date for member:', member.uid, e);
+        }
+        
+        return `
+          <tr>
+            <td>${member.memberId || 'Pending'}</td>
+            <td>${member.fullName || 'N/A'}</td>
+            <td>${member.email || 'N/A'}</td>
+            <td>${member.region || 'N/A'}</td>
+            <td>${joinDate}</td>
+            <td>
+              <span class="badge ${getStatusBadgeClass(member.status)}">
+                ${member.status || 'Pending'}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewMember('${member.uid}')">View</button>
+              <button class="btn btn-sm" style="background: var(--color-warning); color: white;" onclick="openResetModal('${member.uid}', '${(member.fullName || member.email || '').replace(/'/g, "\\'")}')">Reset Password</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ===== HELPER FUNCTIONS =====
+    function getStatusBadgeClass(status) {
+      const statusMap = {
+        'active': 'badge-success',
+        'pending': 'badge-warning',
+        'inactive': 'badge-error'
+      };
+      return statusMap[status?.toLowerCase()] || 'badge-warning';
+    }
+
+    function updateStats() {
+      const stats = {
+        total: allMembers.length,
+        active: allMembers.filter(m => m.status === 'active').length,
+        pending: allMembers.filter(m => m.status === 'pending').length,
+        inactive: allMembers.filter(m => m.status === 'inactive').length
+      };
+      
+      const statCards = document.querySelectorAll('.stat-card .stat-value');
+      if (statCards.length >= 4) {
+        statCards[0].textContent = stats.total.toLocaleString();
+        statCards[1].textContent = stats.active.toLocaleString();
+        statCards[2].textContent = stats.pending.toLocaleString();
+        statCards[3].textContent = stats.inactive.toLocaleString();
+      }
+    }
+
+    // ===== SEARCH & FILTER =====
+    function applyFilters(searchTerm = '') {
+      const selects = document.querySelectorAll('select.form-input');
+      const regionFilter = selects[0]?.value || '';
+      const statusFilter = selects[1]?.value || '';
+      
+      filteredMembers = allMembers.filter(member => {
+        const matchesSearch = !searchTerm || 
+          member.fullName?.toLowerCase().includes(searchTerm) ||
+          member.email?.toLowerCase().includes(searchTerm) ||
+          member.memberId?.toLowerCase().includes(searchTerm);
+        
+        // Case-insensitive region matching
+        const matchesRegion = !regionFilter || 
+          member.region?.toLowerCase() === regionFilter.toLowerCase();
+        
+        // Case-insensitive status matching
+        const matchesStatus = !statusFilter || 
+          member.status?.toLowerCase() === statusFilter.toLowerCase();
+        
+        return matchesSearch && matchesRegion && matchesStatus;
+      });
+      
+      renderMembers();
+    }
+
+    // ===== EXPORT MEMBERS DATA IMPLEMENTATION =====
+    window.exportMembersDataImpl = () => {
+      try {
+        if (!allMembers || allMembers.length === 0) {
+          UIModule.showAlert('No member data to export', 'warning');
+          return;
+        }
+
+        // Prepare CSV data
+        const headers = ['Member ID', 'Full Name', 'Email', 'Phone', 'Region', 'Status', 'Join Date', 'Employment Status'];
+        const csvRows = [headers.join(',')];
+
+        allMembers.forEach(member => {
+          const row = [
+            member.memberId || '',
+            `"${(member.fullName || '').replace(/"/g, '""')}"`,
+            member.email || '',
+            member.phoneNumber || '',
+            member.region || '',
+            member.status || '',
+            member.createdAt ? new Date(member.createdAt.toDate()).toLocaleDateString() : '',
+            member.employmentStatus || ''
+          ];
+          csvRows.push(row.join(','));
+        });
+
+        // Create blob and download
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        const timestamp = new Date().toISOString().split('T')[0];
+        link.setAttribute('href', url);
+        link.setAttribute('download', `amcag_members_${timestamp}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        UIModule.showAlert(`Successfully exported ${allMembers.length} members`, 'success');
+      } catch (error) {
+        console.error('Export error:', error);
+        UIModule.showAlert('Failed to export data: ' + error.message, 'error');
+      }
+    };
+
+    // ===== ADD NEW MEMBER =====
+    // (Already defined as window.addNewMember at top of script)
+
+    // ===== VIEW MEMBER DETAILS =====
+    // (Already defined as window.viewMember at top of script)
+
+    // ===== ATTACH EVENT LISTENERS =====
+    window.addEventListener('DOMContentLoaded', () => {
+      // Search input
+      const searchInput = document.querySelector('input[placeholder="Search members..."]');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          applyFilters(e.target.value.toLowerCase());
+        });
+      }
+
+      // Filter dropdowns
+      document.querySelectorAll('select.form-input').forEach(select => {
+        select.addEventListener('change', () => {
+          const searchTerm = searchInput?.value.toLowerCase() || '';
+          applyFilters(searchTerm);
+        });
+      });
+    });
+
+    AuthModule.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+      } else {
+        // Check if user has national executive or super admin role
+        if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
+          window.location.href = '/member-dashboard.html';
+        } else {
+          loadMembers();
+        }
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

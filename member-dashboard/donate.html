@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Make a Donation | AMCAG Member Portal</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Member Portal</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/member-dashboard/profile.html" class="dashboard-nav-item">
+          <span>👤</span> My Profile
+        </a>
+        <a href="/member-dashboard/dues-payment.html" class="dashboard-nav-item">
+          <span>💳</span> Pay Dues
+        </a>
+        <a href="/member-dashboard/donate.html" class="dashboard-nav-item active">
+          <span>💰</span> Donate
+        </a>
+        <a href="/member-dashboard/my-donations.html" class="dashboard-nav-item">
+          <span>📜</span> My Donations
+        </a>
+        <a href="/member-dashboard/waiver-request.html" class="dashboard-nav-item">
+          <span>📝</span> Request Waiver
+        </a>
+        <a href="/member-dashboard/certificates.html" class="dashboard-nav-item">
+          <span>🎓</span> Certificates
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Make a Donation</h1>
+          <p class="dashboard-subtitle">Support AMCAG's charitable activities</p>
+        </div>
+      </div>
+
+      <!-- Active Campaigns -->
+      <div class="card mb-4">
+        <h3 class="card-title">Active Campaigns</h3>
+        <div id="campaignsList" class="grid grid-3 gap-4">
+          <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-secondary);">
+            Loading campaigns...
+          </div>
+        </div>
+      </div>
+
+      <!-- Donation Form -->
+      <div class="card">
+        <h3 class="card-title mb-4">Donation Details</h3>
+
+        <form id="donationForm">
+          <!-- Donation Type -->
+          <div class="form-group">
+            <label class="form-label required">Donation Type</label>
+            <div style="display: flex; gap: 1rem;">
+              <label style="flex: 1; cursor: pointer; padding: 1rem; border: 2px solid var(--color-primary); border-radius: var(--radius-md); text-align: center; background: var(--color-primary-95);" onclick="selectDonationType('monetary')">
+                <input type="radio" name="donationType" value="monetary" checked style="display: none;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">💰</div>
+                <div style="font-weight: 600;">Money</div>
+              </label>
+              <label style="flex: 1; cursor: pointer; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); text-align: center;" onclick="selectDonationType('material')">
+                <input type="radio" name="donationType" value="material" style="display: none;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📦</div>
+                <div style="font-weight: 600;">Materials</div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Campaign Selection -->
+          <div class="form-group">
+            <label class="form-label">Select Campaign (Optional)</label>
+            <select id="campaignSelect" class="form-input">
+              <option value="">General Fund</option>
+            </select>
+            <small class="text-secondary">Choose a specific campaign or contribute to the general fund</small>
+          </div>
+
+          <!-- Monetary Fields -->
+          <div id="monetaryFields">
+            <div class="form-group">
+              <label class="form-label required">Amount (GHS)</label>
+              <input type="number" id="donationAmount" class="form-input" min="1" step="0.01" placeholder="0.00" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Quick Select</label>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="setAmount(50)">GHS 50</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="setAmount(100)">GHS 100</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="setAmount(250)">GHS 250</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="setAmount(500)">GHS 500</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="setAmount(1000)">GHS 1,000</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label required">Payment Method</label>
+              <select id="paymentMethod" class="form-input" required>
+                <option value="">Select payment method...</option>
+                <option value="MTN MoMo">MTN Mobile Money</option>
+                <option value="Vodafone Cash">Vodafone Cash</option>
+                <option value="AirtelTigo Money">AirtelTigo Money</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cash">Cash (In-person)</option>
+              </select>
+            </div>
+
+            <div class="alert alert-info">
+              <strong>Payment Instructions:</strong>
+              <ul style="margin: 0.5rem 0 0 1.5rem;">
+                <li><strong>Mobile Money:</strong> Dial *XXX# and send to 0XX XXX XXXX</li>
+                <li><strong>Bank Transfer:</strong> Account No: XXXXXXXXX (Bank Name)</li>
+                <li><strong>Cash:</strong> Visit your regional office</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Material Fields -->
+          <div id="materialFields" style="display: none;">
+            <div class="form-group">
+              <label class="form-label required">Items to Donate</label>
+              <div id="itemsList">
+                <div class="item-row" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; align-items: end;">
+                  <div>
+                    <input type="text" class="form-input item-name" placeholder="Item name (e.g., Books, Rice)">
+                  </div>
+                  <div>
+                    <input type="number" class="form-input item-quantity" placeholder="Quantity" min="1">
+                  </div>
+                  <div>
+                    <input type="text" class="form-input item-unit" placeholder="Unit (e.g., bags, pieces)">
+                  </div>
+                  <div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="removeItem(this)" style="display: none; white-space: nowrap;">Remove</button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm mt-2" onclick="addItemRow()">+ Add Another Item</button>
+            </div>
+
+            <div class="alert alert-info">
+              <strong>📦 Material Donation Process:</strong><br>
+              After submitting this pledge, please deliver items to your regional office. Our regional secretary will confirm receipt.
+            </div>
+          </div>
+
+          <!-- Purpose/Message -->
+          <div class="form-group">
+            <label class="form-label">Purpose/Message (Optional)</label>
+            <textarea id="donationPurpose" class="form-input" rows="3" placeholder="Share why you're donating or any special instructions..."></textarea>
+          </div>
+
+          <!-- Visibility -->
+          <div class="form-group">
+            <label class="form-label">Visibility</label>
+            <select id="visibility" class="form-input">
+              <option value="public">Public - Show my name on donor lists</option>
+              <option value="members_only">Members Only - Visible to AMCAG members only</option>
+              <option value="executives_only">Private - Visible to executives only</option>
+            </select>
+          </div>
+
+          <!-- Summary Card -->
+          <div id="donationSummary" class="card" style="background: var(--color-primary-95); border: 2px solid var(--color-primary); margin-top: 2rem;">
+            <h4 style="margin-bottom: 1rem;">Donation Summary</h4>
+            <div style="display: grid; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between;">
+                <span>Type:</span>
+                <strong id="summaryType">Monetary</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Amount:</span>
+                <strong id="summaryAmount">GHS 0.00</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Campaign:</span>
+                <strong id="summaryCampaign">General Fund</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Tax Deductible:</span>
+                <strong id="summaryTaxDeductible">Yes</strong>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary mt-4" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+            Submit Donation
+          </button>
+        </form>
+      </div>
+
+      <!-- Your Impact -->
+      <div class="card mt-4">
+        <h3 class="card-title">Your Donation Impact</h3>
+        <div class="grid grid-3 gap-4 mt-4">
+          <div style="text-align: center; padding: 1.5rem; background: var(--color-neutral-98); border-radius: var(--radius-md);">
+            <div style="font-size: 2rem; color: var(--color-primary);" id="myTotalDonations">GHS 0</div>
+            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Total Given</div>
+          </div>
+          <div style="text-align: center; padding: 1.5rem; background: var(--color-neutral-98); border-radius: var(--radius-md);">
+            <div style="font-size: 2rem; color: var(--color-secondary);" id="myDonationCount">0</div>
+            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Donations</div>
+          </div>
+          <div style="text-align: center; padding: 1.5rem; background: var(--color-neutral-98); border-radius: var(--radius-md);">
+            <div style="font-size: 2rem; color: var(--color-tertiary);" id="myDonorTier">Bronze</div>
+            <div style="color: var(--text-secondary); margin-top: 0.5rem;">Donor Tier</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/suspension-check.js"></script>
+
+  <script>
+    let currentUser = null;
+    let submitDonation;
+
+    function selectDonationType(type) {
+      document.querySelector(`input[value="${type}"]`).checked = true;
+      toggleDonationType();
+      
+      // Visual feedback
+      document.querySelectorAll('label[onclick^="selectDonationType"]').forEach(label => {
+        label.style.borderColor = 'var(--border-color)';
+        label.style.background = 'white';
+      });
+      event.currentTarget.style.borderColor = 'var(--color-primary)';
+      event.currentTarget.style.background = 'var(--color-primary-95)';
+    }
+
+    function toggleDonationType() {
+      const type = document.querySelector('input[name="donationType"]:checked').value;
+      document.getElementById('monetaryFields').style.display = type === 'monetary' ? 'block' : 'none';
+      document.getElementById('materialFields').style.display = type === 'material' ? 'block' : 'none';
+      document.getElementById('summaryType').textContent = type === 'monetary' ? 'Monetary' : 'Material';
+      updateSummary();
+    }
+
+    function setAmount(amount) {
+      document.getElementById('donationAmount').value = amount;
+      updateSummary();
+    }
+
+    function addItemRow() {
+      const container = document.getElementById('itemsList');
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; align-items: end;';
+      row.innerHTML = `
+        <div><input type="text" class="form-input item-name" placeholder="Item name"></div>
+        <div><input type="number" class="form-input item-quantity" placeholder="Quantity" min="1"></div>
+        <div><input type="text" class="form-input item-unit" placeholder="Unit"></div>
+        <div><button type="button" class="btn btn-outline btn-sm" onclick="removeItem(this)" style="white-space: nowrap;">Remove</button></div>
+      `;
+      container.appendChild(row);
+    }
+
+    function removeItem(btn) {
+      btn.closest('.item-row').remove();
+    }
+
+    function updateSummary() {
+      const type = document.querySelector('input[name="donationType"]:checked').value;
+      const amount = parseFloat(document.getElementById('donationAmount').value) || 0;
+      const campaignSelect = document.getElementById('campaignSelect');
+      const campaignText = campaignSelect.options[campaignSelect.selectedIndex].text;
+
+      document.getElementById('summaryType').textContent = type === 'monetary' ? 'Monetary' : 'Material';
+      document.getElementById('summaryAmount').textContent = type === 'monetary' ? `GHS ${amount.toFixed(2)}` : 'Multiple Items';
+      document.getElementById('summaryCampaign').textContent = campaignText;
+      document.getElementById('summaryTaxDeductible').textContent = amount >= 100 ? 'Yes (Receipt will be issued)' : 'N/A';
+    }
+
+    async function loadCampaigns() {
+      try {
+        const db = firebase.firestore();
+        const snapshot = await db.collection('donation_campaigns')
+          .where('status', '==', 'active')
+          .orderBy('createdAt', 'desc')
+          .get();
+
+        const select = document.getElementById('campaignSelect');
+        const container = document.getElementById('campaignsList');
+
+        if (snapshot.empty) {
+          container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-secondary);">No active campaigns</div>';
+          return;
+        }
+
+        // Populate dropdown
+        snapshot.forEach(doc => {
+          const campaign = doc.data();
+          const option = document.createElement('option');
+          option.value = doc.id;
+          option.textContent = campaign.title;
+          select.appendChild(option);
+        });
+
+        // Display campaign cards
+        container.innerHTML = snapshot.docs.map(doc => {
+          const campaign = { id: doc.id, ...doc.data() };
+          const progress = campaign.targetAmount ? (campaign.currentAmount / campaign.targetAmount * 100).toFixed(1) : 0;
+
+          return `
+            <div class="card" style="cursor: pointer;" onclick="document.getElementById('campaignSelect').value='${campaign.id}'; updateSummary();">
+              <h4 style="margin-bottom: 0.5rem;">${campaign.title}</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">${campaign.description}</p>
+              ${campaign.targetAmount ? `
+                <div style="margin-bottom: 0.5rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.25rem;">
+                    <span>GHS ${campaign.currentAmount?.toLocaleString() || 0}</span>
+                    <span>of GHS ${campaign.targetAmount.toLocaleString()}</span>
+                  </div>
+                  <div style="height: 6px; background: var(--color-neutral-90); border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${Math.min(progress, 100)}%; height: 100%; background: var(--color-primary);"></div>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading campaigns:', error);
+      }
+    }
+
+    async function loadMyDonations() {
+      try {
+        const db = firebase.firestore();
+        const snapshot = await db.collection('donations')
+          .where('donorUid', '==', currentUser.uid)
+          .where('status', '==', 'received')
+          .get();
+
+        let totalMonetary = 0;
+        snapshot.forEach(doc => {
+          const donation = doc.data();
+          if (donation.type === 'monetary') {
+            totalMonetary += donation.amount || 0;
+          }
+        });
+
+        document.getElementById('myTotalDonations').textContent = `GHS ${totalMonetary.toLocaleString()}`;
+        document.getElementById('myDonationCount').textContent = snapshot.size;
+
+        // Determine tier
+        let tier = 'Bronze';
+        if (totalMonetary >= 5000) tier = '💎 Platinum';
+        else if (totalMonetary >= 1000) tier = '🥇 Gold';
+        else if (totalMonetary >= 500) tier = '🥈 Silver';
+        else tier = '🥉 Bronze';
+
+        document.getElementById('myDonorTier').textContent = tier;
+      } catch (error) {
+        console.error('Error loading donations:', error);
+      }
+    }
+
+    document.getElementById('donationForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const type = document.querySelector('input[name="donationType"]:checked').value;
+      const formData = {
+        type,
+        campaign: document.getElementById('campaignSelect').value || null,
+        purpose: document.getElementById('donationPurpose').value || null,
+        visibility: document.getElementById('visibility').value
+      };
+
+      if (type === 'monetary') {
+        const amount = parseFloat(document.getElementById('donationAmount').value);
+        if (!amount || amount < 1) {
+          UIModule.showAlert('Please enter a valid amount', 'error');
+          return;
+        }
+
+        formData.amount = amount;
+        formData.paymentMethod = document.getElementById('paymentMethod').value;
+
+        if (!formData.paymentMethod) {
+          UIModule.showAlert('Please select a payment method', 'error');
+          return;
+        }
+      } else {
+        const items = [];
+        document.querySelectorAll('.item-row').forEach(row => {
+          const name = row.querySelector('.item-name').value.trim();
+          const quantity = parseInt(row.querySelector('.item-quantity').value);
+          const unit = row.querySelector('.item-unit').value.trim();
+
+          if (name && quantity && unit) {
+            items.push({ name, quantity, unit });
+          }
+        });
+
+        if (items.length === 0) {
+          UIModule.showAlert('Please add at least one item', 'error');
+          return;
+        }
+
+        formData.items = items;
+      }
+
+      try {
+        UIModule.showLoader('Submitting donation...');
+
+        const result = await submitDonation(formData);
+
+        UIModule.hideLoader();
+
+        if (result.data.success) {
+          UIModule.showAlert(
+            `✅ Donation submitted successfully!\n\n` +
+            `Donation ID: ${result.data.donationId}\n` +
+            `Status: Pledged\n\n` +
+            `${type === 'monetary' ? 'Please complete payment and your donation will be confirmed.' : 'Please deliver items to your regional office for confirmation.'}`,
+            'success'
+          );
+
+          document.getElementById('donationForm').reset();
+          toggleDonationType();
+          loadMyDonations();
+        } else {
+          UIModule.showAlert('Failed: ' + (result.data.error || 'Unknown error'), 'error');
+        }
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error:', error);
+        UIModule.showAlert('Error: ' + error.message, 'error');
+      }
+    });
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    // Event listeners
+    document.getElementById('donationAmount').addEventListener('input', updateSummary);
+    document.getElementById('campaignSelect').addEventListener('change', updateSummary);
+
+    // Initialize
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      currentUser = user;
+
+      if (!submitDonation) {
+        const functions = firebase.functions();
+        submitDonation = functions.httpsCallable('submitDonation');
+      }
+
+      loadCampaigns();
+      loadMyDonations();
+    });
+
+    // Initialize first donation type option
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelector('label[onclick^="selectDonationType"]').style.borderColor = 'var(--color-primary)';
+      document.querySelector('label[onclick^="selectDonationType"]').style.background = 'var(--color-primary-95)';
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>

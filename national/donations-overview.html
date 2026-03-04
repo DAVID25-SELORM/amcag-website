@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Donations Overview | National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG National Dashboard</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="/national/members.html" class="dashboard-nav-item">
+          <span>👥</span> Members
+        </a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">
+          <span>📈</span> Analytics
+        </a>
+        <a href="/national/donations-overview.html" class="dashboard-nav-item active">
+          <span>💰</span> Donations
+        </a>
+        <a href="/national/campaigns.html" class="dashboard-nav-item">
+          <span>🎯</span> Campaigns
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header mb-6">
+        <div>
+          <h1 class="dashboard-title">Donations Overview</h1>
+          <p class="dashboard-subtitle">National donation statistics and trends</p>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+          <button class="btn btn-outline" onclick="exportData()">📥 Export Data</button>
+          <a href="/national/campaigns.html" class="btn btn-primary">🎯 Manage Campaigns</a>
+        </div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="totalDonations" style="color: var(--color-primary);">GHS 0</div>
+          <div class="stat-label">Total Donations</div>
+          <div class="stat-trend" id="donationsTrend"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalDonors" style="color: var(--color-secondary);">0</div>
+          <div class="stat-label">Active Donors</div>
+          <div class="stat-trend" id="donorsTrend"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="thisMonth" style="color: var(--color-tertiary);">GHS 0</div>
+          <div class="stat-label">This Month</div>
+          <div class="stat-trend" id="monthTrend"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="distributed" style="color: var(--color-success);">0</div>
+          <div class="stat-label">Distributions</div>
+          <div class="stat-trend" id="distTrend"></div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-2 gap-4 mb-6">
+        <div class="card">
+          <h3 class="card-title mb-4">📈 Monthly Trend</h3>
+          <canvas id="trendChart" height="250"></canvas>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title mb-4">🌍 Regional Breakdown</h3>
+          <canvas id="regionalChart" height="250"></canvas>
+        </div>
+      </div>
+
+      <!-- Top Donors -->
+      <div class="card mb-6">
+        <h3 class="card-title mb-4">🏆 Top Donors</h3>
+        <div id="topDonorsList">
+          <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            Loading...
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Distributions -->
+      <div class="card mb-6">
+        <h3 class="card-title mb-4">📦 Recent Distributions</h3>
+        <div id="distributionsList">
+          <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            Loading...
+          </div>
+        </div>
+      </div>
+
+      <!-- All Donations Table -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <h3 class="card-title">All Donations</h3>
+          <div style="display: flex; gap: 1rem;">
+            <select id="regionFilter" class="form-input" style="width: auto;">
+              <option value="">All Regions</option>
+            </select>
+            <select id="statusFilter" class="form-input" style="width: auto;">
+              <option value="">All Status</option>
+              <option value="pledged">Pledged</option>
+              <option value="received">Received</option>
+              <option value="allocated">Allocated</option>
+              <option value="distributed">Distributed</option>
+            </select>
+            <select id="typeFilter" class="form-input" style="width: auto;">
+              <option value="">All Types</option>
+              <option value="monetary">Monetary</option>
+              <option value="material">Material</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="donationsTable">
+          <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            Loading donations...
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+
+  <script>
+    let allDonations = [];
+    let filteredDonations = [];
+    let trendChart = null;
+    let regionalChart = null;
+
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    async function loadAllData() {
+      try {
+        UIModule.showLoader('Loading donation data...');
+        
+        const db = firebase.firestore();
+        const snapshot = await db.collection('donations')
+          .orderBy('donatedAt', 'desc')
+          .get();
+
+        allDonations = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        filteredDonations = [...allDonations];
+
+        // Populate region filter
+        const regions = [...new Set(allDonations.map(d => d.region))].sort();
+        const regionFilter = document.getElementById('regionFilter');
+        regionFilter.innerHTML = '<option value="">All Regions</option>' + 
+          regions.map(r => `<option value="${r}">${r}</option>`).join('');
+
+        updateStatistics();
+        renderCharts();
+        renderTopDonors();
+        renderRecentDistributions();
+        renderDonationsTable();
+
+        UIModule.hideLoader();
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error loading data:', error);
+        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+      }
+    }
+
+    function updateStatistics() {
+      // Total monetary donations
+      const totalMonetary = allDonations
+        .filter(d => d.type === 'monetary' && d.status !== 'pledged')
+        .reduce((sum, d) => sum + (d.amount || 0), 0);
+
+      // Unique donors
+      const uniqueDonors = new Set(allDonations.map(d => d.donorUid)).size;
+
+      // This month
+      const now = new Date();
+      const thisMonthDonations = allDonations.filter(d => {
+        const date = new Date(d.donatedAt.toDate());
+        return date.getMonth() === now.getMonth() && 
+               date.getFullYear() === now.getFullYear() &&
+               d.type === 'monetary' && 
+               d.status !== 'pledged';
+      }).reduce((sum, d) => sum + (d.amount || 0), 0);
+
+      // Distributions
+      const distributions = allDonations.filter(d => d.status === 'distributed').length;
+
+      document.getElementById('totalDonations').textContent = `GHS ${totalMonetary.toLocaleString()}`;
+      document.getElementById('totalDonors').textContent = uniqueDonors;
+      document.getElementById('thisMonth').textContent = `GHS ${thisMonthDonations.toLocaleString()}`;
+      document.getElementById('distributed').textContent = distributions;
+    }
+
+    function renderCharts() {
+      renderTrendChart();
+      renderRegionalChart();
+    }
+
+    function renderTrendChart() {
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      
+      // Get last 6 months
+      const months = [];
+      const data = [];
+      const now = new Date();
+      
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        months.push(monthName);
+        
+        const monthTotal = allDonations.filter(d => {
+          const donationDate = new Date(d.donatedAt.toDate());
+          return donationDate.getMonth() === date.getMonth() &&
+                 donationDate.getFullYear() === date.getFullYear() &&
+                 d.type === 'monetary' &&
+                 d.status !== 'pledged';
+        }).reduce((sum, d) => sum + (d.amount || 0), 0);
+        
+        data.push(monthTotal);
+      }
+
+      if (trendChart) {
+        trendChart.destroy();
+      }
+
+      trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Donations (GHS)',
+            data: data,
+            borderColor: 'rgb(99, 102, 241)',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => 'GHS ' + value.toLocaleString()
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderRegionalChart() {
+      const ctx = document.getElementById('regionalChart').getContext('2d');
+      
+      // Aggregate by region
+      const regionTotals = {};
+      allDonations.filter(d => d.type === 'monetary' && d.status !== 'pledged').forEach(d => {
+        if (!regionTotals[d.region]) {
+          regionTotals[d.region] = 0;
+        }
+        regionTotals[d.region] += d.amount || 0;
+      });
+
+      const labels = Object.keys(regionTotals).sort();
+      const data = labels.map(r => regionTotals[r]);
+
+      if (regionalChart) {
+        regionalChart.destroy();
+      }
+
+      const colors = [
+        'rgb(99, 102, 241)',
+        'rgb(168, 85, 247)',
+        'rgb(236, 72, 153)',
+        'rgb(251, 146, 60)',
+        'rgb(34, 197, 94)',
+        'rgb(59, 130, 246)',
+        'rgb(234, 179, 8)'
+      ];
+
+      regionalChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: colors
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right'
+            }
+          }
+        }
+      });
+    }
+
+    function renderTopDonors() {
+      // Aggregate donations by donor
+      const donorTotals = {};
+      allDonations.filter(d => d.type === 'monetary' && d.status !== 'pledged' && !d.anonymous).forEach(d => {
+        const key = d.donorUid;
+        if (!donorTotals[key]) {
+          donorTotals[key] = {
+            name: d.donorName,
+            total: 0,
+            count: 0
+          };
+        }
+        donorTotals[key].total += d.amount || 0;
+        donorTotals[key].count += 1;
+      });
+
+      const topDonors = Object.values(donorTotals)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10);
+
+      const container = document.getElementById('topDonorsList');
+
+      if (topDonors.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            No donor data available
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Donor Name</th>
+                <th>Total Donated</th>
+                <th>Donations</th>
+                <th>Tier</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${topDonors.map((donor, index) => {
+                const tier = getDonorTier(donor.total);
+                return `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${donor.name}</td>
+                    <td style="font-weight: 600;">GHS ${donor.total.toLocaleString()}</td>
+                    <td>${donor.count}</td>
+                    <td><span class="badge badge-${tier.color}">${tier.icon} ${tier.name}</span></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function getDonorTier(total) {
+      if (total >= 5000) return { name: 'Diamond', icon: '💠', color: 'primary' };
+      if (total >= 1000) return { name: 'Platinum', icon: '💎', color: 'secondary' };
+      if (total >= 500) return { name: 'Gold', icon: '🥇', color: 'warning' };
+      if (total >= 100) return { name: 'Silver', icon: '🥈', color: 'info' };
+      return { name: 'Bronze', icon: '🥉', color: 'tertiary' };
+    }
+
+    function renderRecentDistributions() {
+      const distributions = allDonations
+        .filter(d => d.status === 'distributed' && d.distribution)
+        .sort((a, b) => b.distribution.distributedAt.toDate() - a.distribution.distributedAt.toDate())
+        .slice(0, 5);
+
+      const container = document.getElementById('distributionsList');
+
+      if (distributions.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            No distributions recorded yet
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = distributions.map(d => {
+        const dist = d.distribution;
+        const date = new Date(dist.distributedAt.toDate()).toLocaleDateString();
+        
+        return `
+          <div class="card mb-3" style="border-left: 4px solid var(--color-success);">
+            <div style="display: flex; gap: 1.5rem; align-items: start;">
+              <div style="font-size: 2rem;">📦</div>
+              <div style="flex: 1;">
+                <h4 style="margin: 0 0 0.5rem 0;">${dist.location}</h4>
+                <div style="display: grid; gap: 0.25rem; font-size: 0.875rem; color: var(--text-secondary);">
+                  <div>👥 ${dist.beneficiaries} beneficiaries</div>
+                  <div>📅 ${date}</div>
+                  <div>👤 Distributed by: ${dist.distributedByName}</div>
+                  ${d.type === 'monetary' ? `<div>💰 GHS ${d.amount.toLocaleString()}</div>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function applyFilters() {
+      const regionFilter = document.getElementById('regionFilter').value;
+      const statusFilter = document.getElementById('statusFilter').value;
+      const typeFilter = document.getElementById('typeFilter').value;
+
+      filteredDonations = allDonations.filter(d => {
+        const matchesRegion = !regionFilter || d.region === regionFilter;
+        const matchesStatus = !statusFilter || d.status === statusFilter;
+        const matchesType = !typeFilter || d.type === typeFilter;
+        return matchesRegion && matchesStatus && matchesType;
+      });
+
+      renderDonationsTable();
+    }
+
+    function renderDonationsTable() {
+      const container = document.getElementById('donationsTable');
+
+      if (filteredDonations.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+            No donations found
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>ID</th>
+                <th>Donor</th>
+                <th>Region</th>
+                <th>Type</th>
+                <th>Amount/Items</th>
+                <th>Status</th>
+                <th>Campaign</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredDonations.slice(0, 50).map(d => {
+                const date = new Date(d.donatedAt.toDate()).toLocaleDateString();
+                const statusColor = {
+                  pledged: 'warning',
+                  received: 'success',
+                  allocated: 'info',
+                  distributed: 'primary'
+                }[d.status] || 'secondary';
+                
+                return `
+                  <tr>
+                    <td>${date}</td>
+                    <td style="font-family: monospace; font-size: 0.875rem;">${d.donationId}</td>
+                    <td>${d.anonymous ? '<em>Anonymous</em>' : d.donorName}</td>
+                    <td>${d.region}</td>
+                    <td><span class="badge badge-${d.type === 'monetary' ? 'success' : 'info'}">${d.type}</span></td>
+                    <td style="font-weight: 600;">${d.type === 'monetary' ? `GHS ${d.amount.toLocaleString()}` : `${d.items.length} items`}</td>
+                    <td><span class="badge badge-${statusColor}">${d.status}</span></td>
+                    <td style="font-size: 0.875rem;">${d.campaignTitle || '-'}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          ${filteredDonations.length > 50 ? `
+            <div style="text-align: center; padding: 1rem; color: var(--text-secondary); font-size: 0.875rem;">
+              Showing 50 of ${filteredDonations.length} donations
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function exportData() {
+      const csv = [
+        ['Date', 'Donation ID', 'Donor', 'Region', 'Type', 'Amount', 'Status', 'Campaign'].join(','),
+        ...filteredDonations.map(d => [
+          new Date(d.donatedAt.toDate()).toLocaleDateString(),
+          d.donationId,
+          d.anonymous ? 'Anonymous' : d.donorName,
+          d.region,
+          d.type,
+          d.type === 'monetary' ? d.amount : `"${d.items.map(i => `${i.quantity} ${i.unit} ${i.name}`).join('; ')}"`,
+          d.status,
+          d.campaignTitle || 'General Fund'
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `donations-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('regionFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('typeFilter').addEventListener('change', applyFilters);
+
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/membership.html';
+        return;
+      }
+
+      const db = firebase.firestore();
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      const userData = userDoc.data();
+      
+      if (userData.role !== 'national_executive') {
+        UIModule.showAlert('Access denied. National Executive role required.', 'error');
+        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+        return;
+      }
+
+      loadAllData();
+    });
+  </script>
+  <script src="/js/mobile-menu.js"></script>
+</body>
+</html>
