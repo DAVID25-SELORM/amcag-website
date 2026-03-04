@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Certificates Management | AMCAG National Dashboard</title>
+  <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/mobile.css">
@@ -288,6 +289,61 @@
     </main>
   </div>
 
+  <!-- Issue Certificate Modal -->
+  <div id="issueCertModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Issue Certificate</h2>
+        <button class="modal-close" onclick="closeIssueCertificateModal()">&times;</button>
+      </div>
+      <form id="issueCertForm" onsubmit="issueCertificateSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="memberEmail">Member Email *</label>
+            <input type="email" id="memberEmail" class="form-input" required placeholder="Enter member email">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="certificateType">Certificate Type *</label>
+            <select id="certificateType" class="form-input" required>
+              <option value="">Select certificate type</option>
+              <option value="membership">Membership Certificate</option>
+              <option value="training">Training Certificate</option>
+              <option value="achievement">Achievement Award</option>
+              <option value="leadership">Leadership Position</option>
+              <option value="participation">Event Participation</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="certificateTitle">Certificate Title *</label>
+            <input type="text" id="certificateTitle" class="form-input" required placeholder="e.g., Member in Good Standing">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="issuedDate">Issue Date *</label>
+            <input type="date" id="issuedDate" class="form-input" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="expiryDate">Expiry Date (Optional)</label>
+            <input type="date" id="expiryDate" class="form-input">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="certificateNotes">Notes (Optional)</label>
+            <textarea id="certificateNotes" class="form-input" rows="3" placeholder="Additional notes or achievements"></textarea>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeIssueCertificateModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Issue Certificate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -333,13 +389,104 @@
     }
 
     function downloadTemplate() {
-      UIModule.showAlert('Certificate template download - Coming soon', 'info');
-      // Download certificate template file
+      // Create CSV template for bulk certificate issuance
+      const csvContent = [
+        ['Member Email', 'Certificate Type', 'Certificate Title', 'Issue Date (YYYY-MM-DD)', 'Expiry Date (YYYY-MM-DD)', 'Notes'],
+        ['member@example.com', 'membership', 'Member in Good Standing', '2026-03-01', '2027-03-01', 'Annual membership certificate'],
+        ['leader@example.com', 'leadership', 'Regional Coordinator', '2026-03-01', '', 'Leadership position certificate']
+      ].map(row => row.join(',')).join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `certificate_template_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      UIModule.showAlert('Certificate template downloaded successfully!', 'success');
     }
 
     function openIssueCertificateModal() {
-      UIModule.showAlert('Issue Certificate modal - Coming soon', 'info');
-      // Open modal to issue new certificate
+      const modal = document.getElementById('issueCertModal');
+      modal.style.display = 'flex';
+      
+      // Set default issue date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('issuedDate').value = today;
+    }
+    
+    function closeIssueCertificateModal() {
+      const modal = document.getElementById('issueCertModal');
+      modal.style.display = 'none';
+      document.getElementById('issueCertForm').reset();
+    }
+    
+    async function issueCertificateSubmit(event) {
+      event.preventDefault();
+      
+      const memberEmail = document.getElementById('memberEmail').value.trim();
+      const certificateType = document.getElementById('certificateType').value;
+      const certificateTitle = document.getElementById('certificateTitle').value.trim();
+      const issuedDate = document.getElementById('issuedDate').value;
+      const expiryDate = document.getElementById('expiryDate').value;
+      const notes = document.getElementById('certificateNotes').value.trim();
+      
+      try {
+        UIModule.showLoader('Issuing certificate...');
+        
+        const db = firebase.firestore();
+        
+        // Get member details
+        const membersSnapshot = await db.collection('users').where('email', '==', memberEmail).limit(1).get();
+        
+        if (membersSnapshot.empty) {
+          UIModule.hideLoader();
+          UIModule.showAlert('Member not found with this email', 'error');
+          return;
+        }
+        
+        const memberDoc = membersSnapshot.docs[0];
+        const memberData = memberDoc.data();
+        
+        // Generate certificate ID
+        const year = new Date().getFullYear();
+        const random = Math.floor(Math.random() * 99999).toString().padStart(5, '0');
+        const certId = `CERT-${year}-${random}`;
+        
+        // Create certificate document
+        const certificateData = {
+          certificateId: certId,
+          memberId: memberDoc.id,
+          memberName: memberData.fullName || memberData.displayName || 'Unknown',
+          memberEmail: memberEmail,
+          type: certificateType,
+          title: certificateTitle,
+          issuedAt: issuedDate,
+          issuedBy: firebase.auth().currentUser.email,
+          expiryDate: expiryDate || null,
+          notes: notes || '',
+          status: 'issued',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          verificationUrl: `https://amcag-website.web.app/certificate-verify.html?id=${certId}`
+        };
+        
+        await db.collection('certificates').doc(certId).set(certificateData);
+        
+        UIModule.hideLoader();
+        UIModule.showAlert(`Certificate ${certId} issued successfully!`, 'success');
+        
+        closeIssueCertificateModal();
+        loadCertificates();
+        
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error issuing certificate:', error);
+        UIModule.showAlert('Error issuing certificate: ' + error.message, 'error');
+      }
     }
 
     async function loadCertificates() {
