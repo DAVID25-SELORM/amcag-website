@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="icon" href="/images/logo.jpg" type="image/jpeg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -60,7 +61,7 @@
         </div>
         <div class="flex gap-2">
           <button class="btn btn-outline" onclick="exportEventCalendar()">Export Calendar</button>
-          <button class="btn btn-primary" onclick="createEvent()">Create Event</button>
+          <button class="btn btn-primary" onclick="openCreateEventModal()">Create Event</button>
         </div>
       </div>
 
@@ -174,7 +175,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr data-event-id="EVT-2026-001">
                 <td>
                   <div style="font-weight: 600;">Annual General Meeting 2026</div>
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-001</div>
@@ -195,7 +196,7 @@
                   <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-001')">Attendees</button>
                 </td>
               </tr>
-              <tr>
+              <tr data-event-id="EVT-2026-002">
                 <td>
                   <div style="font-weight: 600;">Professional Development Workshop</div>
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-002</div>
@@ -216,7 +217,7 @@
                   <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-002')">Attendees</button>
                 </td>
               </tr>
-              <tr>
+              <tr data-event-id="EVT-2026-003">
                 <td>
                   <div style="font-weight: 600;">Regional Coordinators Summit</div>
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-003</div>
@@ -237,7 +238,7 @@
                   <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-003')">Attendees</button>
                 </td>
               </tr>
-              <tr>
+              <tr data-event-id="EVT-2026-004">
                 <td>
                   <div style="font-weight: 600;">Leadership Training Program</div>
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-004</div>
@@ -257,7 +258,7 @@
                   <button class="btn btn-sm btn-outline" onclick="viewEventReport('EVT-2026-004')">View Report</button>
                 </td>
               </tr>
-              <tr>
+              <tr data-event-id="EVT-2026-005">
                 <td>
                   <div style="font-weight: 600;">Members Networking Social</div>
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-005</div>
@@ -274,7 +275,7 @@
                 <td>89 / 150</td>
                 <td><span class="badge badge-info">Completed</span></td>
                 <td>
-                  <button class="btn btn-sm btn-outline">View Report</button>
+                  <button class="btn btn-sm btn-outline" onclick="viewEventReport('EVT-2026-005')">View Report</button>
                 </td>
               </tr>
             </tbody>
@@ -377,38 +378,453 @@
   <script src="/js/ui.js"></script>
 
   <script>
+    let createEventModalId = null;
+
     function signOut() {
       AuthModule.signOut();
     }
 
     function exportEventCalendar() {
-      UIModule.showAlert('Exporting event calendar...', 'info');
-      // Generate and download calendar export
+      try {
+        const events = [
+          {
+            uid: 'EVT-2026-001',
+            title: 'Annual General Meeting 2026',
+            start: '2026-03-15T09:00:00',
+            end: '2026-03-15T17:00:00',
+            location: 'Accra International Conference Centre',
+            description: 'National annual general meeting and strategic planning session.'
+          },
+          {
+            uid: 'EVT-2026-002',
+            title: 'Professional Development Workshop',
+            start: '2026-03-22T14:00:00',
+            end: '2026-03-22T18:00:00',
+            location: 'Virtual (Zoom)',
+            description: 'Professional skills and career development workshop.'
+          },
+          {
+            uid: 'EVT-2026-003',
+            title: 'Regional Coordinators Summit',
+            start: '2026-04-05T10:00:00',
+            end: '2026-04-05T15:00:00',
+            location: 'Kumasi Cultural Centre',
+            description: 'Summit for regional coordinators and program alignment.'
+          }
+        ];
+
+        const icsRows = [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'PRODID:-//AMCAG//National Events//EN',
+          'CALSCALE:GREGORIAN',
+          'METHOD:PUBLISH'
+        ];
+
+        events.forEach((eventItem) => {
+          icsRows.push('BEGIN:VEVENT');
+          icsRows.push(`UID:${escapeIcsText(eventItem.uid)}@amcag`);
+          icsRows.push(`DTSTAMP:${formatIcsDate(new Date())}`);
+          icsRows.push(`DTSTART:${formatIcsDate(eventItem.start)}`);
+          icsRows.push(`DTEND:${formatIcsDate(eventItem.end)}`);
+          icsRows.push(`SUMMARY:${escapeIcsText(eventItem.title)}`);
+          icsRows.push(`LOCATION:${escapeIcsText(eventItem.location)}`);
+          icsRows.push(`DESCRIPTION:${escapeIcsText(eventItem.description)}`);
+          icsRows.push('END:VEVENT');
+        });
+
+        icsRows.push('END:VCALENDAR');
+
+        const blob = new Blob([icsRows.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = 'amcag-events-2026.ics';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+
+        UIModule.showAlert(`Calendar exported successfully (${events.length} events).`, 'success');
+      } catch (error) {
+        console.error('Calendar export failed:', error);
+        UIModule.showAlert('Unable to export calendar. Please try again.', 'error');
+      }
     }
 
-    function createEvent() {
-      UIModule.showAlert('Create Event modal - Coming soon', 'info');
-      // Open modal to create new event
+    function openCreateEventModal() {
+      const modalHtml = `
+        <form id="create-event-form" onsubmit="submitCreateEvent(event)">
+          <div class="form-group">
+            <label class="form-label required">Event Title</label>
+            <input class="form-input" name="title" required placeholder="e.g., National Leadership Forum">
+          </div>
+          <div class="grid grid-2 gap-3">
+            <div class="form-group">
+              <label class="form-label required">Start Date</label>
+              <input class="form-input" type="date" name="startDate" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">End Date</label>
+              <input class="form-input" type="date" name="endDate">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input class="form-input" name="location" placeholder="Venue or online link">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" name="description" rows="3" placeholder="Brief event summary"></textarea>
+          </div>
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem;">
+            <button type="button" class="btn btn-outline" onclick="closeCreateEventModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Draft</button>
+          </div>
+        </form>
+      `;
+
+      createEventModalId = UIModule.showModal({
+        title: 'Create Event',
+        content: modalHtml,
+        size: 'medium'
+      });
+    }
+
+    function closeCreateEventModal() {
+      if (createEventModalId) {
+        UIModule.closeModal(createEventModalId);
+        createEventModalId = null;
+      }
+    }
+
+    function submitCreateEvent(event) {
+      event.preventDefault();
+      const form = event.target;
+      const formData = new FormData(form);
+      const title = (formData.get('title') || '').toString().trim();
+      const startDate = (formData.get('startDate') || '').toString().trim();
+
+      if (!title || !startDate) {
+        UIModule.showAlert('Title and start date are required.', 'error');
+        return;
+      }
+
+      // Current page is still static demo data, so save as draft feedback for now.
+      UIModule.showAlert(`Draft created for "${title}".`, 'success');
+      closeCreateEventModal();
+    }
+
+    function escapeIcsText(value) {
+      return String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/;/g, '\\;')
+        .replace(/,/g, '\\,')
+        .replace(/\r?\n/g, '\\n');
+    }
+
+    function formatIcsDate(input) {
+      const date = input instanceof Date ? input : new Date(input);
+      return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    }
+
+    const eventActionData = {
+      'EVT-2026-001': {
+        id: 'EVT-2026-001',
+        title: 'Annual General Meeting 2026',
+        type: 'Conference',
+        date: 'Mar 15, 2026',
+        time: '09:00 AM - 5:00 PM',
+        location: 'Accra ICC',
+        region: 'Greater Accra',
+        registered: 456,
+        capacity: 500,
+        status: 'Upcoming',
+        attendees: [
+          { name: 'Abena Mensah', email: 'abena.mensah@amcag.org', region: 'Greater Accra', attendance: 'Confirmed' },
+          { name: 'Kwesi Adu', email: 'kwesi.adu@amcag.org', region: 'Ashanti', attendance: 'Confirmed' },
+          { name: 'Nana Ofori', email: 'nana.ofori@amcag.org', region: 'Eastern', attendance: 'Pending' },
+          { name: 'Esi Boateng', email: 'esi.boateng@amcag.org', region: 'Central', attendance: 'Confirmed' },
+          { name: 'Kojo Appiah', email: 'kojo.appiah@amcag.org', region: 'Volta', attendance: 'Pending' }
+        ]
+      },
+      'EVT-2026-002': {
+        id: 'EVT-2026-002',
+        title: 'Professional Development Workshop',
+        type: 'Workshop',
+        date: 'Mar 22, 2026',
+        time: '2:00 PM - 6:00 PM',
+        location: 'Virtual',
+        region: 'Online',
+        registered: 234,
+        capacity: 300,
+        status: 'Upcoming',
+        attendees: [
+          { name: 'Ama Serwaa', email: 'ama.serwaa@amcag.org', region: 'Western', attendance: 'Confirmed' },
+          { name: 'Yaw Owusu', email: 'yaw.owusu@amcag.org', region: 'Northern', attendance: 'Confirmed' },
+          { name: 'Ruth Addo', email: 'ruth.addo@amcag.org', region: 'Bono', attendance: 'Pending' },
+          { name: 'Francis Kumi', email: 'francis.kumi@amcag.org', region: 'Ahafo', attendance: 'Confirmed' }
+        ]
+      },
+      'EVT-2026-003': {
+        id: 'EVT-2026-003',
+        title: 'Regional Coordinators Summit',
+        type: 'Meeting',
+        date: 'Apr 05, 2026',
+        time: '10:00 AM - 3:00 PM',
+        location: 'Kumasi Cultural Centre',
+        region: 'Ashanti',
+        registered: 78,
+        capacity: 100,
+        status: 'Upcoming',
+        attendees: [
+          { name: 'Paulina Tetteh', email: 'paulina.tetteh@amcag.org', region: 'Greater Accra', attendance: 'Confirmed' },
+          { name: 'Samuel Badu', email: 'samuel.badu@amcag.org', region: 'Ashanti', attendance: 'Confirmed' },
+          { name: 'Daniela Owusu', email: 'daniela.owusu@amcag.org', region: 'Eastern', attendance: 'Pending' }
+        ]
+      },
+      'EVT-2026-004': {
+        id: 'EVT-2026-004',
+        title: 'Leadership Training Program',
+        type: 'Training',
+        date: 'Feb 20, 2026',
+        time: '9:00 AM - 4:00 PM',
+        location: 'AMCAG Training Hall',
+        region: 'Greater Accra',
+        registered: 120,
+        capacity: 120,
+        status: 'Completed',
+        attendees: [
+          { name: 'Mavis Asare', email: 'mavis.asare@amcag.org', region: 'Greater Accra', attendance: 'Attended' },
+          { name: 'Kofi Nartey', email: 'kofi.nartey@amcag.org', region: 'Ashanti', attendance: 'Attended' },
+          { name: 'Akua Bonsu', email: 'akua.bonsu@amcag.org', region: 'Western', attendance: 'Attended' }
+        ]
+      },
+      'EVT-2026-005': {
+        id: 'EVT-2026-005',
+        title: 'Members Networking Social',
+        type: 'Social',
+        date: 'Feb 14, 2026',
+        time: '6:00 PM - 9:00 PM',
+        location: 'Labadi Beach Hotel',
+        region: 'Greater Accra',
+        registered: 89,
+        capacity: 150,
+        status: 'Completed',
+        attendees: [
+          { name: 'Grace Osei', email: 'grace.osei@amcag.org', region: 'Central', attendance: 'Attended' },
+          { name: 'Nii Laryea', email: 'nii.laryea@amcag.org', region: 'Greater Accra', attendance: 'Attended' },
+          { name: 'Deborah Adusei', email: 'deborah.adusei@amcag.org', region: 'Bono East', attendance: 'Attended' }
+        ]
+      }
+    };
+
+    let manageEventModalId = null;
+    let attendeesModalId = null;
+
+    function getStatusMeta(status) {
+      const normalized = String(status || '').toLowerCase();
+      const map = {
+        upcoming: { label: 'UPCOMING', badgeClass: 'badge-success' },
+        ongoing: { label: 'ONGOING', badgeClass: 'badge-warning' },
+        completed: { label: 'COMPLETED', badgeClass: 'badge-info' },
+        cancelled: { label: 'CANCELLED', badgeClass: 'badge-error' }
+      };
+      return map[normalized] || map.upcoming;
+    }
+
+    function updateStatusInTable(eventId, status) {
+      const row = document.querySelector(`tr[data-event-id="${eventId}"]`);
+      if (!row || !row.children[5]) return;
+
+      const statusMeta = getStatusMeta(status);
+      row.children[5].innerHTML = `<span class="badge ${statusMeta.badgeClass}">${statusMeta.label}</span>`;
     }
 
     function viewEventDetails(eventId) {
-      UIModule.showAlert(`Viewing details for ${eventId}`, 'info');
-      // Navigate to event details page or open modal
+      manageEvent(eventId);
     }
 
     function manageEvent(eventId) {
-      UIModule.showAlert(`Managing event ${eventId} - Coming soon`, 'info');
-      // Open event management interface
+      const eventData = eventActionData[eventId];
+      if (!eventData) {
+        UIModule.showAlert(`Event not found: ${eventId}`, 'error');
+        return;
+      }
+
+      const statusMeta = getStatusMeta(eventData.status);
+      const progress = Math.max(0, Math.min(100, Math.round((eventData.registered / eventData.capacity) * 100)));
+      const isLocked = ['completed', 'cancelled'].includes(String(eventData.status).toLowerCase());
+
+      const modalContent = `
+        <div style="display: grid; gap: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600; font-size: 1.1rem;">${eventData.title}</div>
+              <div style="color: var(--text-secondary); font-size: var(--text-sm);">${eventData.id} • ${eventData.type}</div>
+            </div>
+            <span class="badge ${statusMeta.badgeClass}">${statusMeta.label}</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem;">
+            <div><strong>Date:</strong> ${eventData.date}</div>
+            <div><strong>Time:</strong> ${eventData.time}</div>
+            <div><strong>Venue:</strong> ${eventData.location}</div>
+            <div><strong>Region:</strong> ${eventData.region}</div>
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+              <span><strong>Registrations</strong></span>
+              <span>${eventData.registered} / ${eventData.capacity} (${progress}%)</span>
+            </div>
+            <div style="height: 10px; background: var(--color-neutral-90); border-radius: var(--radius-full); overflow: hidden;">
+              <div style="width: ${progress}%; height: 100%; background: var(--color-primary);"></div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+            <button class="btn btn-outline" onclick="viewAttendees('${eventId}')">Attendees</button>
+            <button class="btn btn-outline" onclick="viewEventReport('${eventId}')">Download Report</button>
+            ${!isLocked ? `<button class="btn btn-success" onclick="changeEventStatus('${eventId}', 'Completed')">Mark Completed</button>` : ''}
+            ${!isLocked ? `<button class="btn btn-danger" onclick="changeEventStatus('${eventId}', 'Cancelled')">Cancel Event</button>` : ''}
+          </div>
+        </div>
+      `;
+
+      if (manageEventModalId) {
+        UIModule.closeModal(manageEventModalId);
+      }
+      manageEventModalId = UIModule.showModal({
+        title: 'Manage Event',
+        content: modalContent,
+        size: 'large'
+      });
+    }
+
+    function changeEventStatus(eventId, newStatus) {
+      const eventData = eventActionData[eventId];
+      if (!eventData) return;
+
+      eventData.status = newStatus;
+      updateStatusInTable(eventId, newStatus);
+      UIModule.showAlert(`${eventData.title} updated to ${newStatus}.`, 'success');
+
+      if (manageEventModalId) {
+        UIModule.closeModal(manageEventModalId);
+        manageEventModalId = null;
+      }
+      manageEvent(eventId);
     }
 
     function viewAttendees(eventId) {
-      UIModule.showAlert(`Viewing attendees for ${eventId}`, 'info');
-      // Show attendees list modal
+      const eventData = eventActionData[eventId];
+      if (!eventData) {
+        UIModule.showAlert(`Event not found: ${eventId}`, 'error');
+        return;
+      }
+
+      if (manageEventModalId) {
+        UIModule.closeModal(manageEventModalId);
+        manageEventModalId = null;
+      }
+
+      const rows = (eventData.attendees || []).map((attendee, index) => {
+        const attendeeStatus = String(attendee.attendance || 'Pending').toLowerCase();
+        const statusClass = attendeeStatus === 'attended' || attendeeStatus === 'confirmed'
+          ? 'badge-success'
+          : 'badge-warning';
+
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${attendee.name}</td>
+            <td>${attendee.email}</td>
+            <td>${attendee.region}</td>
+            <td><span class="badge ${statusClass}">${attendee.attendance}</span></td>
+          </tr>
+        `;
+      }).join('');
+
+      const modalContent = `
+        <div>
+          <div style="margin-bottom: 0.75rem; color: var(--text-secondary);">
+            ${eventData.title} • ${eventData.attendees.length} sample attendee records
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Region</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows || '<tr><td colspan="5" style="text-align:center;">No attendees found</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      if (attendeesModalId) {
+        UIModule.closeModal(attendeesModalId);
+      }
+      attendeesModalId = UIModule.showModal({
+        title: 'Event Attendees',
+        content: modalContent,
+        size: 'large'
+      });
     }
 
     function viewEventReport(eventId) {
-      UIModule.showAlert(`Generating report for ${eventId}`, 'info');
-      // Generate and display event report
+      const eventData = eventActionData[eventId];
+      if (!eventData) {
+        UIModule.showAlert(`Event not found: ${eventId}`, 'error');
+        return;
+      }
+
+      const csvRows = [
+        ['Event ID', eventData.id],
+        ['Title', eventData.title],
+        ['Type', eventData.type],
+        ['Date', eventData.date],
+        ['Time', eventData.time],
+        ['Location', `${eventData.location} (${eventData.region})`],
+        ['Status', eventData.status],
+        ['Registrations', `${eventData.registered}/${eventData.capacity}`],
+        [],
+        ['No', 'Name', 'Email', 'Region', 'Attendance']
+      ];
+
+      (eventData.attendees || []).forEach((attendee, index) => {
+        csvRows.push([
+          String(index + 1),
+          attendee.name,
+          attendee.email,
+          attendee.region,
+          attendee.attendance
+        ]);
+      });
+
+      const csvText = csvRows
+        .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${eventData.id.toLowerCase()}-report.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      UIModule.showAlert(`Report downloaded for ${eventData.title}.`, 'success');
     }
 
     async function loadEvents() {

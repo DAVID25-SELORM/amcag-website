@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Member Approval | AMCAG Regional Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
-  <link rel="stylesheet" href="/css/main.css">  <link rel="stylesheet" href="/css/mobile.css">  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap
-
-" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
   <nav class="navbar">
@@ -28,13 +28,13 @@
         <a href="/region-dashboard/index.html" class="dashboard-nav-item">
           <span>📊</span> Dashboard
         </a>
-        <a href="/region-dashboard/members.html" class="dashboard-nav-item">
+        <a href="/region-dashboard/member-approval.html" class="dashboard-nav-item">
           <span>👥</span> Members
         </a>
         <a href="/region-dashboard/member-approval.html" class="dashboard-nav-item active">
           <span>✅</span> Member Approval
         </a>
-        <a href="/region-dashboard/events.html" class="dashboard-nav-item">
+        <a href="/region-dashboard/meetings.html" class="dashboard-nav-item">
           <span>📅</span> Events
         </a>
       </nav>
@@ -173,15 +173,62 @@
     let canApprove = false;
     let pendingMembers = [];
     let selectedMemberUid = null;
+    let selectedMember = null;
     let approveMemberFunction = null;
     let rejectMemberFunction = null;
+    let actionInProgress = false;
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function parseDateValue(value) {
+      if (!value) return null;
+      if (typeof value?.toDate === 'function') return value.toDate();
+      if (value instanceof Date) return value;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDateValue(value, fallback = 'N/A') {
+      const dateObj = parseDateValue(value);
+      if (!dateObj) return fallback;
+      return dateObj.toLocaleDateString();
+    }
+
+    function getFunctionErrorMessage(error, fallback = 'Unknown error') {
+      if (!error) return fallback;
+      if (error.details && typeof error.details === 'string') return error.details;
+      if (error.message) return error.message;
+      return fallback;
+    }
+
+    function initializeApprovalFunctions() {
+      if (approveMemberFunction && rejectMemberFunction) return true;
+      if (!firebase.apps || !firebase.apps.length) return false;
+      const functions = firebase.functions();
+      approveMemberFunction = functions.httpsCallable('approveMember');
+      rejectMemberFunction = functions.httpsCallable('rejectMember');
+      return true;
+    }
+
+    async function ensureApprovalFunctionsReady(maxAttempts = 20, delayMs = 100) {
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        if (initializeApprovalFunctions()) return true;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+      return false;
+    }
 
     // Initialize Cloud Functions
-    firebase.auth().onAuthStateChanged(user => {
-      if (user && !approveMemberFunction) {
-        const functions = firebase.functions();
-        approveMemberFunction = functions.httpsCallable('approveMember');
-        rejectMemberFunction = functions.httpsCallable('rejectMember');
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        initializeApprovalFunctions();
       }
     });
 
@@ -199,16 +246,29 @@
         const db = firebase.firestore();
         
         // Load pending members for this region only
-        const snapshot = await db.collection('users')
-          .where('status', '==', 'pending')
-          .where('region', '==', currentRegion)
-          .orderBy('registrationDate', 'desc')
-          .get();
+        let snapshot;
+        try {
+          snapshot = await db.collection('users')
+            .where('status', '==', 'pending')
+            .where('region', '==', currentRegion)
+            .orderBy('registrationDate', 'desc')
+            .get();
+        } catch (queryError) {
+          console.warn('Pending members query fallback triggered:', queryError);
+          snapshot = await db.collection('users')
+            .where('status', '==', 'pending')
+            .where('region', '==', currentRegion)
+            .get();
+        }
 
         pendingMembers = snapshot.docs.map(doc => ({
           uid: doc.id,
           ...doc.data()
-        }));
+        })).sort((a, b) => {
+          const aDate = parseDateValue(a.registrationDate);
+          const bDate = parseDateValue(b.registrationDate);
+          return (bDate?.getTime() || 0) - (aDate?.getTime() || 0);
+        });
 
         document.getElementById('pendingCount').textContent = pendingMembers.length;
 
@@ -227,7 +287,7 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error loading pending members:', error);
-        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+        UIModule.showAlert('Error loading data: ' + getFunctionErrorMessage(error, 'Unable to load pending members'), 'error');
       }
     }
 
@@ -248,12 +308,12 @@
 
       tbody.innerHTML = pendingMembers.map(member => `
         <tr>
-          <td style="font-weight: 600;">${member.fullName || 'N/A'}</td>
-          <td>${member.email || 'N/A'}</td>
-          <td>${member.phone || 'N/A'}</td>
-          <td>${member.registrationDate ? new Date(member.registrationDate.toDate()).toLocaleDateString() : 'N/A'}</td>
+          <td style="font-weight: 600;">${escapeHtml(member.fullName || 'N/A')}</td>
+          <td>${escapeHtml(member.email || 'N/A')}</td>
+          <td>${escapeHtml(member.phone || 'N/A')}</td>
+          <td>${formatDateValue(member.registrationDate)}</td>
           <td>
-            <button class="btn btn-sm btn-primary" onclick='viewMemberDetails(${JSON.stringify(member).replace(/'/g, "\\'")})'> 
+            <button class="btn btn-sm btn-primary" onclick="viewMemberDetailsByUid('${member.uid}')"> 
               Review
             </button>
           </td>
@@ -272,25 +332,34 @@
       });
     });
 
+    function viewMemberDetailsByUid(uid) {
+      const member = pendingMembers.find((entry) => entry.uid === uid);
+      if (!member) {
+        UIModule.showAlert('Member record not found. Please refresh and try again.', 'error');
+        return;
+      }
+      viewMemberDetails(member);
+    }
+
     // View member details
     function viewMemberDetails(member) {
       selectedMemberUid = member.uid;
+      selectedMember = member;
       
       document.getElementById('modalName').textContent = member.fullName || 'N/A';
       document.getElementById('modalEmail').textContent = member.email || 'N/A';
       document.getElementById('modalPhone').textContent = member.phone || 'N/A';
       document.getElementById('modalRegion').textContent = member.region || 'N/A';
-      document.getElementById('modalRegDate').textContent = member.registrationDate ? 
-        new Date(member.registrationDate.toDate()).toLocaleString() : 'N/A';
+      const regDate = parseDateValue(member.registrationDate);
+      document.getElementById('modalRegDate').textContent = regDate ? regDate.toLocaleString() : 'N/A';
       document.getElementById('modalEmailVerified').innerHTML = member.emailVerified ? 
         '<span class="badge badge-success">✅ Verified</span>' : 
         '<span class="badge badge-warning">⏳ Pending</span>';
       
-      // Auto-generate member ID
+      // Auto-generate preview (backend generates final member ID)
       const year = new Date().getFullYear();
-      const regionCode = currentRegion.replace(/\s+/g, '').substring(0, 3).toUpperCase();
       const nextNumber = String(pendingMembers.length + 1).padStart(4, '0');
-      document.getElementById('memberIdInput').value = `AMCAG-${regionCode}-${year}-${nextNumber}`;
+      document.getElementById('memberIdInput').value = `AMCAG-${year}-${nextNumber}`;
       
       document.getElementById('memberModal').style.display = 'flex';
     }
@@ -298,27 +367,29 @@
     function closeMemberModal() {
       document.getElementById('memberModal').style.display = 'none';
       selectedMemberUid = null;
+      selectedMember = null;
       document.getElementById('approvalNotes').value = '';
     }
 
     // Approve member
     async function approveMember() {
-      if (!selectedMemberUid) return;
-
-      const memberId = document.getElementById('memberIdInput').value;
-      const notes = document.getElementById('approvalNotes').value;
-
-      if (!memberId) {
-        UIModule.showAlert('Member ID is required', 'error');
+      if (actionInProgress) {
+        UIModule.showAlert('Another action is in progress. Please wait.', 'warning');
         return;
       }
+      if (!selectedMemberUid || !selectedMember) return;
+
+      const notes = document.getElementById('approvalNotes').value.trim();
 
       try {
+        actionInProgress = true;
+        if (!(await ensureApprovalFunctionsReady()) || typeof approveMemberFunction !== 'function') {
+          throw new Error('Approval service is not ready. Please try again.');
+        }
         UIModule.showLoader('Approving member...');
 
         const result = await approveMemberFunction({
           memberUid: selectedMemberUid,
-          memberId: memberId,
           notes: notes
         });
 
@@ -335,19 +406,29 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + getFunctionErrorMessage(error), 'error');
+      } finally {
+        actionInProgress = false;
       }
     }
 
     // Reject member
     async function rejectMember() {
+      if (actionInProgress) {
+        UIModule.showAlert('Another action is in progress. Please wait.', 'warning');
+        return;
+      }
       if (!selectedMemberUid) return;
 
-      const notes = document.getElementById('approvalNotes').value || 'No reason provided';
+      const notes = document.getElementById('approvalNotes').value.trim() || 'No reason provided';
 
       if (!confirm('Reject this registration?')) return;
 
       try {
+        actionInProgress = true;
+        if (!(await ensureApprovalFunctionsReady()) || typeof rejectMemberFunction !== 'function') {
+          throw new Error('Rejection service is not ready. Please try again.');
+        }
         UIModule.showLoader('Rejecting...');
 
         const result = await rejectMemberFunction({
@@ -368,7 +449,9 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + getFunctionErrorMessage(error), 'error');
+      } finally {
+        actionInProgress = false;
       }
     }
 
@@ -383,45 +466,67 @@
         return;
       }
 
-      currentUser = user;
-      
-      const db = firebase.firestore();
-      const userDoc = await db.collection('users').doc(user.uid).get();
-      
-      if (!userDoc.exists) {
-        window.location.href = '/member-dashboard.html';
-        return;
+      try {
+        currentUser = user;
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        
+        if (!userDoc.exists) {
+          window.location.href = '/member-dashboard.html';
+          return;
+        }
+
+        const userData = userDoc.data();
+        currentRegion = userData.region || null;
+
+        if (!currentRegion) {
+          UIModule.showAlert('Your profile has no region assigned. Contact admin.', 'error');
+          setTimeout(() => window.location.href = '/region-dashboard/index.html', 2000);
+          return;
+        }
+
+        document.getElementById('regionSubtitle').textContent = `Review pending registrations for ${currentRegion}`;
+
+        // Check if user can approve members
+        if (userData.role !== 'regional_executive' && userData.role !== 'super_admin') {
+          UIModule.showAlert('Access denied. Regional Executive role required.', 'error');
+          setTimeout(() => window.location.href = '/region-dashboard/index.html', 2000);
+          return;
+        }
+
+        // Check if this region has approval permission
+        const regionDoc = await db.collection('regions').doc(currentRegion).get();
+        
+        if (!regionDoc.exists) {
+          await db.collection('regions').doc(currentRegion).set({
+            name: currentRegion,
+            canApproveMembersLocally: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          canApprove = userData.role === 'super_admin';
+        } else {
+          const regionData = regionDoc.data();
+          canApprove = userData.role === 'super_admin' ||
+            (regionData.canApproveMembersLocally === true && userData.canApproveMembership === true);
+        }
+
+        const functionsReady = await ensureApprovalFunctionsReady();
+        if (!functionsReady) {
+          UIModule.showAlert('Warning: Approval services are not ready yet. Please retry actions shortly.', 'warning');
+        }
+
+        loadPendingMembers();
+      } catch (error) {
+        console.error('Error initializing member approval page:', error);
+        UIModule.showAlert('Failed to initialize page: ' + getFunctionErrorMessage(error), 'error');
       }
+    });
 
-      const userData = userDoc.data();
-      currentRegion = userData.region;
-
-      document.getElementById('regionSubtitle').textContent = `Review pending registrations for ${currentRegion}`;
-
-      // Check if user can approve members
-      if (userData.role !== 'regional_executive' && userData.role !== 'super_admin') {
-        UIModule.showAlert('Access denied. Regional Executive role required.', 'error');
-        setTimeout(() => window.location.href = '/region-dashboard/index.html', 2000);
-        return;
+    window.addEventListener('click', (event) => {
+      const modal = document.getElementById('memberModal');
+      if (event.target === modal) {
+        closeMemberModal();
       }
-
-      // Check if this region has approval permission
-      const regionDoc = await db.collection('regions').doc(currentRegion).get();
-      
-      if (!regionDoc.exists) {
-        // Create region document if it doesn't exist
-        await db.collection('regions').doc(currentRegion).set({
-          name: currentRegion,
-          canApproveMembersLocally: false,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        canApprove = false;
-      } else {
-        const regionData = regionDoc.data();
-        canApprove = regionData.canApproveMembersLocally === true && userData.canApproveMembership === true;
-      }
-
-      loadPendingMembers();
     });
   </script>
   <script src="/js/mobile-menu.js"></script>

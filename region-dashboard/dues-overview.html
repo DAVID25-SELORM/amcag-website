@@ -81,7 +81,7 @@
             <div style="color: var(--text-secondary); margin-top: 0.5rem;">Not Paid Yet</div>
           </div>
           <div class="p-4" style="background: var(--color-error-container); border-radius: var(--radius-md); text-align: center;">
-            <div style="font-size: var(--text-2xl); font-weight: 700; color: var(--color-error);" id="arrears Count">0</div>
+            <div style="font-size: var(--text-2xl); font-weight: 700; color: var(--color-error);" id="arrearsCount">0</div>
             <div style="color: var(--text-secondary); margin-top: 0.5rem;">With Arrears</div>
           </div>
         </div>
@@ -209,17 +209,68 @@
     let allMembers = [];
     let allPayments = [];
 
-    // Get month name
     function getMonthName(month) {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return months[month - 1];
+      const index = Number(month) - 1;
+      return months[index] || 'Unknown';
+    }
+
+    function parseAmount(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function normalizeDate(value) {
+      if (!value) return null;
+      if (value instanceof Date) return value;
+      if (typeof value?.toDate === 'function') {
+        try {
+          return value.toDate();
+        } catch {
+          return null;
+        }
+      }
+      if (typeof value === 'number') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      if (typeof value === 'string') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    }
+
+    function formatDate(value) {
+      const date = normalizeDate(value);
+      return date ? date.toLocaleDateString() : 'N/A';
+    }
+
+    function getErrorMessage(error) {
+      if (!error) return 'Unknown error';
+      if (typeof error.details === 'string') return error.details;
+      if (error.details && typeof error.details.message === 'string') return error.details.message;
+      if (typeof error.message === 'string') return error.message;
+      return 'Unknown error';
+    }
+
+    function csvEscape(value) {
+      return `"${String(value ?? '').replace(/"/g, '""')}"`;
     }
 
     // Load all data for the region
     async function loadRegionalData() {
       try {
         UIModule.showLoader('Loading regional data...');
-        
         const db = firebase.firestore();
 
         // Load members in this region
@@ -232,6 +283,7 @@
           uid: doc.id,
           ...doc.data()
         }));
+        allPayments = [];
 
         // Load payments for these members
         if (allMembers.length > 0) {
@@ -259,12 +311,11 @@
         calculateStatistics();
         applyFilters();
 
-        UIModule.hideLoader();
-        
       } catch (error) {
-        UIModule.hideLoader();
         console.error('Error loading data:', error);
-        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+        UIModule.showAlert(`Error loading data: ${getErrorMessage(error)}`, 'error');
+      } finally {
+        UIModule.hideLoader();
       }
     }
 
@@ -274,9 +325,7 @@
       const currentMonth = now.getMonth() + 1;
       const currentYear = now.getFullYear();
 
-      const regDate = member.registrationDate ? 
-        member.registrationDate.toDate() : 
-        new Date();
+      const regDate = normalizeDate(member.registrationDate) || now;
 
       // Get member payments
       const memberPayments = allPayments.filter(p => p.uid === member.uid);
@@ -290,7 +339,7 @@
         if (payment.status === 'paid' || payment.status === 'waived') {
           paidMonths.add(`${payment.year}-${payment.month}`);
           if (payment.status === 'paid') {
-            totalPaid += payment.amount || 0;
+            totalPaid += parseAmount(payment.amount);
           }
           if (!lastPayment || 
               payment.year > lastPayment.year || 
@@ -301,7 +350,7 @@
       });
 
       // Calculate overdue months
-      let checkDate = new Date(regDate);
+      const checkDate = new Date(regDate.getFullYear(), regDate.getMonth(), 1);
       let overdueMonths = 0;
 
       while (checkDate < now) {
@@ -360,7 +409,7 @@
             p.status === 'paid'
           );
           if (thisMonthPayment) {
-            totalCollected += thisMonthPayment.amount || 0;
+            totalCollected += parseAmount(thisMonthPayment.amount);
           }
         } else {
           notPaidThisMonth++;
@@ -386,7 +435,7 @@
     // Apply filters
     function applyFilters() {
       const statusFilter = document.getElementById('statusFilter').value;
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
 
       let filteredMembers = allMembers.filter(member => {
         // Status filter
@@ -417,7 +466,7 @@
     // Render members table
     function renderMembersTable(members) {
       const tbody = document.getElementById('membersTableBody');
-      document.getElementById('memberCount').textContent = `${members.length} members`;
+      document.getElementById('memberCount').textContent = `${members.length} member${members.length === 1 ? '' : 's'}`;
 
       if (members.length === 0) {
         tbody.innerHTML = `
@@ -443,10 +492,10 @@
 
         return `
           <tr>
-            <td><strong>${member.memberId || 'Pending'}</strong></td>
-            <td>${member.fullName || 'N/A'}</td>
-            <td>${member.phone || 'N/A'}</td>
-            <td>${lastPaymentText}</td>
+            <td><strong>${escapeHtml(member.memberId || 'Pending')}</strong></td>
+            <td>${escapeHtml(member.fullName || 'N/A')}</td>
+            <td>${escapeHtml(member.phone || 'N/A')}</td>
+            <td>${escapeHtml(lastPaymentText)}</td>
             <td style="font-weight: 600; color: ${status.overdueMonths > 0 ? 'var(--color-error)' : 'inherit'};">
               ${status.overdueMonths}
             </td>
@@ -455,7 +504,7 @@
             </td>
             <td>${statusBadge}</td>
             <td>
-              <button class="btn btn-sm btn-secondary" onclick='viewMemberDetails(${JSON.stringify(member).replace(/'/g, "&apos;")})'>
+              <button class="btn btn-sm btn-secondary" data-action="view-member" data-member-uid="${escapeHtml(member.uid)}">
                 View
               </button>
             </td>
@@ -464,8 +513,23 @@
       }).join('');
     }
 
+    document.getElementById('membersTableBody').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action="view-member"]');
+      if (!button) return;
+      viewMemberDetails(button.dataset.memberUid);
+    });
+
     // View member details
-    function viewMemberDetails(member) {
+    function viewMemberDetails(memberOrUid) {
+      const member = typeof memberOrUid === 'string'
+        ? allMembers.find(item => item.uid === memberOrUid)
+        : memberOrUid;
+
+      if (!member) {
+        UIModule.showAlert('Member details not found.', 'error');
+        return;
+      }
+
       const status = getMemberDuesStatus(member);
 
       document.getElementById('modalMemberName').textContent = member.fullName || 'N/A';
@@ -473,10 +537,7 @@
       document.getElementById('modalPhone').textContent = member.phone || 'N/A';
       document.getElementById('modalEmail').textContent = member.email || 'N/A';
       
-      const regDate = member.registrationDate ? 
-        new Date(member.registrationDate.toDate()).toLocaleDateString() : 
-        'N/A';
-      document.getElementById('modalRegDate').textContent = regDate;
+      document.getElementById('modalRegDate').textContent = formatDate(member.registrationDate);
       
       document.getElementById('modalTotalPaid').textContent = status.totalPaid.toFixed(2);
       document.getElementById('modalAmountOwed').textContent = status.amountOwed.toFixed(2);
@@ -507,18 +568,18 @@
             '<span class="badge badge-warning">Pending</span>';
 
           const dateText = payment.paymentDate ?
-            new Date(payment.paymentDate.toDate()).toLocaleDateString() :
+            formatDate(payment.paymentDate) :
             payment.createdAt ?
-            new Date(payment.createdAt.toDate()).toLocaleDateString() :
+            formatDate(payment.createdAt) :
             'N/A';
 
           return `
             <tr>
-              <td>${getMonthName(payment.month)} ${payment.year}</td>
-              <td style="font-weight: 600;">GHS ${payment.amount.toFixed(2)}</td>
-              <td>${payment.paymentMethod || 'N/A'}</td>
+              <td>${escapeHtml(getMonthName(payment.month))} ${escapeHtml(payment.year)}</td>
+              <td style="font-weight: 600;">GHS ${parseAmount(payment.amount).toFixed(2)}</td>
+              <td>${escapeHtml(payment.paymentMethod || 'N/A')}</td>
               <td>${statusBadge}</td>
-              <td>${dateText}</td>
+              <td>${escapeHtml(dateText)}</td>
             </tr>
           `;
         }).join('');
@@ -546,7 +607,7 @@
         
         const statusText = status.isCurrentlyOverdue ? 'Overdue' : 'Current';
 
-        csv += `"${member.memberId || 'Pending'}","${member.fullName || 'N/A'}","${member.phone || 'N/A'}","${lastPayment}",${status.overdueMonths},${status.amountOwed.toFixed(2)},${status.totalPaid.toFixed(2)},"${statusText}"\n`;
+        csv += `${csvEscape(member.memberId || 'Pending')},${csvEscape(member.fullName || 'N/A')},${csvEscape(member.phone || 'N/A')},${csvEscape(lastPayment)},${status.overdueMonths},${status.amountOwed.toFixed(2)},${status.totalPaid.toFixed(2)},${csvEscape(statusText)}\n`;
       });
 
       // Download
@@ -572,43 +633,47 @@
         return;
       }
 
-      currentUser = user;
-      
-      const db = firebase.firestore();
-      const userDoc = await db.collection('users').doc(user.uid).get();
-      
-      if (!userDoc.exists) {
-        UIModule.showAlert('User profile not found', 'error');
-        return;
+      try {
+        currentUser = user;
+
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+
+        if (!userDoc.exists) {
+          UIModule.showAlert('User profile not found', 'error');
+          return;
+        }
+
+        const userData = userDoc.data();
+
+        if (!userData.role || userData.role !== 'regional_executive') {
+          UIModule.showAlert('Access denied. Regional executive access required.', 'error');
+          setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+          return;
+        }
+
+        if (!userData.region) {
+          UIModule.showAlert('No region assigned to your account', 'error');
+          return;
+        }
+
+        userRegion = userData.region;
+        document.getElementById('regionName').textContent = `${userRegion} Region - Membership Dues`;
+
+        await loadRegionalData();
+      } catch (error) {
+        console.error('Error initializing dues overview:', error);
+        UIModule.showAlert(`Error initializing page: ${getErrorMessage(error)}`, 'error');
       }
-
-      const userData = userDoc.data();
-
-      // Check permissions
-      if (!userData.role || userData.role !== 'regional_executive') {
-        UIModule.showAlert('Access denied. Regional executive access required.', 'error');
-        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
-        return;
-      }
-
-      if (!userData.region) {
-        UIModule.showAlert('No region assigned to your account', 'error');
-        return;
-      }
-
-      userRegion = userData.region;
-      document.getElementById('regionName').textContent = `${userRegion} Region - Membership Dues`;
-
-      loadRegionalData();
     });
 
     // Close modal when clicking outside
-    window.onclick = (event) => {
+    window.addEventListener('click', (event) => {
       const modal = document.getElementById('memberModal');
       if (event.target === modal) {
         closeMemberModal();
       }
-    };
+    });
   </script>
   <script src="/js/mobile-menu.js"></script>
 </body>

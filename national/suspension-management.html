@@ -410,14 +410,74 @@
     let unsuspendRegionFunction = null;
     let selectedSuspension = null;
 
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function parseDateValue(value) {
+      if (!value) return null;
+      if (typeof value?.toDate === 'function') return value.toDate();
+      if (value instanceof Date) return value;
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day, 23, 59, 59, 999);
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDateValue(value, fallback = 'N/A') {
+      const dateObj = parseDateValue(value);
+      if (!dateObj) return fallback;
+      return dateObj.toLocaleDateString();
+    }
+
+    function getSuspensionComputedStatus(suspension) {
+      const now = new Date();
+      if (suspension.status === 'unsuspended') return 'unsuspended';
+      const endDate = parseDateValue(suspension.endDate);
+      if (endDate && endDate < now) return 'expired';
+      return 'active';
+    }
+
+    function getFunctionErrorMessage(error, fallback = 'Unknown error') {
+      if (!error) return fallback;
+      if (error.details && typeof error.details === 'string') return error.details;
+      if (error.message) return error.message;
+      return fallback;
+    }
+
+    function initializeSuspensionFunctions() {
+      if (suspendUserFunction && unsuspendUserFunction && suspendRegionFunction && unsuspendRegionFunction) {
+        return true;
+      }
+      if (!firebase.apps || !firebase.apps.length) return false;
+
+      const functions = firebase.functions();
+      suspendUserFunction = functions.httpsCallable('suspendUser');
+      unsuspendUserFunction = functions.httpsCallable('unsuspendUser');
+      suspendRegionFunction = functions.httpsCallable('suspendRegion');
+      unsuspendRegionFunction = functions.httpsCallable('unsuspendRegion');
+      return true;
+    }
+
+    async function ensureSuspensionFunctionsReady(maxAttempts = 20, delayMs = 100) {
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        if (initializeSuspensionFunctions()) return true;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+      return false;
+    }
+
     // Initialize Cloud Functions
-    firebase.auth().onAuthStateChanged(user => {
-      if (user && !suspendUserFunction) {
-        const functions = firebase.functions();
-        suspendUserFunction = functions.httpsCallable('suspendUser');
-        unsuspendUserFunction = functions.httpsCallable('unsuspendUser');
-        suspendRegionFunction = functions.httpsCallable('suspendRegion');
-        unsuspendRegionFunction = functions.httpsCallable('unsuspendRegion');
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        initializeSuspensionFunctions();
       }
     });
 
@@ -471,14 +531,24 @@
         });
 
         // Load suspensions
-        const suspensionsSnapshot = await db.collection('suspensions')
-          .orderBy('createdAt', 'desc')
-          .get();
+        let suspensionsSnapshot;
+        try {
+          suspensionsSnapshot = await db.collection('suspensions')
+            .orderBy('createdAt', 'desc')
+            .get();
+        } catch (queryError) {
+          console.warn('Falling back to unordered suspension query:', queryError);
+          suspensionsSnapshot = await db.collection('suspensions').get();
+        }
 
         allSuspensions = suspensionsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })).sort((a, b) => {
+          const aDate = parseDateValue(a.createdAt);
+          const bDate = parseDateValue(b.createdAt);
+          return (bDate?.getTime() || 0) - (aDate?.getTime() || 0);
+        });
 
         calculateStatistics();
         renderActiveTables();
@@ -488,7 +558,7 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error loading data:', error);
-        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+        UIModule.showAlert('Error loading data: ' + getFunctionErrorMessage(error, 'Unable to load suspension data'), 'error');
       }
     }
 
@@ -498,7 +568,8 @@
       
       const activeSuspensions = allSuspensions.filter(s => {
         if (s.status === 'unsuspended') return false;
-        if (s.endDate && new Date(s.endDate) < now) return false;
+        const endDate = parseDateValue(s.endDate);
+        if (endDate && endDate < now) return false;
         return true;
       });
 
@@ -525,7 +596,8 @@
       const activeSuspensions = allSuspensions.filter(s => {
         if (s.type !== 'user') return false;
         if (s.status === 'unsuspended') return false;
-        if (s.endDate && new Date(s.endDate) < now) return false;
+        const endDate = parseDateValue(s.endDate);
+        if (endDate && endDate < now) return false;
         return true;
       });
 
@@ -544,13 +616,14 @@
 
       tbody.innerHTML = activeSuspensions.map(suspension => {
         const user = allUsers.find(u => u.uid === suspension.targetUid);
-        const suspendedDate = suspension.createdAt ? new Date(suspension.createdAt.toDate()).toLocaleDateString() : 'N/A';
-        const endDate = suspension.endDate ? new Date(suspension.endDate).toLocaleDateString() : 'Permanent';
+        const suspendedDate = formatDateValue(suspension.createdAt);
+        const endDate = suspension.endDate ? formatDateValue(suspension.endDate, 'N/A') : 'Permanent';
+        const endDateObj = parseDateValue(suspension.endDate);
         
         let statusBadge;
         if (suspension.durationType === 'permanent') {
           statusBadge = '<span class="badge badge-error">Permanent</span>';
-        } else if (suspension.endDate && new Date(suspension.endDate) > now) {
+        } else if (endDateObj && endDateObj > now) {
           statusBadge = '<span class="badge badge-warning">Temporary</span>';
         } else {
           statusBadge = '<span class="badge badge-secondary">Expired</span>';
@@ -558,16 +631,16 @@
 
         return `
           <tr>
-            <td><strong>${suspension.targetName || 'Unknown'}</strong></td>
-            <td>${user?.memberId || 'N/A'}</td>
-            <td>${suspension.region || 'N/A'}</td>
-            <td>${suspension.suspendedByName || 'Unknown'}</td>
-            <td><small>${suspension.reason || 'N/A'}</small></td>
+            <td><strong>${escapeHtml(suspension.targetName || 'Unknown')}</strong></td>
+            <td>${escapeHtml(user?.memberId || 'N/A')}</td>
+            <td>${escapeHtml(suspension.region || 'N/A')}</td>
+            <td>${escapeHtml(suspension.suspendedByName || 'Unknown')}</td>
+            <td><small>${escapeHtml(suspension.reason || 'N/A')}</small></td>
             <td>${suspendedDate}</td>
             <td>${endDate}</td>
             <td>${statusBadge}</td>
             <td>
-              <button class="btn btn-sm btn-success" onclick='unsuspend(${JSON.stringify(suspension).replace(/'/g, "&apos;")})'>
+              <button class="btn btn-sm btn-success" onclick="openUnsuspendModalById('${suspension.id}')">
                 ✅ Unsuspend
               </button>
             </td>
@@ -582,7 +655,8 @@
       const activeSuspensions = allSuspensions.filter(s => {
         if (s.type !== 'region') return false;
         if (s.status === 'unsuspended') return false;
-        if (s.endDate && new Date(s.endDate) < now) return false;
+        const endDate = parseDateValue(s.endDate);
+        if (endDate && endDate < now) return false;
         return true;
       });
 
@@ -601,13 +675,14 @@
 
       tbody.innerHTML = activeSuspensions.map(suspension => {
         const affectedMembers = allUsers.filter(u => u.region === suspension.targetRegion).length;
-        const suspendedDate = suspension.createdAt ? new Date(suspension.createdAt.toDate()).toLocaleDateString() : 'N/A';
-        const endDate = suspension.endDate ? new Date(suspension.endDate).toLocaleDateString() : 'Permanent';
+        const suspendedDate = formatDateValue(suspension.createdAt);
+        const endDate = suspension.endDate ? formatDateValue(suspension.endDate, 'N/A') : 'Permanent';
+        const endDateObj = parseDateValue(suspension.endDate);
         
         let statusBadge;
         if (suspension.durationType === 'permanent') {
           statusBadge = '<span class="badge badge-error">Permanent</span>';
-        } else if (suspension.endDate && new Date(suspension.endDate) > now) {
+        } else if (endDateObj && endDateObj > now) {
           statusBadge = '<span class="badge badge-warning">Temporary</span>';
         } else {
           statusBadge = '<span class="badge badge-secondary">Expired</span>';
@@ -615,15 +690,15 @@
 
         return `
           <tr>
-            <td><strong>${suspension.targetRegion || 'Unknown'}</strong></td>
+            <td><strong>${escapeHtml(suspension.targetRegion || 'Unknown')}</strong></td>
             <td>${affectedMembers} members</td>
-            <td>${suspension.suspendedByName || 'Unknown'}</td>
-            <td><small>${suspension.reason || 'N/A'}</small></td>
+            <td>${escapeHtml(suspension.suspendedByName || 'Unknown')}</td>
+            <td><small>${escapeHtml(suspension.reason || 'N/A')}</small></td>
             <td>${suspendedDate}</td>
             <td>${endDate}</td>
             <td>${statusBadge}</td>
             <td>
-              <button class="btn btn-sm btn-success" onclick='unsuspend(${JSON.stringify(suspension).replace(/'/g, "&apos;")})'>
+              <button class="btn btn-sm btn-success" onclick="openUnsuspendModalById('${suspension.id}')">
                 ✅ Unsuspend
               </button>
             </td>
@@ -635,29 +710,41 @@
     // Render history
     function renderHistory() {
       const tbody = document.getElementById('historyTable');
+      const typeFilter = document.getElementById('historyTypeFilter')?.value || '';
+      const statusFilter = document.getElementById('historyStatusFilter')?.value || '';
 
-      if (allSuspensions.length === 0) {
+      const historyData = allSuspensions.filter((suspension) => {
+        if (typeFilter && suspension.type !== typeFilter) return false;
+        const computedStatus = getSuspensionComputedStatus(suspension);
+        if (statusFilter && computedStatus !== statusFilter) return false;
+        return true;
+      });
+
+      if (historyData.length === 0) {
         tbody.innerHTML = `
           <tr>
             <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-              No suspension history
+              No suspension history for current filter
             </td>
           </tr>
         `;
         return;
       }
 
-      tbody.innerHTML = allSuspensions.map(suspension => {
-        const date = suspension.createdAt ? new Date(suspension.createdAt.toDate()).toLocaleDateString() : 'N/A';
+      tbody.innerHTML = historyData.map(suspension => {
+        const date = formatDateValue(suspension.createdAt);
         const target = suspension.type === 'user' ? suspension.targetName : suspension.targetRegion;
         const duration = suspension.durationType === 'permanent' ? 'Permanent' : 
-          (suspension.endDate ? `Until ${new Date(suspension.endDate).toLocaleDateString()}` : 'N/A');
-        
-        const now = new Date();
+          (suspension.endDate ? `Until ${formatDateValue(suspension.endDate, 'N/A')}` : 'N/A');
+
+        const computedStatus = getSuspensionComputedStatus(suspension);
+        const actionText = (computedStatus === 'unsuspended' && (suspension.action || 'suspended') === 'suspended')
+          ? 'unsuspended'
+          : (suspension.action || 'suspended');
         let status;
-        if (suspension.status === 'unsuspended') {
+        if (computedStatus === 'unsuspended') {
           status = '<span class="badge badge-secondary">Unsuspended</span>';
-        } else if (suspension.endDate && new Date(suspension.endDate) < now) {
+        } else if (computedStatus === 'expired') {
           status = '<span class="badge badge-secondary">Expired</span>';
         } else {
           status = '<span class="badge badge-error">Active</span>';
@@ -667,10 +754,10 @@
           <tr>
             <td>${date}</td>
             <td><span class="badge">${suspension.type === 'user' ? '👤 User' : '📍 Region'}</span></td>
-            <td><strong>${target || 'Unknown'}</strong></td>
-            <td>${suspension.action || 'suspended'}</td>
-            <td>${suspension.suspendedByName || 'Unknown'}</td>
-            <td><small>${suspension.reason || 'N/A'}</small></td>
+            <td><strong>${escapeHtml(target || 'Unknown')}</strong></td>
+            <td>${escapeHtml(actionText)}</td>
+            <td>${escapeHtml(suspension.suspendedByName || 'Unknown')}</td>
+            <td><small>${escapeHtml(suspension.reason || 'N/A')}</small></td>
             <td>${duration}</td>
             <td>${status}</td>
           </tr>
@@ -788,7 +875,16 @@
         return;
       }
 
+      if (!(await ensureSuspensionFunctionsReady()) || typeof suspendUserFunction !== 'function') {
+        UIModule.showAlert('Suspension service is still initializing. Please try again in a moment.', 'warning');
+        return;
+      }
+
       const user = allUsers.find(u => u.uid === userUid);
+      if (!user) {
+        UIModule.showAlert('Selected user not found. Please refresh data and try again.', 'error');
+        return;
+      }
       
       if (!confirm(`SUSPEND ${user.fullName}?\n\nType: ${suspensionType}\n${suspensionType === 'temporary' ? `Until: ${endDate}` : ''}\nReason: ${reason}\n\nThis action will immediately lock out the user.`)) {
         return;
@@ -818,7 +914,7 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error suspending user:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + getFunctionErrorMessage(error), 'error');
       }
     });
 
@@ -834,6 +930,11 @@
 
       if (notes.length < 20) {
         UIModule.showAlert('Please provide at least 20 characters in the explanation', 'error');
+        return;
+      }
+
+      if (!(await ensureSuspensionFunctionsReady()) || typeof suspendRegionFunction !== 'function') {
+        UIModule.showAlert('Suspension service is still initializing. Please try again in a moment.', 'warning');
         return;
       }
 
@@ -867,11 +968,20 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error suspending region:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + getFunctionErrorMessage(error), 'error');
       }
     });
 
     // Unsuspend
+    function openUnsuspendModalById(suspensionId) {
+      const suspension = allSuspensions.find((entry) => entry.id === suspensionId);
+      if (!suspension) {
+        UIModule.showAlert('Selected suspension record was not found. Please refresh and try again.', 'error');
+        return;
+      }
+      unsuspend(suspension);
+    }
+
     function unsuspend(suspension) {
       selectedSuspension = suspension;
       document.getElementById('unsuspendTarget').textContent = 
@@ -890,14 +1000,25 @@
       if (!selectedSuspension) return;
 
       try {
+        if (!(await ensureSuspensionFunctionsReady())) {
+          UIModule.showAlert('Suspension service is still initializing. Please try again in a moment.', 'warning');
+          return;
+        }
+
         UIModule.showLoader('Unsuspending...');
 
         let result;
         if (selectedSuspension.type === 'user') {
+          if (typeof unsuspendUserFunction !== 'function') {
+            throw new Error('User unsuspension function is unavailable');
+          }
           result = await unsuspendUserFunction({
             suspensionId: selectedSuspension.id
           });
         } else {
+          if (typeof unsuspendRegionFunction !== 'function') {
+            throw new Error('Region unsuspension function is unavailable');
+          }
           result = await unsuspendRegionFunction({
             suspensionId: selectedSuspension.id
           });
@@ -916,7 +1037,7 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error unsuspending:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + getFunctionErrorMessage(error), 'error');
       }
     }
 
@@ -932,29 +1053,39 @@
       }
 
       currentUser = user;
-      
-      const db = firebase.firestore();
-      const userDoc = await db.collection('users').doc(user.uid).get();
-      
-      if (!userDoc.exists) {
-        UIModule.showAlert('User profile not found', 'error');
-        return;
+
+      try {
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        
+        if (!userDoc.exists) {
+          UIModule.showAlert('User profile not found', 'error');
+          return;
+        }
+
+        const userData = userDoc.data();
+
+        // Check permissions
+        if (!userData.role || userData.role !== 'super_admin') {
+          UIModule.showAlert('Access denied. Super admin access required.', 'error');
+          setTimeout(() => window.location.href = '/national/dashboard.html', 2000);
+          return;
+        }
+
+        const functionsReady = await ensureSuspensionFunctionsReady();
+        if (!functionsReady) {
+          UIModule.showAlert('Warning: Suspension action services are not ready yet. Data view will still load.', 'warning');
+        }
+
+        loadSuspensionData();
+      } catch (error) {
+        console.error('Error initializing suspension page:', error);
+        UIModule.showAlert('Failed to initialize suspension portal: ' + getFunctionErrorMessage(error), 'error');
       }
-
-      const userData = userDoc.data();
-
-      // Check permissions
-      if (!userData.role || userData.role !== 'super_admin') {
-        UIModule.showAlert('Access denied. Super admin access required.', 'error');
-        setTimeout(() => window.location.href = '/national/dashboard.html', 2000);
-        return;
-      }
-
-      loadSuspensionData();
     });
 
     // Close modals when clicking outside
-    window.onclick = (event) => {
+    window.addEventListener('click', (event) => {
       const modals = [
         { element: document.getElementById('suspendUserModal'), close: closeSuspendUserModal },
         { element: document.getElementById('suspendRegionModal'), close: closeSuspendRegionModal },
@@ -966,7 +1097,7 @@
           modal.close();
         }
       });
-    };
+    });
   </script>
 
   <style>

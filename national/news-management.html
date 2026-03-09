@@ -180,9 +180,9 @@
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script>
-    // Authentication check - National Executives, Regional Executives, and Super Admins
-    window.AuthModule.requireAnyRole(['national_executive', 'regional_executive', 'super_admin']);
-    
+    // Allowed roles for this page
+    const allowedRoles = ['national_executive', 'regional_executive', 'super_admin'];
+
     let editingNewsId = null;
     let userRegion = '';
     let userRole = '';
@@ -196,22 +196,45 @@
       
       // Get user region and role
       firebase.auth().onAuthStateChanged(async (user) => {
-      if (user) {
-        const db = firebase.firestore();
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
+        if (!user) {
+          window.location.href = '/membership.html';
+          return;
+        }
+
+        try {
+          const db = firebase.firestore();
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          if (!userDoc.exists) {
+            UIModule.showAlert('User profile not found. Please contact support.', 'error');
+            setTimeout(() => window.location.href = '/member-dashboard.html', 1200);
+            return;
+          }
+
           const userData = userDoc.data();
           userRegion = userData.region || '';
           userRole = userData.role || '';
-          
+
+          if (!allowedRoles.includes(userRole)) {
+            UIModule.showAlert('Access denied for your role.', 'error');
+            setTimeout(() => window.location.href = '/member-dashboard.html', 1200);
+            return;
+          }
+
           // Show region field for regional executives
           if (userRole === 'regional_executive' && userRegion) {
             document.getElementById('region-field-group').style.display = 'block';
             document.getElementById('news-region').value = userRegion;
           }
+
+          await loadNews();
+        } catch (error) {
+          console.error('Error validating access:', error);
+          UIModule.showAlert('Unable to validate access. Please refresh.', 'error');
         }
-      }
-    });
+      });
+    }
+    
+    initializePageWhenReady();
     
     // Category icons and badges
     const categoryConfig = {
@@ -292,7 +315,8 @@
         UIModule.showAlert('Error: ' + error.message, 'error');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = newsId ? 'Update Article' : 'Publish Article';
+        const activeNewsId = document.getElementById('news-id').value;
+        submitBtn.textContent = activeNewsId ? 'Update Article' : 'Publish Article';
       }
     });
     
@@ -302,10 +326,29 @@
       
       try {
         const db = firebase.firestore();
-        const snapshot = await db.collection('news')
-          .orderBy('createdAt', 'desc')
-          .limit(50)
-          .get();
+        let snapshot;
+
+        // Regional executives should only manage their region's articles.
+        if (userRole === 'regional_executive' && userRegion) {
+          try {
+            snapshot = await db.collection('news')
+              .where('region', '==', userRegion)
+              .orderBy('createdAt', 'desc')
+              .limit(50)
+              .get();
+          } catch (indexError) {
+            console.warn('Regional news index not found, loading without order:', indexError);
+            snapshot = await db.collection('news')
+              .where('region', '==', userRegion)
+              .limit(50)
+              .get();
+          }
+        } else {
+          snapshot = await db.collection('news')
+            .orderBy('createdAt', 'desc')
+            .limit(50)
+            .get();
+        }
         
         if (snapshot.empty) {
           container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: var(--space-4);">No articles yet. Create your first one!</p>';
@@ -340,7 +383,7 @@
                   </div>
                   <div style="display: flex; gap: var(--space-2);">
                     <button onclick="editNews('${article.id}')" class="btn btn-sm btn-outline">✏️ Edit</button>
-                    <button onclick="deleteNews('${article.id}', '${article.title.replace(/'/g, "\\'")}' )" class="btn btn-sm btn-outline" style="color: var(--color-error);">🗑️ Delete</button>
+                    <button onclick='deleteNews("${article.id}", ${JSON.stringify(article.title || "")})' class="btn btn-sm btn-outline" style="color: var(--color-error);">Delete</button>
                   </div>
                 </div>
               </div>
@@ -456,8 +499,6 @@
       }
     })();
     
-    // Load news on page load
-    window.addEventListener('load', loadNews);
   </script>
   <script src="/js/mobile-menu.js"></script>
 </body>

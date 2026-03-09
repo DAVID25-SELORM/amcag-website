@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Regions Management | AMCAG National Dashboard</title>
+  <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/mobile.css">
@@ -341,8 +342,112 @@
     }
     
     function addNewRegion() {
-      UIModule.showAlert('Add Region feature - Coming soon', 'info');
-      // This would typically open a modal to add a new region
+      // Show add region modal
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+          <div class="modal-header">
+            <h2>Add New Region</h2>
+            <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
+          </div>
+          <div class="modal-body">
+            <form id="addRegionForm">
+              <div class="form-group">
+                <label>Region Name *</label>
+                <input type="text" id="regionName" required class="form-input" placeholder="e.g., Greater Accra">
+              </div>
+              <div class="form-group">
+                <label>Region Code *</label>
+                <input type="text" id="regionCode" required class="form-input" placeholder="e.g., GA" maxlength="5" style="text-transform: uppercase">
+              </div>
+              <div class="form-group">
+                <label>Coordinator Name</label>
+                <input type="text" id="coordinatorName" class="form-input" placeholder="Regional coordinator name">
+              </div>
+              <div class="form-group">
+                <label>Coordinator Email</label>
+                <input type="email" id="coordinatorEmail" class="form-input" placeholder="coordinator@example.com">
+              </div>
+              <div class="form-group">
+                <label>Coordinator Phone</label>
+                <input type="tel" id="coordinatorPhone" class="form-input" placeholder="+233 XX XXX XXXX">
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <textarea id="regionDescription" rows="3" class="form-input" placeholder="Brief description of the region..."></textarea>
+              </div>
+              <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-outline" onclick="this.closest('.modal').remove()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Region</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Handle form submission
+      document.getElementById('addRegionForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+        
+        try {
+          const regionData = {
+            name: document.getElementById('regionName').value.trim(),
+            code: document.getElementById('regionCode').value.trim().toUpperCase(),
+            coordinator: {
+              name: document.getElementById('coordinatorName').value.trim() || null,
+              email: document.getElementById('coordinatorEmail').value.trim() || null,
+              phone: document.getElementById('coordinatorPhone').value.trim() || null
+            },
+            description: document.getElementById('regionDescription').value.trim() || null,
+            memberCount: 0,
+            status: 'active',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: firebase.auth().currentUser.uid
+          };
+          
+          const db = firebase.firestore();
+          
+          // Check if region code already exists
+          const existingRegion = await db.collection('regions')
+            .where('code', '==', regionData.code)
+            .get();
+          
+          if (!existingRegion.empty) {
+            UIModule.showAlert('A region with this code already exists', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add Region';
+            return;
+          }
+          
+          // Add the region
+          await db.collection('regions').add(regionData);
+          
+          // Log the action
+          await db.collection('activity_logs').add({
+            type: 'region_created',
+            regionName: regionData.name,
+            regionCode: regionData.code,
+            performedBy: firebase.auth().currentUser.uid,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          UIModule.showAlert('Region added successfully', 'success');
+          modal.remove();
+          
+          // Reload regions
+          loadRegions();
+        } catch (error) {
+          console.error('Error adding region:', error);
+          UIModule.showAlert('Error adding region: ' + error.message, 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Add Region';
+        }
+      });
     }
 
     async function loadRegions() {

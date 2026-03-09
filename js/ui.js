@@ -456,6 +456,50 @@ const UIModule = (function() {
       menu.classList.toggle('active');
     }
   }
+
+  // ===== NAVIGATION FEEDBACK =====
+  function attachNavigationFeedback() {
+    const navLinks = document.querySelectorAll('a.navbar-link, a.dashboard-nav-item, a.sidebar-link');
+
+    navLinks.forEach(link => {
+      if (link.dataset.navFeedbackBound === '1') {
+        return;
+      }
+
+      link.dataset.navFeedbackBound = '1';
+      link.addEventListener('click', (event) => {
+        // Only handle normal left-click navigation.
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+          return;
+        }
+
+        const href = link.getAttribute('href');
+        if (!href || href === '#' || href.startsWith('javascript:')) {
+          return;
+        }
+
+        if (link.target && link.target !== '_self') {
+          return;
+        }
+
+        try {
+          const destination = new URL(href, window.location.origin);
+          const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+          const next = `${destination.pathname}${destination.search}${destination.hash}`;
+
+          if (current === next) {
+            return;
+          }
+        } catch (error) {
+          // If URL parsing fails, skip feedback and allow default behavior.
+          return;
+        }
+
+        showLoader('Opening page...');
+        setTimeout(() => hideLoader(), 2500);
+      });
+    });
+  }
   
   // ===== SCROLL TO TOP =====
   function scrollToTop(smooth = true) {
@@ -478,11 +522,14 @@ const UIModule = (function() {
       const navbar = document.querySelector('.navbar');
       const menu = document.querySelector('.navbar-menu');
       
-      if (menu && menu.classList.contains('active') && 
+      if (menu && navbar && menu.classList.contains('active') && 
           !navbar.contains(e.target)) {
         menu.classList.remove('active');
       }
     });
+
+    // Show immediate loader feedback when users click dashboard/navbar tabs.
+    attachNavigationFeedback();
     
     console.log('UI module initialized');
   }

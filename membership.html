@@ -537,10 +537,14 @@
           const userData = userDoc.data();
           const role = userData.role;
           const status = userData.status;
+          const mustResetPassword = userData.mustResetPassword === true;
+          const mustCompleteProfile = userData.mustCompleteProfile === true;
           console.log('[Login] ========================================');
           console.log('[Login] USER PROFILE LOADED');
           console.log('[Login] Role:', role);
           console.log('[Login] Status:', status);
+          console.log('[Login] Must Reset Password:', mustResetPassword);
+          console.log('[Login] Must Complete Profile:', mustCompleteProfile);
           console.log('[Login] Full Name:', userData.fullName);
           console.log('[Login] Region:', userData.region);
           console.log('[Login] ========================================');
@@ -561,6 +565,20 @@
           sessionStorage.setItem('userProfile', JSON.stringify(userData));
           sessionStorage.setItem('userUid', result.user.uid);
           console.log('[Login] ✅ Profile cached to sessionStorage');
+
+          if (mustResetPassword) {
+            console.log('[Login] 🚀 REDIRECTING → /change-password.html');
+            UIModule.hideLoader();
+            window.location.href = '/change-password.html';
+            return;
+          }
+
+          if (mustCompleteProfile) {
+            console.log('[Login] 🚀 REDIRECTING → /complete-profile.html');
+            UIModule.hideLoader();
+            window.location.href = '/complete-profile.html';
+            return;
+          }
           
           console.log('[Login] Preparing redirect...');
           UIModule.hideLoader();

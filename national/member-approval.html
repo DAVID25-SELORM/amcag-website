@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="icon" href="/images/logo.jpg" type="image/jpeg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -179,7 +180,7 @@
 
         <div class="form-group">
           <label class="form-label">Member ID</label>
-          <input type="text" id="memberIdInput" class="form-input" placeholder="e.g., AMCAG-2026-001" readonly>
+          <input type="text" id="memberIdInput" class="form-input" placeholder="e.g., AMCAG-2026-0001" readonly>
           <span class="form-help">Auto-generated on approval</span>
         </div>
 
@@ -211,15 +212,83 @@
     let selectedMemberUid = null;
     let approveMemberFunction = null;
     let rejectMemberFunction = null;
+    const PENDING_FALLBACK_KEY = 'memberApproval_pendingUsersFallback';
+    let usePendingFallbackQuery = localStorage.getItem(PENDING_FALLBACK_KEY) === '1';
 
-    // Initialize Cloud Functions
-    firebase.auth().onAuthStateChanged(user => {
-      if (user && !approveMemberFunction) {
+    function isMissingIndexError(error) {
+      const message = (error?.message || '').toLowerCase();
+      return error?.code === 'failed-precondition' &&
+        (message.includes('index') || message.includes('create_composite'));
+    }
+
+    function toDateSafe(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDate(value, includeTime = false) {
+      const date = toDateSafe(value);
+      if (!date) return 'N/A';
+      return includeTime ? date.toLocaleString() : date.toLocaleDateString();
+    }
+
+    function setPendingFallbackMode(enabled) {
+      usePendingFallbackQuery = !!enabled;
+      if (enabled) {
+        localStorage.setItem(PENDING_FALLBACK_KEY, '1');
+      } else {
+        localStorage.removeItem(PENDING_FALLBACK_KEY);
+      }
+    }
+
+    async function loadTodayAuditStats(db) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      try {
+        const snapshot = await db.collection('audit_logs')
+          .where('timestamp', '>=', today)
+          .get();
+
+        let approvedToday = 0;
+        let rejectedToday = 0;
+
+        snapshot.forEach(doc => {
+          const action = doc.data()?.action;
+          if (action === 'member_approved') approvedToday++;
+          if (action === 'member_rejected') rejectedToday++;
+        });
+
+        document.getElementById('approvedToday').textContent = approvedToday;
+        document.getElementById('rejectedToday').textContent = rejectedToday;
+      } catch (error) {
+        console.warn('Unable to load today audit stats quickly:', error);
+        document.getElementById('approvedToday').textContent = '-';
+        document.getElementById('rejectedToday').textContent = '-';
+      }
+    }
+
+    function initializeApprovalFunctions() {
+      if (approveMemberFunction && rejectMemberFunction) {
+        return true;
+      }
+
+      if (typeof firebase === 'undefined' || !firebase.apps || firebase.apps.length === 0) {
+        return false;
+      }
+
+      try {
         const functions = firebase.functions();
         approveMemberFunction = functions.httpsCallable('approveMember');
         rejectMemberFunction = functions.httpsCallable('rejectMember');
+        return true;
+      } catch (error) {
+        console.error('Failed to initialize approval functions:', error);
+        return false;
       }
-    });
+    }
 
     // Load pending members
     async function loadPendingMembers() {
@@ -227,39 +296,53 @@
         UIModule.showLoader('Loading pending members...');
         
         const db = firebase.firestore();
-        const snapshot = await db.collection('users')
-          .where('status', '==', 'pending')
-          .orderBy('registrationDate', 'desc')
-          .get();
+        let snapshot;
+
+        if (usePendingFallbackQuery) {
+          snapshot = await db.collection('users')
+            .where('status', '==', 'pending')
+            .get();
+        } else {
+          try {
+            snapshot = await db.collection('users')
+              .where('status', '==', 'pending')
+              .orderBy('registrationDate', 'desc')
+              .get();
+          } catch (error) {
+            if (!isMissingIndexError(error)) throw error;
+
+            console.warn('Missing index for pending members query. Enabling fallback mode.', error);
+            setPendingFallbackMode(true);
+            snapshot = await db.collection('users')
+              .where('status', '==', 'pending')
+              .get();
+          }
+        }
 
         pendingMembers = snapshot.docs.map(doc => ({
           uid: doc.id,
           ...doc.data()
         }));
 
+        // Preserve newest-first behavior even when fallback query is used.
+        pendingMembers.sort((a, b) => {
+          const aDate = toDateSafe(a.registrationDate) || toDateSafe(a.createdAt) || new Date(0);
+          const bDate = toDateSafe(b.registrationDate) || toDateSafe(b.createdAt) || new Date(0);
+          return bDate - aDate;
+        });
+
         filteredMembers = [...pendingMembers];
         
-        // Update stats
+        // Update immediately visible stats
         document.getElementById('pendingCount').textContent = pendingMembers.length;
-        
-        // Get today's approvals/rejections
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const approvedSnapshot = await db.collection('audit_logs')
-          .where('action', '==', 'member_approved')
-          .where('timestamp', '>=', today)
-          .get();
-        document.getElementById('approvedToday').textContent = approvedSnapshot.size;
-        
-        const rejectedSnapshot = await db.collection('audit_logs')
-          .where('action', '==', 'member_rejected')
-          .where('timestamp', '>=', today)
-          .get();
-        document.getElementById('rejectedToday').textContent = rejectedSnapshot.size;
+        document.getElementById('approvedToday').textContent = '...';
+        document.getElementById('rejectedToday').textContent = '...';
 
         renderTable();
         UIModule.hideLoader();
+
+        // Load audit counters in background so table becomes interactive faster.
+        loadTodayAuditStats(db);
         
       } catch (error) {
         UIModule.hideLoader();
@@ -292,7 +375,7 @@
           <td>${member.email || 'N/A'}</td>
           <td>${member.phone || 'N/A'}</td>
           <td><span class="badge badge-secondary">${member.region || 'N/A'}</span></td>
-          <td>${member.registrationDate ? new Date(member.registrationDate.toDate()).toLocaleDateString() : 'N/A'}</td>
+          <td>${formatDate(member.registrationDate || member.createdAt)}</td>
           <td>
             <button class="btn btn-sm btn-primary" onclick='viewMemberDetails(${JSON.stringify(member).replace(/'/g, "\\'")})'>
               Review
@@ -338,24 +421,77 @@
       document.getElementById('bulkActions').style.display = checkedCount > 0 ? 'flex' : 'none';
     }
 
+    function extractMemberSequence(memberId, expectedYear) {
+      const match = String(memberId || '').match(/^AMCAG-(\d{4})-(\d{3,6})$/i);
+      if (!match) return 0;
+      const year = parseInt(match[1], 10);
+      const sequence = parseInt(match[2], 10);
+      if (!Number.isFinite(year) || !Number.isFinite(sequence)) return 0;
+      if (year !== expectedYear) return 0;
+      return sequence > 0 ? sequence : 0;
+    }
+
+    async function getNextMemberIdPreview() {
+      const db = firebase.firestore();
+      const year = new Date().getFullYear();
+      const prefix = `AMCAG-${year}-`;
+      let highestSequence = 0;
+
+      try {
+        const counterDoc = await db.collection('system_counters').doc('membership_id').get();
+        if (counterDoc.exists) {
+          const counterData = counterDoc.data() || {};
+          if (counterData.year === year) {
+            const counterValue = parseInt(counterData.lastNumber || 0, 10);
+            if (Number.isFinite(counterValue) && counterValue > 0) {
+              highestSequence = counterValue;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Unable to read membership counter for preview:', error);
+      }
+
+      try {
+        const latestMemberQuery = await db.collection('users')
+          .where('memberId', '>=', prefix)
+          .where('memberId', '<=', `${prefix}\uf8ff`)
+          .orderBy('memberId', 'desc')
+          .limit(1)
+          .get();
+
+        if (!latestMemberQuery.empty) {
+          const memberData = latestMemberQuery.docs[0].data() || {};
+          highestSequence = Math.max(highestSequence, extractMemberSequence(memberData.memberId, year));
+        }
+      } catch (error) {
+        console.warn('Unable to query latest member ID for preview:', error);
+      }
+
+      return `${prefix}${String(highestSequence + 1).padStart(4, '0')}`;
+    }
+
     // View member details
-    function viewMemberDetails(member) {
+    async function viewMemberDetails(member) {
       selectedMemberUid = member.uid;
       
       document.getElementById('modalName').textContent = member.fullName || 'N/A';
       document.getElementById('modalEmail').textContent = member.email || 'N/A';
       document.getElementById('modalPhone').textContent = member.phone || 'N/A';
       document.getElementById('modalRegion').textContent = member.region || 'N/A';
-      document.getElementById('modalRegDate').textContent = member.registrationDate ? 
-        new Date(member.registrationDate.toDate()).toLocaleString() : 'N/A';
+      document.getElementById('modalRegDate').textContent = formatDate(member.registrationDate || member.createdAt, true);
       document.getElementById('modalEmailVerified').innerHTML = member.emailVerified ? 
         '<span class="badge badge-success">✅ Verified</span>' : 
         '<span class="badge badge-warning">⏳ Pending</span>';
       
-      // Auto-generate member ID
-      const year = new Date().getFullYear();
-      const nextNumber = String(pendingMembers.length + 1).padStart(4, '0');
-      document.getElementById('memberIdInput').value = `AMCAG-${year}-${nextNumber}`;
+      // Preview next membership ID (actual final ID is generated securely on the server).
+      document.getElementById('memberIdInput').value = 'Generating...';
+      try {
+        const previewId = await getNextMemberIdPreview();
+        document.getElementById('memberIdInput').value = previewId;
+      } catch (error) {
+        document.getElementById('memberIdInput').value = 'Auto-generated on approval';
+      }
       
       document.getElementById('memberModal').style.display = 'flex';
     }
@@ -370,27 +506,26 @@
     async function approveSingleMember() {
       if (!selectedMemberUid) return;
 
-      const memberId = document.getElementById('memberIdInput').value;
-      const notes = document.getElementById('approvalNotes').value;
-
-      if (!memberId) {
-        UIModule.showAlert('Member ID is required', 'error');
+      if (!initializeApprovalFunctions()) {
+        UIModule.showAlert('Approval service is not ready yet. Please wait a moment and try again.', 'error');
         return;
       }
+
+      const notes = document.getElementById('approvalNotes').value;
 
       try {
         UIModule.showLoader('Approving member...');
 
         const result = await approveMemberFunction({
           memberUid: selectedMemberUid,
-          memberId: memberId,
           notes: notes
         });
 
         UIModule.hideLoader();
 
         if (result.data.success) {
-          UIModule.showAlert('✅ Member approved successfully!', 'success');
+          const approvedMemberId = result.data.memberId || 'AMCAG ID';
+          UIModule.showAlert(`✅ Member approved successfully! ID: ${approvedMemberId}`, 'success');
           closeMemberModal();
           loadPendingMembers();
         } else {
@@ -407,6 +542,11 @@
     // Reject single member
     async function rejectSingleMember() {
       if (!selectedMemberUid) return;
+
+      if (!initializeApprovalFunctions()) {
+        UIModule.showAlert('Approval service is not ready yet. Please wait a moment and try again.', 'error');
+        return;
+      }
 
       const notes = document.getElementById('approvalNotes').value || 'No reason provided';
 
@@ -446,23 +586,23 @@
 
       if (selectedUids.length === 0) return;
 
+      if (!initializeApprovalFunctions()) {
+        UIModule.showAlert('Approval service is not ready yet. Please wait a moment and try again.', 'error');
+        return;
+      }
+
       if (!confirm(`Approve ${selectedUids.length} member(s)?`)) return;
 
       try {
         UIModule.showLoader(`Approving ${selectedUids.length} members...`);
 
         let successCount = 0;
-        const year = new Date().getFullYear();
 
-        for (let i = 0; i < selectedUids.length; i++) {
-          const uid = selectedUids[i];
-          const nextNumber = String(pendingMembers.length + i + 1).padStart(4, '0');
-          const memberId = `AMCAG-${year}-${nextNumber}`;
+        for (const uid of selectedUids) {
 
           try {
             const result = await approveMemberFunction({
               memberUid: uid,
-              memberId: memberId,
               notes: 'Bulk approval'
             });
 
@@ -489,6 +629,11 @@
         .map(cb => cb.dataset.uid);
 
       if (selectedUids.length === 0) return;
+
+      if (!initializeApprovalFunctions()) {
+        UIModule.showAlert('Approval service is not ready yet. Please wait a moment and try again.', 'error');
+        return;
+      }
 
       const reason = prompt(`Enter reason for rejecting ${selectedUids.length} member(s):`);
       if (!reason) return;
@@ -550,6 +695,7 @@
         return;
       }
 
+      initializeApprovalFunctions();
       loadPendingMembers();
     });
   </script>

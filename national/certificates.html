@@ -357,6 +357,77 @@
   <script src="/js/ui.js"></script>
 
   <script>
+    function showUserAlert(message, type = 'info') {
+      if (window.UIModule && typeof UIModule.showAlert === 'function') {
+        UIModule.showAlert(message, type);
+      } else {
+        console[type === 'error' ? 'error' : 'log'](message);
+      }
+    }
+
+    function showLoader(message) {
+      if (window.UIModule && typeof UIModule.showLoader === 'function') {
+        UIModule.showLoader(message);
+      }
+    }
+
+    function hideLoader() {
+      if (window.UIModule && typeof UIModule.hideLoader === 'function') {
+        UIModule.hideLoader();
+      }
+    }
+
+    function escapeCsvCell(value) {
+      const text = String(value ?? '').replace(/"/g, '""');
+      return `"${text}"`;
+    }
+
+    function triggerFileDownload(content, filename, mimeType = 'text/csv;charset=utf-8;') {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    function findCertificateRow(certId) {
+      const rows = Array.from(document.querySelectorAll('table.table tbody tr'));
+      return rows.find((row) => {
+        const idCell = row.querySelector('td div[style*="font-family: monospace"]');
+        return idCell && idCell.textContent.trim() === certId;
+      }) || null;
+    }
+
+    function updateCertificateRowIssued(certId, issuedDateString) {
+      const row = findCertificateRow(certId);
+      if (!row) return;
+      const cells = row.querySelectorAll('td');
+      if (cells.length < 7) return;
+
+      cells[3].textContent = issuedDateString;
+      cells[5].innerHTML = '<span class="badge badge-success">Issued</span>';
+      cells[6].innerHTML = `
+        <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewCertificate('${certId}')">View</button>
+        <button class="btn btn-sm btn-outline" onclick="downloadCertificate('${certId}')">Download</button>
+      `;
+    }
+
+    function getCertificateTypeFromRow(certId) {
+      const row = findCertificateRow(certId);
+      if (!row) return 'membership';
+      const typeText = (row.querySelectorAll('td')[2]?.textContent || '').trim().toLowerCase();
+      if (typeText.includes('training')) return 'training';
+      if (typeText.includes('achievement')) return 'achievement';
+      if (typeText.includes('leadership')) return 'leadership';
+      if (typeText.includes('participation')) return 'participation';
+      return 'membership';
+    }
+
     function signOut() {
       AuthModule.signOut();
     }
@@ -366,48 +437,69 @@
     }
 
     function downloadCertificate(certId) {
-      UIModule.showAlert(`Downloading certificate: ${certId}`, 'success');
-      // Trigger certificate PDF download
-      // This would typically call a cloud function to generate and download PDF
+      const certUrl = `/certificate-view.html?id=${encodeURIComponent(certId)}`;
+      window.open(certUrl, '_blank');
+      showUserAlert(`Opened certificate ${certId}`, 'success');
     }
 
-    function issueCertificate(certId) {
+    async function issueCertificate(certId) {
       if (confirm(`Issue certificate ${certId} now?`)) {
-        UIModule.showLoader('Issuing certificate...');
-        // Call cloud function to issue certificate
-        setTimeout(() => {
-          UIModule.hideLoader();
-          UIModule.showAlert('Certificate issued successfully!', 'success');
+        showLoader('Issuing certificate...');
+
+        try {
+          const db = firebase.firestore();
+          const issueDate = new Date();
+          const issuedAt = issueDate.toISOString().split('T')[0];
+          const issuedAtLabel = issueDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric'
+          });
+
+          const authUser = firebase.auth().currentUser;
+          const payload = {
+            certificateId: certId,
+            type: getCertificateTypeFromRow(certId),
+            status: 'issued',
+            issuedAt,
+            issuedBy: authUser?.email || 'system',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+
+          await db.collection('certificates').doc(certId).set(payload, { merge: true });
+
+          updateCertificateRowIssued(certId, issuedAtLabel);
+          hideLoader();
+          showUserAlert(`Certificate ${certId} issued successfully`, 'success');
           loadCertificates();
-        }, 1500);
+        } catch (error) {
+          hideLoader();
+          console.error('Error issuing certificate:', error);
+          showUserAlert(`Error issuing certificate: ${error.message}`, 'error');
+        }
       }
     }
 
     function viewCertificateHistory(certId) {
-      UIModule.showAlert(`Viewing history for certificate: ${certId}`, 'info');
+      showUserAlert(`Viewing history for certificate: ${certId}`, 'info');
       // Show certificate history modal with all status changes
     }
 
     function downloadTemplate() {
-      // Create CSV template for bulk certificate issuance
-      const csvContent = [
-        ['Member Email', 'Certificate Type', 'Certificate Title', 'Issue Date (YYYY-MM-DD)', 'Expiry Date (YYYY-MM-DD)', 'Notes'],
-        ['member@example.com', 'membership', 'Member in Good Standing', '2026-03-01', '2027-03-01', 'Annual membership certificate'],
-        ['leader@example.com', 'leadership', 'Regional Coordinator', '2026-03-01', '', 'Leadership position certificate']
-      ].map(row => row.join(',')).join('\n');
-      
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', `certificate_template_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      UIModule.showAlert('Certificate template downloaded successfully!', 'success');
+      try {
+        const rows = [
+          ['memberEmail', 'certificateType', 'certificateTitle', 'issuedDate', 'expiryDate', 'notes'],
+          ['member@example.com', 'membership', 'Member in Good Standing', '2026-03-01', '2027-03-01', 'Annual membership certificate'],
+          ['leader@example.com', 'leadership', 'Regional Coordinator', '2026-03-01', '', 'Leadership position certificate']
+        ];
+        const csvContent = '\uFEFF' + rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n');
+        const filename = `certificate_template_${new Date().toISOString().split('T')[0]}.csv`;
+        triggerFileDownload(csvContent, filename);
+        showUserAlert('Certificate template downloaded successfully.', 'success');
+      } catch (error) {
+        console.error('Template download failed:', error);
+        showUserAlert('Unable to download certificate template. Please try again.', 'error');
+      }
     }
 
     function openIssueCertificateModal() {
@@ -436,7 +528,7 @@
       const notes = document.getElementById('certificateNotes').value.trim();
       
       try {
-        UIModule.showLoader('Issuing certificate...');
+        showLoader('Issuing certificate...');
         
         const db = firebase.firestore();
         
@@ -444,8 +536,8 @@
         const membersSnapshot = await db.collection('users').where('email', '==', memberEmail).limit(1).get();
         
         if (membersSnapshot.empty) {
-          UIModule.hideLoader();
-          UIModule.showAlert('Member not found with this email', 'error');
+          hideLoader();
+          showUserAlert('Member not found with this email', 'error');
           return;
         }
         
@@ -466,7 +558,7 @@
           type: certificateType,
           title: certificateTitle,
           issuedAt: issuedDate,
-          issuedBy: firebase.auth().currentUser.email,
+          issuedBy: firebase.auth().currentUser?.email || 'system',
           expiryDate: expiryDate || null,
           notes: notes || '',
           status: 'issued',
@@ -476,16 +568,20 @@
         
         await db.collection('certificates').doc(certId).set(certificateData);
         
-        UIModule.hideLoader();
-        UIModule.showAlert(`Certificate ${certId} issued successfully!`, 'success');
+        hideLoader();
+        showUserAlert(`Certificate ${certId} issued successfully!`, 'success');
         
         closeIssueCertificateModal();
+        updateCertificateRowIssued(
+          certId,
+          new Date(issuedDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+        );
         loadCertificates();
         
       } catch (error) {
-        UIModule.hideLoader();
+        hideLoader();
         console.error('Error issuing certificate:', error);
-        UIModule.showAlert('Error issuing certificate: ' + error.message, 'error');
+        showUserAlert('Error issuing certificate: ' + error.message, 'error');
       }
     }
 
@@ -500,7 +596,7 @@
         console.log('Certificates loaded:', snapshot.size);
       } catch (error) {
         console.error('Error loading certificates:', error);
-        UIModule.showAlert('Error loading certificates data', 'error');
+        showUserAlert('Error loading certificates data', 'error');
       }
     }
 
@@ -508,17 +604,17 @@
       const certId = document.getElementById('certIdInput').value.trim();
       
       if (!certId) {
-        UIModule.showAlert('Please enter a certificate ID', 'error');
+        showUserAlert('Please enter a certificate ID', 'error');
         return;
       }
 
       try {
-        UIModule.showLoader('Verifying certificate...');
+        showLoader('Verifying certificate...');
         
         const db = firebase.firestore();
         const certDoc = await db.collection('certificates').doc(certId).get();
         
-        UIModule.hideLoader();
+        hideLoader();
         
         const resultDiv = document.getElementById('verificationResult');
         resultDiv.style.display = 'block';
@@ -562,24 +658,28 @@
           `;
         }
       } catch (error) {
-        UIModule.hideLoader();
+        hideLoader();
         console.error('Error verifying certificate:', error);
-        UIModule.showAlert('Error verifying certificate', 'error');
+        showUserAlert('Error verifying certificate', 'error');
       }
     }
 
-    AuthModule.onAuthStateChanged((user) => {
-      if (!user) {
-        window.location.href = '/membership.html';
-      } else {
-        // Check if user has national executive or super admin role
-        if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
-          window.location.href = '/member-dashboard.html';
+    if (window.AuthModule && typeof AuthModule.onAuthStateChanged === 'function') {
+      AuthModule.onAuthStateChanged((user) => {
+        if (!user) {
+          window.location.href = '/membership.html';
         } else {
-          loadCertificates();
+          // Check if user has national executive or super admin role
+          if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
+            window.location.href = '/member-dashboard.html';
+          } else {
+            loadCertificates();
+          }
         }
-      }
-    });
+      });
+    } else {
+      console.warn('AuthModule unavailable; showing local certificate actions only.');
+    }
   </script>
   <script src="/js/mobile-menu.js"></script>
 </body>

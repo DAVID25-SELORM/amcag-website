@@ -156,18 +156,23 @@ window.FirebaseModule = {
   initializeFirebase
 };
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    // Small delay to ensure Firebase SDK is loaded
-    setTimeout(initializeFirebase, 100);
-  });
-} else {
-  // DOM already loaded, check if Firebase is available
-  if (typeof firebase !== 'undefined') {
-    initializeFirebase();
-  } else {
-    // Wait a bit for Firebase SDK to load
-    setTimeout(initializeFirebase, 100);
+function bootFirebase(retries = 20) {
+  if (typeof firebase === 'undefined') {
+    if (retries > 0) {
+      setTimeout(() => bootFirebase(retries - 1), 50);
+    } else {
+      console.error('Firebase SDK not available after retries.');
+    }
+    return;
   }
+
+  initializeFirebase();
+}
+
+// Auto-initialize immediately. Firebase setup has no DOM dependency.
+bootFirebase();
+
+// Retry once DOM is ready as a safety net for slow script loading.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => bootFirebase(5));
 }

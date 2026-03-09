@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -26,7 +26,7 @@
         <li><a href="/region-dashboard/index.html" class="navbar-link">Dashboard</a></li>
         <li><a href="/region-dashboard/payment-approvals.html" class="navbar-link active">Payments</a></li>
         <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
-          <span class="theme-icon">🌙</span>
+          <span class="theme-icon">ðŸŒ™</span>
         </button></li>
         <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
       </ul>
@@ -37,7 +37,7 @@
   <section class="section-sm" style="background: var(--gradient-primary); color: white;">
     <div class="container">
       <h1 style="font-family: var(--font-display); font-size: var(--text-5xl); font-weight: var(--font-bold); margin-bottom: var(--space-2);">
-        💳 Payment Approvals
+        ðŸ’³ Payment Approvals
       </h1>
       <p style="font-size: var(--text-xl); opacity: 0.95;">
         Review and approve pending manual payments
@@ -137,12 +137,83 @@
 
     let currentUserData = null;
     let approveManualPaymentFunction = null;
+    let actionInProgress = false;
+    let currentPendingPayments = [];
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function parseDateValue(value) {
+      if (!value) return null;
+      if (typeof value?.toDate === 'function') return value.toDate();
+      if (value instanceof Date) return value;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDateValue(value, fallback = 'N/A') {
+      const dateObj = parseDateValue(value);
+      if (!dateObj) return fallback;
+      return dateObj.toLocaleDateString();
+    }
+
+    function toAmount(value) {
+      const amount = Number(value);
+      return Number.isFinite(amount) ? amount : 0;
+    }
+
+    function getFunctionErrorMessage(error, fallback = 'Unknown error') {
+      if (!error) return fallback;
+      if (error.details && typeof error.details === 'string') return error.details;
+      if (error.message) return error.message;
+      return fallback;
+    }
+
+    function initializePaymentFunctions() {
+      if (approveManualPaymentFunction) return true;
+      if (!firebase.apps || !firebase.apps.length) return false;
+      approveManualPaymentFunction = firebase.functions().httpsCallable('approveManualPayment');
+      return true;
+    }
+
+    async function ensurePaymentFunctionsReady(maxAttempts = 20, delayMs = 100) {
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        if (initializePaymentFunctions()) return true;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+      return false;
+    }
+
+    function sortByDateDesc(items, field) {
+      return items.sort((a, b) => {
+        const aDate = parseDateValue(a?.[field]);
+        const bDate = parseDateValue(b?.[field]);
+        return (bDate?.getTime() || 0) - (aDate?.getTime() || 0);
+      });
+    }
+
+    function matchesUserRegion(payment) {
+      if (currentUserData?.role !== 'regional_executive') return true;
+      const userRegion = currentUserData?.region;
+      return payment?.region === userRegion || payment?.memberRegion === userRegion;
+    }
+
+    function setPendingActionButtonsDisabled(isDisabled) {
+      document.querySelectorAll('[data-payment-action]').forEach((button) => {
+        button.disabled = Boolean(isDisabled);
+      });
+    }
 
     // Initialize Cloud Functions
-    firebase.auth().onAuthStateChanged(user => {
-      if (user && !approveManualPaymentFunction) {
-        const functions = firebase.functions();
-        approveManualPaymentFunction = functions.httpsCallable('approveManualPayment');
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        initializePaymentFunctions();
       }
     });
 
@@ -153,48 +224,147 @@
         
         const db = firebase.firestore();
         const user = firebase.auth().currentUser;
+
+        if (!user) {
+          throw new Error('Not authenticated');
+        }
         
         // Get current user data
         const userDoc = await db.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+          throw new Error('User profile not found');
+        }
         currentUserData = userDoc.data();
 
         // Build query based on role
-        let pendingQuery = db.collection('payments')
-          .where('type', '==', 'monthly_dues')
-          .where('status', '==', 'pending')
-          .orderBy('createdAt', 'desc');
+        let pendingPayments = [];
+        try {
+          let pendingQuery = db.collection('payments')
+            .where('type', '==', 'monthly_dues')
+            .where('status', '==', 'pending')
+            .orderBy('createdAt', 'desc');
 
-        // Regional executives see only their region
-        if (currentUserData.role === 'regional_executive') {
-          pendingQuery = pendingQuery.where('region', '==', currentUserData.region);
+          // Regional executives see only their region
+          if (currentUserData.role === 'regional_executive') {
+            pendingQuery = pendingQuery.where('region', '==', currentUserData.region);
+          }
+
+          const pendingSnapshot = await pendingQuery.get();
+          pendingPayments = pendingSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+
+          if (currentUserData.role === 'regional_executive' && pendingPayments.length === 0) {
+            try {
+              const altPendingSnapshot = await db.collection('payments')
+                .where('type', '==', 'monthly_dues')
+                .where('status', '==', 'pending')
+                .where('memberRegion', '==', currentUserData.region)
+                .orderBy('createdAt', 'desc')
+                .get();
+              pendingPayments = altPendingSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }));
+            } catch (altPendingError) {
+              console.warn('Pending memberRegion fallback query failed:', altPendingError);
+            }
+          }
+        } catch (pendingQueryError) {
+          console.warn('Pending query fallback triggered:', pendingQueryError);
+          const fallbackPendingSnapshot = await db.collection('payments')
+            .where('status', '==', 'pending')
+            .get();
+
+          pendingPayments = fallbackPendingSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+            .filter(p => p.type === 'monthly_dues')
+            .filter(matchesUserRegion);
+
+          sortByDateDesc(pendingPayments, 'createdAt');
         }
-
-        const pendingSnapshot = await pendingQuery.get();
-        const pendingPayments = pendingSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
 
         // Get recently processed (last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        let processedPayments = [];
+        try {
+          let processedQuery = db.collection('payments')
+            .where('type', '==', 'monthly_dues')
+            .where('status', 'in', ['paid', 'rejected'])
+            .where('approvedAt', '>=', firebase.firestore.Timestamp.fromDate(thirtyDaysAgo))
+            .orderBy('approvedAt', 'desc')
+            .limit(20);
 
-        let processedQuery = db.collection('payments')
-          .where('type', '==', 'monthly_dues')
-          .where('status', 'in', ['paid', 'rejected'])
-          .where('approvedAt', '>=', firebase.firestore.Timestamp.fromDate(thirtyDaysAgo))
-          .orderBy('approvedAt', 'desc')
-          .limit(20);
+          if (currentUserData.role === 'regional_executive') {
+            processedQuery = processedQuery.where('region', '==', currentUserData.region);
+          }
 
-        if (currentUserData.role === 'regional_executive') {
-          processedQuery = processedQuery.where('region', '==', currentUserData.region);
+          const processedSnapshot = await processedQuery.get();
+          processedPayments = processedSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+
+          if (currentUserData.role === 'regional_executive' && processedPayments.length === 0) {
+            try {
+              const altProcessedSnapshot = await db.collection('payments')
+                .where('type', '==', 'monthly_dues')
+                .where('status', 'in', ['paid', 'rejected'])
+                .where('memberRegion', '==', currentUserData.region)
+                .where('approvedAt', '>=', firebase.firestore.Timestamp.fromDate(thirtyDaysAgo))
+                .orderBy('approvedAt', 'desc')
+                .limit(20)
+                .get();
+              processedPayments = altProcessedSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }));
+            } catch (altProcessedError) {
+              console.warn('Processed memberRegion fallback query failed:', altProcessedError);
+            }
+          }
+        } catch (processedQueryError) {
+          console.warn('Processed query fallback triggered:', processedQueryError);
+          try {
+            const fallbackProcessedSnapshot = await db.collection('payments')
+              .where('status', 'in', ['paid', 'rejected'])
+              .limit(250)
+              .get();
+
+            processedPayments = fallbackProcessedSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+          } catch (inQueryError) {
+            console.warn('Processed IN query fallback failed, using split queries:', inQueryError);
+            const [paidSnapshot, rejectedSnapshot] = await Promise.all([
+              db.collection('payments').where('status', '==', 'paid').limit(200).get(),
+              db.collection('payments').where('status', '==', 'rejected').limit(200).get()
+            ]);
+
+            processedPayments = [
+              ...paidSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+              ...rejectedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+            ];
+          }
+
+          processedPayments = processedPayments
+            .filter(p => p.type === 'monthly_dues')
+            .filter(matchesUserRegion)
+            .filter(p => {
+              const approvedAtDate = parseDateValue(p.approvedAt);
+              return approvedAtDate && approvedAtDate >= thirtyDaysAgo;
+            });
+
+          sortByDateDesc(processedPayments, 'approvedAt');
+          processedPayments = processedPayments.slice(0, 20);
         }
 
-        const processedSnapshot = await processedQuery.get();
-        const processedPayments = processedSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        currentPendingPayments = pendingPayments;
 
         // Update stats
         updateStats(pendingPayments, processedPayments);
@@ -208,7 +378,7 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error loading payments:', error);
-        UIModule.showAlert('Error loading payments: ' + error.message, 'error');
+        UIModule.showAlert('Error loading payments: ' + getFunctionErrorMessage(error, 'Unable to load payments'), 'error');
       }
     }
 
@@ -216,7 +386,7 @@
     function updateStats(pending, processed) {
       const pendingCount = pending.length;
       const approvedCount = processed.filter(p => p.status === 'paid').length;
-      const totalPending = pending.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const totalPending = pending.reduce((sum, p) => sum + toAmount(p.amount), 0);
 
       document.getElementById('pendingCount').textContent = pendingCount;
       document.getElementById('approvedCount').textContent = approvedCount;
@@ -231,7 +401,7 @@
         tbody.innerHTML = `
           <tr>
             <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-              ✅ No pending payments
+              âœ… No pending payments
             </td>
           </tr>
         `;
@@ -239,28 +409,47 @@
       }
 
       tbody.innerHTML = payments.map(payment => {
-        const createdDate = payment.createdAt ? 
-          new Date(payment.createdAt.toDate()).toLocaleDateString() : 'N/A';
+        const createdDate = formatDateValue(payment.createdAt);
+        const amount = toAmount(payment.amount);
+        const monthLabel = escapeHtml(getMonthName(payment.month));
+        const yearLabel = escapeHtml(payment.year ?? '');
+        const normalizedMethod = String(payment.paymentMethod || '').toLowerCase();
+        const methodLabelMap = {
+          bank_transfer: 'Bank Transfer',
+          momo: 'Mobile Money',
+          mobile_money: 'Mobile Money',
+          paystack: 'Paystack',
+          cash: 'Cash'
+        };
+        const methodLabel = methodLabelMap[normalizedMethod] || (normalizedMethod ? normalizedMethod.replace(/_/g, ' ') : 'N/A');
+        const methodIcon = normalizedMethod === 'bank_transfer'
+          ? 'ðŸ¦'
+          : (normalizedMethod === 'momo' || normalizedMethod === 'mobile_money')
+            ? 'ðŸ“±'
+            : normalizedMethod === 'paystack'
+              ? 'ðŸ’³'
+              : 'ðŸ’µ';
+        const referenceText = escapeHtml(payment.transferReference || payment.notes || '-');
 
         return `
           <tr>
             <td>
-              <strong>${payment.memberName || 'Unknown'}</strong><br>
-              <span style="font-size: var(--text-xs); color: var(--text-secondary);">${payment.memberId || 'N/A'}</span>
+              <strong>${escapeHtml(payment.memberName || 'Unknown')}</strong><br>
+              <span style="font-size: var(--text-xs); color: var(--text-secondary);">${escapeHtml(payment.memberId || 'N/A')}</span>
             </td>
-            <td>${getMonthName(payment.month)} ${payment.year}</td>
-            <td style="font-weight: 600;">GHS ${payment.amount.toFixed(2)}</td>
+            <td>${monthLabel} ${yearLabel}</td>
+            <td style="font-weight: 600;">GHS ${amount.toFixed(2)}</td>
             <td>
-              ${payment.paymentMethod === 'bank_transfer' ? '🏦 Bank Transfer' : '💵 Cash'}
+              ${methodIcon} ${escapeHtml(methodLabel)}
             </td>
-            <td>${payment.transferReference || payment.notes || '-'}</td>
+            <td>${referenceText}</td>
             <td>${createdDate}</td>
             <td>
-              <button onclick="approvePayment('${payment.id}')" class="btn btn-sm btn-primary" style="margin-right: 8px;">
-                ✅ Approve
+              <button data-payment-action="approve" data-payment-id="${escapeHtml(payment.id)}" class="btn btn-sm btn-primary" style="margin-right: 8px;" ${actionInProgress ? 'disabled' : ''}>
+                âœ… Approve
               </button>
-              <button onclick="rejectPayment('${payment.id}')" class="btn btn-sm btn-outline" style="color: var(--color-error);">
-                ❌ Reject
+              <button data-payment-action="reject" data-payment-id="${escapeHtml(payment.id)}" class="btn btn-sm btn-outline" style="color: var(--color-error);" ${actionInProgress ? 'disabled' : ''}>
+                âŒ Reject
               </button>
             </td>
           </tr>
@@ -284,20 +473,22 @@
       }
 
       tbody.innerHTML = payments.map(payment => {
+        const amount = toAmount(payment.amount);
+        const monthLabel = escapeHtml(getMonthName(payment.month));
+        const yearLabel = escapeHtml(payment.year ?? '');
         const statusBadge = payment.status === 'paid' ? 
           '<span class="badge badge-success">Approved</span>' :
           '<span class="badge badge-error">Rejected</span>';
 
-        const processedDate = payment.approvedAt ? 
-          new Date(payment.approvedAt.toDate()).toLocaleDateString() : 'N/A';
+        const processedDate = formatDateValue(payment.approvedAt);
 
         return `
           <tr>
-            <td>${payment.memberName || 'Unknown'}</td>
-            <td>${getMonthName(payment.month)} ${payment.year}</td>
-            <td>GHS ${payment.amount.toFixed(2)}</td>
+            <td>${escapeHtml(payment.memberName || 'Unknown')}</td>
+            <td>${monthLabel} ${yearLabel}</td>
+            <td>GHS ${amount.toFixed(2)}</td>
             <td>${statusBadge}</td>
-            <td>${payment.approvedByName || 'System'}</td>
+            <td>${escapeHtml(payment.approvedByName || 'System')}</td>
             <td>${processedDate}</td>
           </tr>
         `;
@@ -306,9 +497,18 @@
 
     // Approve payment
     async function approvePayment(paymentId) {
+      if (actionInProgress) {
+        UIModule.showAlert('Another payment action is processing. Please wait.', 'warning');
+        return;
+      }
       if (!confirm('Approve this payment?')) return;
 
       try {
+        actionInProgress = true;
+        setPendingActionButtonsDisabled(true);
+        if (!(await ensurePaymentFunctionsReady()) || typeof approveManualPaymentFunction !== 'function') {
+          throw new Error('Payment approval service is not ready. Please try again.');
+        }
         UIModule.showLoader('Approving payment...');
 
         const result = await approveManualPaymentFunction({
@@ -318,25 +518,37 @@
 
         UIModule.hideLoader();
 
-        if (result.data.success) {
-          UIModule.showAlert('✅ Payment approved successfully!', 'success');
+        if (result?.data?.success) {
+          UIModule.showAlert('âœ… Payment approved successfully!', 'success');
           loadPayments();
         } else {
-          UIModule.showAlert('Failed to approve payment', 'error');
+          UIModule.showAlert(result?.data?.message || 'Failed to approve payment', 'error');
         }
 
       } catch (error) {
         UIModule.hideLoader();
         console.error('Approval error:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + getFunctionErrorMessage(error), 'error');
+      } finally {
+        actionInProgress = false;
+        setPendingActionButtonsDisabled(false);
       }
     }
 
     // Reject payment
     async function rejectPayment(paymentId) {
+      if (actionInProgress) {
+        UIModule.showAlert('Another payment action is processing. Please wait.', 'warning');
+        return;
+      }
       if (!confirm('Reject this payment? This action cannot be undone.')) return;
 
       try {
+        actionInProgress = true;
+        setPendingActionButtonsDisabled(true);
+        if (!(await ensurePaymentFunctionsReady()) || typeof approveManualPaymentFunction !== 'function') {
+          throw new Error('Payment approval service is not ready. Please try again.');
+        }
         UIModule.showLoader('Rejecting payment...');
 
         const result = await approveManualPaymentFunction({
@@ -346,24 +558,28 @@
 
         UIModule.hideLoader();
 
-        if (result.data.success) {
+        if (result?.data?.success) {
           UIModule.showAlert('Payment rejected', 'warning');
           loadPayments();
         } else {
-          UIModule.showAlert('Failed to reject payment', 'error');
+          UIModule.showAlert(result?.data?.message || 'Failed to reject payment', 'error');
         }
 
       } catch (error) {
         UIModule.hideLoader();
         console.error('Rejection error:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + getFunctionErrorMessage(error), 'error');
+      } finally {
+        actionInProgress = false;
+        setPendingActionButtonsDisabled(false);
       }
     }
 
     // Helper function
     function getMonthName(month) {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return months[month - 1] || month;
+      const monthNumber = Number(month);
+      return months[monthNumber - 1] || String(month ?? '');
     }
 
     function signOut() {
@@ -374,7 +590,7 @@
       document.body.classList.toggle('dark-mode');
       const isDark = document.body.classList.contains('dark-mode');
       localStorage.setItem('darkMode', isDark);
-      document.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
+      document.querySelector('.theme-icon').textContent = isDark ? 'â˜€ï¸' : 'ðŸŒ™';
     }
 
     // Initialize
@@ -382,7 +598,7 @@
       const darkMode = localStorage.getItem('darkMode') === 'true';
       if (darkMode) {
         document.body.classList.add('dark-mode');
-        document.querySelector('.theme-icon').textContent = '☀️';
+        document.querySelector('.theme-icon').textContent = 'â˜€ï¸';
       }
     });
 
@@ -391,7 +607,27 @@
         loadPayments();
       }
     });
+
+    document.getElementById('pendingPaymentsTable').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-payment-action]');
+      if (!button) return;
+
+      const paymentId = button.dataset.paymentId;
+      if (!paymentId || !currentPendingPayments.some((payment) => payment.id === paymentId)) {
+        UIModule.showAlert('Payment record not found. Please refresh.', 'error');
+        return;
+      }
+
+      if (button.dataset.paymentAction === 'approve') {
+        approvePayment(paymentId);
+        return;
+      }
+      if (button.dataset.paymentAction === 'reject') {
+        rejectPayment(paymentId);
+      }
+    });
   </script>
   <script src="/js/mobile-menu.js"></script>
 </body>
 </html>
+

@@ -22,8 +22,7 @@ const RouterModule = (function() {
       '/region.html',
       '/certificate-verify.html',
       '/contact.html',
-      '/membership.html',
-      '/registration.html'
+      '/membership.html'
     ],
     
     // Member routes (requires member authentication)
@@ -31,30 +30,52 @@ const RouterModule = (function() {
       '/member-dashboard.html',
       '/dues.html',
       '/payments.html',
-      '/contributions.html',
       '/profile.html',
-      '/certificates.html'
+      '/certificates.html',
+      '/change-password.html',
+      '/complete-profile.html',
+      '/member-dashboard/dues-payment.html',
+      '/member-dashboard/donate.html',
+      '/member-dashboard/my-donations.html',
+      '/member-dashboard/meetings.html',
+      '/member-dashboard/regional-chat.html',
+      '/member-dashboard/waiver-request.html'
     ],
     
     // Regional executive routes
     regional: [
       '/region-dashboard/index.html',
-      '/region-dashboard/members.html',
-      '/region-dashboard/events.html',
-      '/region-dashboard/payments.html',
-      '/region-dashboard/media.html'
+      '/region-dashboard/member-approval.html',
+      '/region-dashboard/payment-approvals.html',
+      '/region-dashboard/dues-overview.html',
+      '/region-dashboard/waiver-management.html',
+      '/region-dashboard/donations.html',
+      '/region-dashboard/media-upload.html',
+      '/region-dashboard/meetings.html'
     ],
     
     // National executive routes
     national: [
       '/national/dashboard.html',
       '/national/members.html',
+      '/national/member-details.html',
+      '/national/member-approval.html',
       '/national/regions.html',
+      '/national/regional-permissions.html',
       '/national/payments.html',
+      '/national/dues-management.html',
+      '/national/donations-overview.html',
+      '/national/campaigns.html',
       '/national/certificates.html',
       '/national/events.html',
       '/national/analytics.html',
-      '/national/leadership.html'
+      '/national/leadership.html',
+      '/national/news-management.html',
+      '/national/media-upload.html',
+      '/national/security-command-center.html',
+      '/national/suspension-management.html',
+      '/national/meetings.html',
+      '/national/election-calendar.html'
     ]
   };
   
@@ -115,8 +136,8 @@ const RouterModule = (function() {
   function protectRoute() {
     const currentPath = window.location.pathname;
     
-    // Skip protection on login/registration pages (they handle their own logic)
-    if (currentPath === '/membership.html' || currentPath === '/registration.html') {
+    // Skip protection on login page (it handles its own logic)
+    if (currentPath === '/membership.html') {
       return true;
     }
     
@@ -267,8 +288,8 @@ const RouterModule = (function() {
   function init() {
     const currentPath = window.location.pathname;
     
-    // Skip router initialization on login/registration pages
-    if (currentPath === '/membership.html' || currentPath === '/registration.html') {
+    // Skip router initialization on login page
+    if (currentPath === '/membership.html') {
       console.log('Router: Skipping protection on auth page');
       return;
     }
@@ -285,7 +306,7 @@ const RouterModule = (function() {
     // Listen for auth state changes
     window.AuthModule.onAuthStateChanged((user) => {
       // Re-check route protection when auth state changes (except on login pages)
-      if (currentPath !== '/membership.html' && currentPath !== '/registration.html') {
+      if (currentPath !== '/membership.html') {
         protectRoute();
       }
     });

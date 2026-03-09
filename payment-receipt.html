@@ -131,6 +131,38 @@
       background: var(--color-warning-90);
       color: var(--color-warning-10);
     }
+
+    .status-failed {
+      background: #fce8e6;
+      color: #b3261e;
+    }
+
+    .receipt-message {
+      max-width: 800px;
+      margin: 0.75rem auto 0;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      border: 1px solid transparent;
+    }
+
+    .receipt-message.info {
+      background: #e3f2fd;
+      border-color: #90caf9;
+      color: #0d47a1;
+    }
+
+    .receipt-message.warning {
+      background: #fff8e1;
+      border-color: #ffd54f;
+      color: #8d6e00;
+    }
+
+    .receipt-message.error {
+      background: #ffebee;
+      border-color: #ef9a9a;
+      color: #b71c1c;
+    }
   </style>
 </head>
 <body>
@@ -138,6 +170,7 @@
     <button onclick="window.print()" class="btn btn-primary">🖨️ Print / Download PDF</button>
     <button onclick="window.close()" class="btn btn-outline">✖️ Close</button>
   </div>
+  <div id="receipt-message" class="receipt-message no-print info" style="display: none;"></div>
   
   <div class="receipt-container" id="receipt-container">
     <div class="receipt-header">
@@ -214,80 +247,279 @@
   <script>
     // Get payment ID from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const paymentId = urlParams.get('id');
-    
-    if (!paymentId) {
-      alert('No payment ID provided');
-      window.close();
+    const paymentId = (urlParams.get('id') || '').trim();
+
+    function showReceiptMessage(message, type = 'info') {
+      const messageBox = document.getElementById('receipt-message');
+      if (!messageBox) return;
+      messageBox.textContent = message;
+      messageBox.className = `receipt-message no-print ${type}`;
+      messageBox.style.display = '';
     }
-    
-    // Load payment data
-    async function loadReceipt() {
+
+    function hideReceiptMessage() {
+      const messageBox = document.getElementById('receipt-message');
+      if (!messageBox) return;
+      messageBox.style.display = 'none';
+    }
+
+    function parseDateValue(value) {
+      if (!value) return null;
+      if (value && typeof value.toDate === 'function') {
+        return value.toDate();
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatReceiptDate(value) {
+      const dateObj = parseDateValue(value);
+      if (!dateObj) return '-';
+      return dateObj.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+
+    function formatGeneratedDate() {
+      return new Date().toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function getReceiptCacheKey(txnId) {
+      return `amcag_receipt_${txnId}`;
+    }
+
+    function getCachedReceipt(txnId) {
+      try {
+        const raw = localStorage.getItem(getReceiptCacheKey(txnId));
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (error) {
+        console.warn('Failed to read receipt cache:', error);
+        return null;
+      }
+    }
+
+    function setCachedReceipt(txnId, payload) {
+      try {
+        localStorage.setItem(getReceiptCacheKey(txnId), JSON.stringify({
+          ...payload,
+          cachedAt: Date.now()
+        }));
+      } catch (error) {
+        console.warn('Failed to write receipt cache:', error);
+      }
+    }
+
+    function getSamplePayment(txnId) {
+      const samples = {
+        'TXN-2026-00453': {
+          transactionId: 'TXN-2026-00453',
+          memberName: 'Kwame Mensah',
+          memberId: 'AMCAG-2025-001',
+          type: 'Membership Dues',
+          amount: 50,
+          method: 'Mobile Money',
+          paymentDate: '2026-03-01',
+          status: 'completed'
+        },
+        'TXN-2026-00452': {
+          transactionId: 'TXN-2026-00452',
+          memberName: 'Akosua Boateng',
+          memberId: 'AMCAG-2025-002',
+          type: 'Event Registration',
+          amount: 120,
+          method: 'Bank Transfer',
+          paymentDate: '2026-02-28',
+          status: 'completed'
+        },
+        'TXN-2026-00451': {
+          transactionId: 'TXN-2026-00451',
+          memberName: 'Kofi Asante',
+          memberId: 'AMCAG-2025-003',
+          type: 'Membership Dues',
+          amount: 50,
+          method: 'Mobile Money',
+          paymentDate: '2026-02-28',
+          status: 'pending'
+        },
+        'TXN-2026-00450': {
+          transactionId: 'TXN-2026-00450',
+          memberName: 'Ama Owusu',
+          memberId: 'AMCAG-2025-004',
+          type: 'Donation',
+          amount: 500,
+          method: 'Bank Transfer',
+          paymentDate: '2026-02-27',
+          status: 'completed'
+        },
+        'TXN-2026-00449': {
+          transactionId: 'TXN-2026-00449',
+          memberName: 'Yaw Mohammed',
+          memberId: 'AMCAG-2025-005',
+          type: 'Membership Dues',
+          amount: 50,
+          method: 'Mobile Money',
+          paymentDate: '2026-02-27',
+          status: 'failed'
+        }
+      };
+      return samples[txnId] || null;
+    }
+
+    function formatStatus(status) {
+      const normalized = String(status || '').toLowerCase();
+      if (normalized === 'completed' || normalized === 'paid' || normalized === 'success') {
+        return { label: 'PAID', className: 'status-paid' };
+      }
+      if (normalized === 'failed' || normalized === 'error') {
+        return { label: 'FAILED', className: 'status-failed' };
+      }
+      return { label: 'PENDING', className: 'status-pending' };
+    }
+
+    function normalizePaymentRecord(rawPayment, txnId) {
+      const amount = Number(rawPayment?.amount || 0);
+      return {
+        transactionId: rawPayment?.transactionId || txnId,
+        memberName: rawPayment?.memberName || rawPayment?.name || '-',
+        memberId: rawPayment?.memberId || rawPayment?.memberCode || 'Pending',
+        region: rawPayment?.region || rawPayment?.leadershipRegion || '-',
+        paymentMethod: rawPayment?.paymentMethod || rawPayment?.method || '-',
+        paymentDate: rawPayment?.paymentDate || rawPayment?.createdAt || null,
+        paymentPeriod: (rawPayment?.month && rawPayment?.year) ? `${getMonthName(rawPayment.month)} ${rawPayment.year}` : '-',
+        transactionRef: rawPayment?.paystackReference || rawPayment?.transferReference || rawPayment?.reference || rawPayment?.transactionId || txnId,
+        amount: Number.isFinite(amount) ? amount : 0,
+        status: rawPayment?.status || 'pending'
+      };
+    }
+
+    function populateReceipt(payment) {
+      const normalized = normalizePaymentRecord(payment, paymentId);
+
+      document.getElementById('receipt-number').textContent = normalized.transactionId || '-';
+      document.getElementById('payment-date').textContent = formatReceiptDate(normalized.paymentDate);
+      document.getElementById('member-name').textContent = normalized.memberName;
+      document.getElementById('member-id').textContent = normalized.memberId;
+      document.getElementById('region').textContent = normalized.region;
+      document.getElementById('payment-method').textContent = formatPaymentMethod(normalized.paymentMethod);
+      document.getElementById('payment-period').textContent = normalized.paymentPeriod;
+      document.getElementById('transaction-ref').textContent = normalized.transactionRef;
+      document.getElementById('amount').textContent = `GHS ${normalized.amount.toFixed(2)}`;
+      document.getElementById('generated-date').textContent = formatGeneratedDate();
+
+      const statusMeta = formatStatus(normalized.status);
+      const statusBadge = document.getElementById('status-badge');
+      statusBadge.textContent = statusMeta.label;
+      statusBadge.className = `receipt-status-badge ${statusMeta.className}`;
+    }
+
+    async function waitForFirebaseReady(maxAttempts = 40, intervalMs = 125) {
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        if (firebase.apps && firebase.apps.length > 0) {
+          return true;
+        }
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+      return false;
+    }
+
+    async function fetchPaymentFromFirestore(txnId) {
       try {
         const db = firebase.firestore();
-        const paymentDoc = await db.collection('payments').doc(paymentId).get();
-        
-        if (!paymentDoc.exists) {
-          alert('Payment not found');
-          window.close();
+
+        // Try direct document ID first
+        const byDocId = await db.collection('payments').doc(txnId).get();
+        if (byDocId.exists) {
+          return { id: byDocId.id, ...byDocId.data() };
+        }
+
+        // Fallback: query by stored transactionId field
+        const byTransactionId = await db.collection('payments')
+          .where('transactionId', '==', txnId)
+          .limit(1)
+          .get();
+        if (!byTransactionId.empty) {
+          const doc = byTransactionId.docs[0];
+          return { id: doc.id, ...doc.data() };
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Error loading receipt from Firestore:', error);
+        return null;
+      }
+    }
+
+    // Load payment data
+    async function loadReceipt() {
+      document.getElementById('generated-date').textContent = formatGeneratedDate();
+
+      if (!paymentId) {
+        showReceiptMessage('No payment ID provided in URL.', 'error');
+        return;
+      }
+
+      const cachedPayment = getCachedReceipt(paymentId);
+      if (cachedPayment) {
+        populateReceipt(cachedPayment);
+        showReceiptMessage('Showing cached receipt details while checking live records...', 'info');
+      }
+
+      const firebaseReady = await waitForFirebaseReady();
+      if (!firebaseReady) {
+        if (!cachedPayment) {
+          const sample = getSamplePayment(paymentId);
+          if (sample) {
+            populateReceipt(sample);
+            showReceiptMessage('Live data unavailable. Showing local sample receipt.', 'warning');
+          } else {
+            showReceiptMessage('Unable to connect to live payment records. Please try again shortly.', 'error');
+          }
+        }
+        return;
+      }
+
+      const firestorePayment = await fetchPaymentFromFirestore(paymentId);
+      if (firestorePayment) {
+        setCachedReceipt(paymentId, firestorePayment);
+        populateReceipt(firestorePayment);
+        hideReceiptMessage();
+        return;
+      }
+
+      if (!cachedPayment) {
+        const sample = getSamplePayment(paymentId);
+        if (sample) {
+          populateReceipt(sample);
+          showReceiptMessage('Payment was not found in Firestore. Showing local sample data.', 'warning');
           return;
         }
-        
-        const payment = paymentDoc.data();
-        
-        // Populate receipt
-        document.getElementById('receipt-number').textContent = paymentId.substring(0, 12).toUpperCase();
-        document.getElementById('payment-date').textContent = payment.paymentDate ? 
-          new Date(payment.paymentDate.toDate()).toLocaleDateString('en-US', { 
-            month: 'long', 
-            day: 'numeric', 
-            year: 'numeric' 
-          }) : 
-          '-';
-        
-        document.getElementById('member-name').textContent = payment.memberName || '-';
-        document.getElementById('member-id').textContent = payment.memberId || 'Pending';
-        document.getElementById('region').textContent = payment.region || '-';
-        document.getElementById('payment-method').textContent = formatPaymentMethod(payment.paymentMethod);
-        document.getElementById('payment-period').textContent = payment.month && payment.year ? 
-          `${getMonthName(payment.month)} ${payment.year}` : 
-          '-';
-        document.getElementById('transaction-ref').textContent = payment.paystackReference || payment.transferReference || paymentId.substring(0, 16);
-        document.getElementById('amount').textContent = `GHS ${(payment.amount || 0).toFixed(2)}`;
-        
-        // Status badge
-        const statusBadge = document.getElementById('status-badge');
-        if (payment.status === 'paid') {
-          statusBadge.textContent = 'PAID';
-          statusBadge.className = 'receipt-status-badge status-paid';
-        } else {
-          statusBadge.textContent = 'PENDING';
-          statusBadge.className = 'receipt-status-badge status-pending';
-        }
-        
-        // Generated date
-        document.getElementById('generated-date').textContent = new Date().toLocaleDateString('en-US', {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-      } catch (error) {
-        console.error('Error loading receipt:', error);
-        alert('Failed to load receipt');
+        showReceiptMessage(`Payment ${paymentId} not found.`, 'error');
+      } else {
+        showReceiptMessage('Live record not found. Showing cached receipt details.', 'warning');
       }
     }
     
     function formatPaymentMethod(method) {
+      const normalized = String(method || '').toLowerCase().replace(/\s+/g, '_');
       const methods = {
-        'paystack': 'Paystack (Card/MoMo)',
-        'bank_transfer': 'Bank Transfer',
-        'cash': 'Cash',
-        'momo': 'Mobile Money'
+        paystack: 'Paystack (Card/MoMo)',
+        bank_transfer: 'Bank Transfer',
+        bank: 'Bank Transfer',
+        cash: 'Cash',
+        momo: 'Mobile Money',
+        mobile_money: 'Mobile Money',
+        card: 'Card'
       };
-      return methods[method] || method;
+      return methods[normalized] || method || '-';
     }
     
     function getMonthName(month) {
@@ -298,18 +530,7 @@
       return months[month - 1] || month;
     }
     
-    // Wait for Firebase to initialize
-    const checkFirebase = setInterval(() => {
-      if (firebase.apps && firebase.apps.length > 0) {
-        clearInterval(checkFirebase);
-        loadReceipt();
-      }
-    }, 100);
-    
-    // Timeout after 5 seconds
-    setTimeout(() => {
-      clearInterval(checkFirebase);
-    }, 5000);
+    loadReceipt();
   </script>
 </body>
 </html>

@@ -246,7 +246,7 @@
     };
     
     window.addNewMember = function() {
-      window.location.href = '/membership.html';
+      openAddMemberModal();
     };
     
     window.viewMember = function(uid) {
@@ -289,6 +289,7 @@
     // ===== MEMBERS DATA =====
     let allMembers = [];
     let filteredMembers = [];
+    let addMemberModalId = null;
 
     // ===== RE-AUTHENTICATION MODAL LOGIC (SECURITY LAYER 1) =====
     window.openResetModal = async (uid, userName) => {
@@ -490,9 +491,11 @@
       AuthModule.signOut();
     }
 
-    window.loadMembers = async function() {
+    window.loadMembers = async function(showLoading = true) {
       try {
-        UIModule.showLoader('Loading members...');
+        if (showLoading) {
+          UIModule.showLoader('Loading members...');
+        }
         
         const db = firebase.firestore();
         let snapshot;
@@ -520,9 +523,13 @@
         renderMembers();
         updateStats();
         
-        UIModule.hideLoader();
+        if (showLoading) {
+          UIModule.hideLoader();
+        }
       } catch (error) {
-        UIModule.hideLoader();
+        if (showLoading) {
+          UIModule.hideLoader();
+        }
         console.error('Error loading members:', error);
         UIModule.showAlert('Error loading members: ' + error.message, 'error');
         
@@ -624,6 +631,21 @@
       }
     }
 
+    function getCurrentSearchTerm() {
+      const searchInput = document.querySelector('input[placeholder="Search members..."]');
+      return searchInput?.value?.toLowerCase() || '';
+    }
+
+    function insertNewMemberLocally(member) {
+      if (!member || !member.uid) return;
+
+      // Keep newest created member visible immediately and avoid duplicates.
+      allMembers = [member, ...allMembers.filter((existing) => existing.uid !== member.uid)];
+
+      applyFilters(getCurrentSearchTerm());
+      updateStats();
+    }
+
     // ===== SEARCH & FILTER =====
     function applyFilters(searchTerm = '') {
       const selects = document.querySelectorAll('select.form-input');
@@ -697,8 +719,200 @@
       }
     };
 
-    // ===== ADD NEW MEMBER =====
-    // (Already defined as window.addNewMember at top of script)
+    // ===== ADD NEW MEMBER (ADMIN SAFE - DOES NOT SWITCH ADMIN SESSION) =====
+    function generateTemporaryPassword(length = 12) {
+      const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
+      let password = '';
+      for (let i = 0; i < length; i += 1) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+      return password;
+    }
+
+    function getRegionOptionsHtml() {
+      const regions = [
+        'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Northern', 'Western',
+        'Volta', 'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo',
+        'Western North', 'Savannah', 'North East', 'Oti'
+      ];
+      return regions.map((region) => `<option value="${region}">${region}</option>`).join('');
+    }
+
+    function getSecondaryProvisioningApp() {
+      const existing = firebase.apps.find((app) => app.name === 'MemberProvisioning');
+      if (existing) return existing;
+      return firebase.initializeApp(firebase.app().options, 'MemberProvisioning');
+    }
+
+    window.openAddMemberModal = function() {
+      const tempPassword = generateTemporaryPassword();
+      const formHtml = `
+        <form id="add-member-form" onsubmit="submitAddMember(event)">
+          <div class="form-group">
+            <label class="form-label required">Full Name</label>
+            <input type="text" class="form-input" id="add-member-name" required placeholder="e.g., John Doe">
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Email</label>
+            <input type="email" class="form-input" id="add-member-email" required placeholder="member@email.com">
+          </div>
+          <div class="grid grid-2 gap-3">
+            <div class="form-group">
+              <label class="form-label required">Phone</label>
+              <input type="text" class="form-input" id="add-member-phone" required placeholder="+233 24 123 4567">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Region</label>
+              <select class="form-input" id="add-member-region" required>
+                <option value="">Select Region</option>
+                ${getRegionOptionsHtml()}
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Temporary Password</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" class="form-input" id="add-member-password" required minlength="8" value="${tempPassword}" style="font-family: monospace;">
+              <button type="button" class="btn btn-outline" onclick="regenerateAddMemberPassword()">Regenerate</button>
+            </div>
+            <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">
+              Share this password securely with the member. They will be required to change it on first login.
+            </small>
+          </div>
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem;">
+            <button type="button" class="btn btn-outline" onclick="closeAddMemberModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Member</button>
+          </div>
+        </form>
+      `;
+
+      addMemberModalId = UIModule.showModal({
+        title: 'Add New Member',
+        content: formHtml,
+        size: 'medium'
+      });
+    };
+
+    window.regenerateAddMemberPassword = function() {
+      const input = document.getElementById('add-member-password');
+      if (!input) return;
+      input.value = generateTemporaryPassword();
+    };
+
+    window.closeAddMemberModal = function() {
+      if (!addMemberModalId) return;
+      UIModule.closeModal(addMemberModalId);
+      addMemberModalId = null;
+    };
+
+    window.submitAddMember = async function(event) {
+      event.preventDefault();
+
+      const fullName = document.getElementById('add-member-name')?.value?.trim() || '';
+      const email = document.getElementById('add-member-email')?.value?.trim() || '';
+      const phone = document.getElementById('add-member-phone')?.value?.trim() || '';
+      const region = document.getElementById('add-member-region')?.value?.trim() || '';
+      const password = document.getElementById('add-member-password')?.value?.trim() || '';
+
+      if (!fullName || !email || !phone || !region || password.length < 8) {
+        UIModule.showAlert('Please complete all required fields (password must be at least 8 characters).', 'error');
+        return;
+      }
+
+      let secondaryAuth = null;
+      let createdUser = null;
+      try {
+        UIModule.showLoader('Creating member account...');
+
+        const provisioningApp = getSecondaryProvisioningApp();
+        secondaryAuth = provisioningApp.auth();
+        const secondaryDb = provisioningApp.firestore();
+
+        const credential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+        createdUser = credential.user;
+
+        const now = firebase.firestore.FieldValue.serverTimestamp();
+        const adminUser = firebase.auth().currentUser;
+        const baseData = {
+          uid: createdUser.uid,
+          email,
+          fullName,
+          phone,
+          phoneNumber: phone,
+          region,
+          role: 'member',
+          status: 'pending',
+          registrationDate: now,
+          createdAt: now,
+          updatedAt: now,
+          mustResetPassword: true,
+          mustCompleteProfile: true,
+          createdByAdminUid: adminUser?.uid || null,
+          createdByAdminEmail: adminUser?.email || null
+        };
+
+        await secondaryDb.collection('users').doc(createdUser.uid).set(baseData);
+        await secondaryDb.collection('members').doc(createdUser.uid).set({
+          ...baseData,
+          memberId: null,
+          membershipType: 'regular',
+          joiningDate: null,
+          approvalStatus: 'pending_approval'
+        });
+
+        try {
+          await createdUser.sendEmailVerification();
+        } catch (verificationError) {
+          console.warn('Email verification send failed:', verificationError);
+        }
+
+        await secondaryAuth.signOut();
+        UIModule.hideLoader();
+
+        insertNewMemberLocally({
+          uid: createdUser.uid,
+          memberId: null,
+          fullName,
+          email,
+          phoneNumber: phone,
+          region,
+          status: 'pending',
+          createdAt: new Date()
+        });
+
+        closeAddMemberModal();
+        UIModule.showAlert(
+          `Member created successfully. Temporary password: ${password}. Status is pending approval.`,
+          'success',
+          9000
+        );
+
+        // Silent sync so server timestamps / remote fields are refreshed.
+        setTimeout(() => {
+          loadMembers(false);
+        }, 1000);
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Error creating member:', error);
+        UIModule.showAlert(`Failed to create member: ${error.message}`, 'error');
+
+        if (createdUser) {
+          try {
+            await createdUser.delete();
+          } catch (cleanupError) {
+            console.warn('Failed to rollback created auth user:', cleanupError);
+          }
+        }
+
+        if (secondaryAuth) {
+          try {
+            await secondaryAuth.signOut();
+          } catch (signOutError) {
+            console.warn('Secondary auth sign-out failed:', signOutError);
+          }
+        }
+      }
+    };
 
     // ===== VIEW MEMBER DETAILS =====
     // (Already defined as window.viewMember at top of script)

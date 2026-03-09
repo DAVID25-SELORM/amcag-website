@@ -27,10 +27,10 @@
         <a href="/region-dashboard/index.html" class="dashboard-nav-item">
           <span>📊</span> Dashboard
         </a>
-        <a href="/region-dashboard/members.html" class="dashboard-nav-item">
+        <a href="/region-dashboard/member-approval.html" class="dashboard-nav-item">
           <span>👥</span> Members
         </a>
-        <a href="/region-dashboard/waiver-review.html" class="dashboard-nav-item">
+        <a href="/region-dashboard/waiver-management.html" class="dashboard-nav-item">
           <span>📝</span> Waiver Requests
         </a>
         <a href="/region-dashboard/donations.html" class="dashboard-nav-item active">
@@ -59,7 +59,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-value" id="allocatedCount" style="color: var(--color-info);">0</div>
-          <div class="stat-label">Allocated</div>
+          <div class="stat-label">Distributed</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="totalValue" style="color: var(--color-primary);">GHS 0</div>
@@ -69,9 +69,9 @@
 
       <!-- Tabs -->
       <div class="tabs mb-4">
-        <button class="tab-btn active" onclick="switchTab('pending')">Pending Confirmation</button>
-        <button class="tab-btn" onclick="switchTab('confirmed')">Confirmed/Allocated</button>
-        <button class="tab-btn" onclick="switchTab('inventory')">Material Inventory</button>
+        <button class="tab-btn active" onclick="switchTab('pending', this)">Pending Confirmation</button>
+        <button class="tab-btn" onclick="switchTab('confirmed', this)">Confirmed/Distributed</button>
+        <button class="tab-btn" onclick="switchTab('inventory', this)">Material Inventory</button>
       </div>
 
       <!-- Pending Tab -->
@@ -94,8 +94,8 @@
           <div style="margin-bottom: 1.5rem;">
             <select id="statusFilter" class="form-input" style="width: auto;">
               <option value="">All Status</option>
-              <option value="received">Received</option>
-              <option value="allocated">Allocated</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="distributed">Distributed</option>
             </select>
           </div>
 
@@ -210,6 +210,73 @@
     let allDonations = [];
     let selectedDonation = null;
     let activeTab = 'pending';
+    let confirmDonationReceiptFunction = null;
+    let recordDonationDistributionFunction = null;
+    let confirmationInProgress = false;
+    let distributionInProgress = false;
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function parseAmount(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function normalizeDate(value) {
+      if (!value) return null;
+      if (value instanceof Date) return value;
+      if (typeof value?.toDate === 'function') {
+        try {
+          return value.toDate();
+        } catch {
+          return null;
+        }
+      }
+      if (typeof value === 'number') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      if (typeof value === 'string') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    }
+
+    function formatDate(value) {
+      const date = normalizeDate(value);
+      return date ? date.toLocaleDateString() : 'N/A';
+    }
+
+    function dateToMs(value) {
+      const date = normalizeDate(value);
+      return date ? date.getTime() : 0;
+    }
+
+    function getErrorMessage(error) {
+      if (!error) return 'Unknown error';
+      if (typeof error.details === 'string') return error.details;
+      if (error.details && typeof error.details.message === 'string') return error.details.message;
+      if (typeof error.message === 'string') return error.message;
+      return 'Unknown error';
+    }
+
+    function getDonationById(donationId) {
+      return allDonations.find(donation => donation.id === donationId) || null;
+    }
+
+    function initializeCallables() {
+      const functions = firebase.functions();
+      confirmDonationReceiptFunction = confirmDonationReceiptFunction || functions.httpsCallable('confirmDonationReceipt');
+      recordDonationDistributionFunction = recordDonationDistributionFunction || functions.httpsCallable('recordDonationDistribution');
+    }
 
     function signOut() {
       AuthModule.signOut();
@@ -218,36 +285,61 @@
     async function loadDonations() {
       try {
         UIModule.showLoader('Loading donations...');
-        
         const db = firebase.firestore();
-        const snapshot = await db.collection('donations')
-          .where('region', '==', userRegion)
-          .orderBy('donatedAt', 'desc')
-          .get();
+        const donationMap = new Map();
+        const fetchByRegionField = async (fieldName) => {
+          try {
+            const ordered = await db.collection('donations')
+              .where(fieldName, '==', userRegion)
+              .orderBy('donatedAt', 'desc')
+              .get();
+            return ordered.docs;
+          } catch (queryError) {
+            const message = String(queryError?.message || '').toLowerCase();
+            if (!message.includes('index')) {
+              throw queryError;
+            }
 
-        allDonations = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+            console.warn(`Donations index missing for ${fieldName}. Falling back to client-side sort.`, queryError);
+            const fallback = await db.collection('donations')
+              .where(fieldName, '==', userRegion)
+              .get();
+            return fallback.docs;
+          }
+        };
+
+        const regionDocs = await fetchByRegionField('region');
+        regionDocs.forEach(doc => {
+          donationMap.set(doc.id, { id: doc.id, ...doc.data() });
+        });
+
+        if (donationMap.size === 0) {
+          const donorRegionDocs = await fetchByRegionField('donorRegion');
+          donorRegionDocs.forEach(doc => {
+            donationMap.set(doc.id, { id: doc.id, ...doc.data() });
+          });
+        }
+
+        allDonations = Array.from(donationMap.values())
+          .sort((a, b) => dateToMs(b.donatedAt) - dateToMs(a.donatedAt));
 
         updateStatistics();
         renderActiveTab();
-
-        UIModule.hideLoader();
       } catch (error) {
-        UIModule.hideLoader();
         console.error('Error loading donations:', error);
-        UIModule.showAlert('Error loading donations: ' + error.message, 'error');
+        UIModule.showAlert(`Error loading donations: ${getErrorMessage(error)}`, 'error');
+      } finally {
+        UIModule.hideLoader();
       }
     }
 
     function updateStatistics() {
       const pending = allDonations.filter(d => d.status === 'pledged').length;
-      const confirmed = allDonations.filter(d => d.status === 'received').length;
-      const allocated = allDonations.filter(d => d.status === 'allocated').length;
+      const confirmed = allDonations.filter(d => d.status === 'confirmed').length;
+      const allocated = allDonations.filter(d => d.status === 'distributed').length;
       const totalMonetary = allDonations
         .filter(d => d.type === 'monetary' && d.status !== 'pledged')
-        .reduce((sum, d) => sum + (d.amount || 0), 0);
+        .reduce((sum, d) => sum + parseAmount(d.amount), 0);
 
       document.getElementById('pendingCount').textContent = pending;
       document.getElementById('confirmedCount').textContent = confirmed;
@@ -255,13 +347,15 @@
       document.getElementById('totalValue').textContent = `GHS ${totalMonetary.toLocaleString()}`;
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, triggerButton = null) {
       activeTab = tab;
       
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       
-      event.target.classList.add('active');
+      if (triggerButton) {
+        triggerButton.classList.add('active');
+      }
       document.getElementById(tab + 'Tab').classList.add('active');
       
       renderActiveTab();
@@ -292,7 +386,7 @@
       }
 
       container.innerHTML = pending.map(donation => {
-        const date = new Date(donation.donatedAt.toDate()).toLocaleDateString();
+        const date = formatDate(donation.donatedAt);
         
         return `
           <div class="card mb-3" style="border-left: 4px solid var(--color-warning);">
@@ -301,25 +395,25 @@
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
                   <span style="font-size: 1.5rem;">${donation.type === 'monetary' ? '💰' : '📦'}</span>
                   <div>
-                    <h4 style="margin: 0;">${donation.donorName}${donation.anonymous ? ' (Anonymous)' : ''}</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">${donation.donationId}</p>
+                    <h4 style="margin: 0;">${escapeHtml(donation.donorName || 'Unknown Donor')}${donation.anonymous ? ' (Anonymous)' : ''}</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">${escapeHtml(donation.donationId || donation.id)}</p>
                   </div>
                 </div>
 
                 <div style="margin-top: 1rem; display: grid; gap: 0.5rem;">
                   ${donation.type === 'monetary' ? `
-                    <div><strong>Amount:</strong> GHS ${donation.amount.toLocaleString()}</div>
-                    <div><strong>Payment Method:</strong> ${donation.paymentMethod}</div>
+                    <div><strong>Amount:</strong> GHS ${parseAmount(donation.amount).toLocaleString()}</div>
+                    <div><strong>Payment Method:</strong> ${escapeHtml(donation.paymentMethod || 'N/A')}</div>
                   ` : `
-                    <div><strong>Items:</strong> ${donation.items.map(i => `${i.quantity} ${i.unit} ${i.name}`).join(', ')}</div>
+                    <div><strong>Items:</strong> ${(Array.isArray(donation.items) ? donation.items : []).map(i => `${escapeHtml(i.quantity)} ${escapeHtml(i.unit)} ${escapeHtml(i.name)}`).join(', ') || 'N/A'}</div>
                   `}
-                  <div><strong>Purpose:</strong> ${donation.purpose || 'General Fund'}</div>
-                  <div><strong>Date:</strong> ${date}</div>
+                  <div><strong>Purpose:</strong> ${escapeHtml(donation.purpose || 'General Fund')}</div>
+                  <div><strong>Date:</strong> ${escapeHtml(date)}</div>
                 </div>
               </div>
 
               <div>
-                <button class="btn btn-success btn-sm" onclick='openConfirmModal(${JSON.stringify(donation).replace(/'/g, "\\'")}'>
+                <button class="btn btn-success btn-sm" data-action="confirm-donation" data-donation-id="${escapeHtml(donation.id)}">
                   ✅ Confirm Receipt
                 </button>
               </div>
@@ -331,7 +425,7 @@
 
     function renderConfirmedDonations() {
       const statusFilter = document.getElementById('statusFilter').value;
-      let filtered = allDonations.filter(d => ['received', 'allocated'].includes(d.status));
+      let filtered = allDonations.filter(d => ['confirmed', 'distributed'].includes(d.status));
       
       if (statusFilter) {
         filtered = filtered.filter(d => d.status === statusFilter);
@@ -349,7 +443,7 @@
       }
 
       container.innerHTML = filtered.map(donation => {
-        const date = new Date(donation.donatedAt.toDate()).toLocaleDateString();
+        const date = formatDate(donation.donatedAt);
         
         return `
           <div class="card mb-3" style="border-left: 4px solid var(--color-success);">
@@ -358,26 +452,26 @@
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
                   <span style="font-size: 1.5rem;">${donation.type === 'monetary' ? '💰' : '📦'}</span>
                   <div>
-                    <h4 style="margin: 0;">${donation.donorName}${donation.anonymous ? ' (Anonymous)' : ''}</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">${donation.donationId}</p>
+                    <h4 style="margin: 0;">${escapeHtml(donation.donorName || 'Unknown Donor')}${donation.anonymous ? ' (Anonymous)' : ''}</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">${escapeHtml(donation.donationId || donation.id)}</p>
                   </div>
-                  <span class="badge badge-${donation.status === 'received' ? 'success' : 'info'}">${donation.status}</span>
+                  <span class="badge badge-${donation.status === 'confirmed' ? 'success' : 'info'}">${escapeHtml(donation.status)}</span>
                 </div>
 
                 <div style="margin-top: 1rem; display: grid; gap: 0.5rem;">
                   ${donation.type === 'monetary' ? `
-                    <div><strong>Amount:</strong> GHS ${donation.amount.toLocaleString()}</div>
+                    <div><strong>Amount:</strong> GHS ${parseAmount(donation.amount).toLocaleString()}</div>
                   ` : `
-                    <div><strong>Items:</strong> ${donation.items.map(i => `${i.quantity} ${i.unit} ${i.name}`).join(', ')}</div>
+                    <div><strong>Items:</strong> ${(Array.isArray(donation.items) ? donation.items : []).map(i => `${escapeHtml(i.quantity)} ${escapeHtml(i.unit)} ${escapeHtml(i.name)}`).join(', ') || 'N/A'}</div>
                   `}
-                  <div><strong>Date:</strong> ${date}</div>
-                  ${donation.receiptConfirmedAt ? `<div><strong>Confirmed:</strong> ${new Date(donation.receiptConfirmedAt.toDate()).toLocaleDateString()}</div>` : ''}
+                  <div><strong>Date:</strong> ${escapeHtml(date)}</div>
+                  ${donation.receiptConfirmedAt ? `<div><strong>Confirmed:</strong> ${escapeHtml(formatDate(donation.receiptConfirmedAt))}</div>` : ''}
                 </div>
               </div>
 
               <div>
-                ${donation.status === 'allocated' ? `
-                  <button class="btn btn-primary btn-sm" onclick='openDistributionModal(${JSON.stringify(donation).replace(/'/g, "\\'")}'>
+                ${donation.status === 'confirmed' ? `
+                  <button class="btn btn-primary btn-sm" data-action="record-distribution" data-donation-id="${escapeHtml(donation.id)}">
                     📋 Record Distribution
                   </button>
                 ` : ''}
@@ -404,12 +498,12 @@
       // Aggregate items
       const inventory = {};
       materials.forEach(donation => {
-        donation.items.forEach(item => {
+        (Array.isArray(donation.items) ? donation.items : []).forEach(item => {
           const key = item.name;
           if (!inventory[key]) {
             inventory[key] = { name: item.name, unit: item.unit, quantity: 0, donations: [] };
           }
-          inventory[key].quantity += item.quantity;
+          inventory[key].quantity += Number(item.quantity) || 0;
           inventory[key].donations.push(donation);
         });
       });
@@ -418,9 +512,9 @@
         <div class="card mb-3">
           <div style="display: flex; justify-content: between; align-items: center;">
             <div style="flex: 1;">
-              <h4 style="margin: 0 0 0.5rem 0;">${item.name}</h4>
+              <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(item.name)}</h4>
               <div style="font-size: 1.25rem; color: var(--color-primary); font-weight: 600;">
-                ${item.quantity} ${item.unit}
+                ${escapeHtml(item.quantity)} ${escapeHtml(item.unit)}
               </div>
               <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
                 From ${item.donations.length} donation(s)
@@ -432,19 +526,25 @@
       `).join('');
     }
 
-    window.openConfirmModal = (donation) => {
+    window.openConfirmModal = (donationId) => {
+      const donation = getDonationById(donationId);
+      if (!donation) {
+        UIModule.showAlert('Donation record not found.', 'error');
+        return;
+      }
+
       selectedDonation = donation;
       
       document.getElementById('confirmDetails').innerHTML = `
         <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md);">
-          <div style="margin-bottom: 0.5rem;"><strong>Donor:</strong> ${donation.donorName}</div>
-          <div style="margin-bottom: 0.5rem;"><strong>Type:</strong> ${donation.type}</div>
+          <div style="margin-bottom: 0.5rem;"><strong>Donor:</strong> ${escapeHtml(donation.donorName || 'Unknown Donor')}</div>
+          <div style="margin-bottom: 0.5rem;"><strong>Type:</strong> ${escapeHtml(donation.type || 'N/A')}</div>
           ${donation.type === 'monetary' ? `
-            <div style="margin-bottom: 0.5rem;"><strong>Amount:</strong> GHS ${donation.amount.toLocaleString()}</div>
-            <div><strong>Payment Method:</strong> ${donation.paymentMethod}</div>
+            <div style="margin-bottom: 0.5rem;"><strong>Amount:</strong> GHS ${parseAmount(donation.amount).toLocaleString()}</div>
+            <div><strong>Payment Method:</strong> ${escapeHtml(donation.paymentMethod || 'N/A')}</div>
           ` : `
             <div><strong>Items:</strong></div>
-            <ul>${donation.items.map(i => `<li>${i.quantity} ${i.unit} ${i.name}</li>`).join('')}</ul>
+            <ul>${(Array.isArray(donation.items) ? donation.items : []).map(i => `<li>${escapeHtml(i.quantity)} ${escapeHtml(i.unit)} ${escapeHtml(i.name)}</li>`).join('') || '<li>N/A</li>'}</ul>
           `}
         </div>
       `;
@@ -454,33 +554,65 @@
 
     window.closeConfirmModal = () => {
       document.getElementById('confirmModal').style.display = 'none';
+      document.getElementById('receiptNotes').value = '';
+      document.getElementById('receiptConfirm').checked = false;
+      confirmationInProgress = false;
       selectedDonation = null;
     };
 
     window.submitConfirmation = async (e) => {
       e.preventDefault();
+      if (confirmationInProgress) return;
+      if (!selectedDonation || !selectedDonation.id) {
+        UIModule.showAlert('No donation selected for confirmation.', 'error');
+        return;
+      }
+      if (!confirmDonationReceiptFunction) {
+        UIModule.showAlert('Confirmation service is still loading. Please retry.', 'error');
+        return;
+      }
       
       try {
+        confirmationInProgress = true;
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = true;
+        }
+
         UIModule.showLoader('Confirming receipt...');
-        
-        const confirmDonationReceipt = firebase.functions().httpsCallable('confirmDonationReceipt');
-        const result = await confirmDonationReceipt({
+
+        const result = await confirmDonationReceiptFunction({
           donationId: selectedDonation.id,
           notes: document.getElementById('receiptNotes').value
         });
 
-        UIModule.hideLoader();
-        UIModule.showAlert('Donation receipt confirmed successfully!', 'success');
-        closeConfirmModal();
-        loadDonations();
+        if (result?.data?.success) {
+          UIModule.showAlert('Donation receipt confirmed successfully!', 'success');
+          closeConfirmModal();
+          await loadDonations();
+        } else {
+          UIModule.showAlert(`Error: ${result?.data?.error || 'Unable to confirm donation.'}`, 'error');
+        }
       } catch (error) {
-        UIModule.hideLoader();
         console.error('Error confirming receipt:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert(`Error: ${getErrorMessage(error)}`, 'error');
+      } finally {
+        confirmationInProgress = false;
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+        UIModule.hideLoader();
       }
     };
 
-    window.openDistributionModal = (donation) => {
+    window.openDistributionModal = (donationId) => {
+      const donation = getDonationById(donationId);
+      if (!donation) {
+        UIModule.showAlert('Donation record not found.', 'error');
+        return;
+      }
+
       selectedDonation = donation;
       document.getElementById('distDate').valueAsDate = new Date();
       document.getElementById('distributionModal').style.display = 'flex';
@@ -488,13 +620,34 @@
 
     window.closeDistributionModal = () => {
       document.getElementById('distributionModal').style.display = 'none';
+      document.getElementById('distLocation').value = '';
+      document.getElementById('distBeneficiaries').value = '';
+      document.getElementById('distDate').value = '';
+      document.getElementById('distNotes').value = '';
+      document.getElementById('distPhotos').value = '';
+      distributionInProgress = false;
       selectedDonation = null;
     };
 
     window.submitDistribution = async (e) => {
       e.preventDefault();
+      if (distributionInProgress) return;
+      if (!selectedDonation || !selectedDonation.id) {
+        UIModule.showAlert('No donation selected for distribution.', 'error');
+        return;
+      }
+      if (!recordDonationDistributionFunction) {
+        UIModule.showAlert('Distribution service is still loading. Please retry.', 'error');
+        return;
+      }
       
       try {
+        distributionInProgress = true;
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = true;
+        }
+
         UIModule.showLoader('Recording distribution...');
 
         const photoFiles = document.getElementById('distPhotos').files;
@@ -512,28 +665,68 @@
           }
         }
 
-        const recordDonationDistribution = firebase.functions().httpsCallable('recordDonationDistribution');
-        const result = await recordDonationDistribution({
+        const beneficiaries = Number(document.getElementById('distBeneficiaries').value);
+        if (!Number.isFinite(beneficiaries) || beneficiaries < 1) {
+          UIModule.showAlert('Please provide a valid beneficiary count.', 'error');
+          return;
+        }
+
+        const result = await recordDonationDistributionFunction({
           donationId: selectedDonation.id,
-          location: document.getElementById('distLocation').value,
-          beneficiaries: parseInt(document.getElementById('distBeneficiaries').value),
+          beneficiaryName: document.getElementById('distLocation').value.trim(),
+          beneficiaryType: `Beneficiaries: ${beneficiaries}`,
+          impact: document.getElementById('distNotes').value.trim(),
+          location: document.getElementById('distLocation').value.trim(),
+          beneficiaries,
           distributionDate: document.getElementById('distDate').value,
-          notes: document.getElementById('distNotes').value,
+          notes: document.getElementById('distNotes').value.trim(),
           photoUrls: photoUrls
         });
 
-        UIModule.hideLoader();
-        UIModule.showAlert('Distribution recorded successfully!', 'success');
-        closeDistributionModal();
-        loadDonations();
+        if (result?.data?.success) {
+          UIModule.showAlert('Distribution recorded successfully!', 'success');
+          closeDistributionModal();
+          await loadDonations();
+        } else {
+          UIModule.showAlert(`Error: ${result?.data?.error || 'Unable to record distribution.'}`, 'error');
+        }
       } catch (error) {
-        UIModule.hideLoader();
         console.error('Error recording distribution:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert(`Error: ${getErrorMessage(error)}`, 'error');
+      } finally {
+        distributionInProgress = false;
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+        UIModule.hideLoader();
       }
     };
 
     document.getElementById('statusFilter').addEventListener('change', renderConfirmedDonations);
+    document.getElementById('pendingList').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action="confirm-donation"]');
+      if (!button) return;
+      openConfirmModal(button.dataset.donationId);
+    });
+
+    document.getElementById('confirmedList').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action="record-distribution"]');
+      if (!button) return;
+      openDistributionModal(button.dataset.donationId);
+    });
+
+    window.addEventListener('click', (event) => {
+      const confirmModal = document.getElementById('confirmModal');
+      const distributionModal = document.getElementById('distributionModal');
+
+      if (event.target === confirmModal) {
+        closeConfirmModal();
+      }
+      if (event.target === distributionModal) {
+        closeDistributionModal();
+      }
+    });
 
     AuthModule.onAuthStateChanged(async (user) => {
       if (!user) {
@@ -541,20 +734,35 @@
         return;
       }
 
-      currentUser = user;
-      
-      const db = firebase.firestore();
-      const userDoc = await db.collection('users').doc(user.uid).get();
-      const userData = userDoc.data();
-      
-      if (userData.role !== 'regional_secretary') {
-        UIModule.showAlert('Access denied. Regional Secretary role required.', 'error');
-        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
-        return;
-      }
+      try {
+        currentUser = user;
 
-      userRegion = userData.region;
-      loadDonations();
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+          UIModule.showAlert('User profile not found.', 'error');
+          return;
+        }
+
+        const userData = userDoc.data();
+        if (!['regional_executive', 'national_executive', 'super_admin'].includes(userData.role)) {
+          UIModule.showAlert('Access denied. Executive role required.', 'error');
+          setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+          return;
+        }
+
+        if (!userData.region) {
+          UIModule.showAlert('No region assigned to your account.', 'error');
+          return;
+        }
+
+        userRegion = userData.region;
+        initializeCallables();
+        await loadDonations();
+      } catch (error) {
+        console.error('Error initializing donations management:', error);
+        UIModule.showAlert(`Error initializing page: ${getErrorMessage(error)}`, 'error');
+      }
     });
   </script>
   <script src="/js/mobile-menu.js"></script>

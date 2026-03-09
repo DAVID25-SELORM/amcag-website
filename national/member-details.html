@@ -314,25 +314,29 @@
         document.getElementById('memberName').textContent = memberData.fullName || memberData.displayName || 'Unknown Member';
         document.getElementById('memberEmail').textContent = memberData.email || '';
         document.getElementById('fullName').textContent = memberData.fullName || '-';
-        document.getElementById('memberId').textContent = memberId.substring(0, 8).toUpperCase();
-        document.getElementById('phoneNumber').textContent = memberData.phoneNumber || '-';
+        document.getElementById('memberId').textContent = memberData.memberId || memberId.substring(0, 8).toUpperCase();
+        document.getElementById('phoneNumber').textContent = memberData.phoneNumber || memberData.phone || '-';
         document.getElementById('region').textContent = memberData.region || '-';
         document.getElementById('district').textContent = memberData.district || '-';
         document.getElementById('occupation').textContent = memberData.occupation || '-';
         document.getElementById('dateOfBirth').textContent = memberData.dateOfBirth || '-';
         document.getElementById('gender').textContent = memberData.gender || '-';
-        document.getElementById('address').textContent = memberData.residentialAddress || '-';
+        document.getElementById('address').textContent = memberData.residentialAddress || memberData.address || '-';
         document.getElementById('role').textContent = memberData.role || 'Member';
 
         // Status badge
         const status = memberData.status || 'pending';
         const statusBadge = document.getElementById('statusBadge');
         statusBadge.textContent = status.toUpperCase();
-        statusBadge.className = 'badge badge-' + (status === 'approved' ? 'success' : status === 'suspended' ? 'danger' : 'warning');
+        statusBadge.className = 'badge badge-' + (
+          status === 'approved' || status === 'active' ? 'success' :
+          status === 'suspended' ? 'danger' : 'warning'
+        );
 
         // Join date
-        if (memberData.joinedAt) {
-          const joinDate = memberData.joinedAt.toDate ? memberData.joinedAt.toDate() : new Date(memberData.joinedAt);
+        const joinDateRaw = memberData.joinedAt || memberData.joiningDate || memberData.registrationDate || memberData.createdAt;
+        if (joinDateRaw) {
+          const joinDate = joinDateRaw.toDate ? joinDateRaw.toDate() : new Date(joinDateRaw);
           document.getElementById('joinDate').textContent = joinDate.toLocaleDateString('en-US', { 
             year: 'numeric', 
             month: 'long', 
@@ -356,15 +360,44 @@
     }
 
     async function loadPayments() {
+      const tbody = document.getElementById('paymentsTableBody');
+      
       try {
         const db = firebase.firestore();
-        const paymentsSnapshot = await db.collection('payments')
-          .where('userId', '==', memberId)
-          .orderBy('createdAt', 'desc')
-          .limit(20)
-          .get();
-
-        const tbody = document.getElementById('paymentsTableBody');
+        let paymentsSnapshot;
+        
+        // Try with orderBy first
+        try {
+          paymentsSnapshot = await db.collection('payments')
+            .where('uid', '==', memberId)
+            .orderBy('createdAt', 'desc')
+            .limit(20)
+            .get();
+        } catch (indexError) {
+          // If index doesn't exist, try without orderBy
+          console.warn('Firestore index not found, loading without order:', indexError);
+          paymentsSnapshot = await db.collection('payments')
+            .where('uid', '==', memberId)
+            .limit(20)
+            .get();
+        }
+        
+        // Legacy fallback: old docs may store userId
+        if (paymentsSnapshot.empty) {
+          try {
+            paymentsSnapshot = await db.collection('payments')
+              .where('userId', '==', memberId)
+              .orderBy('createdAt', 'desc')
+              .limit(20)
+              .get();
+          } catch (legacyIndexError) {
+            console.warn('Legacy payments index not found, loading without order:', legacyIndexError);
+            paymentsSnapshot = await db.collection('payments')
+              .where('userId', '==', memberId)
+              .limit(20)
+              .get();
+          }
+        }
 
         if (paymentsSnapshot.empty) {
           tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No payments found</td></tr>';
@@ -373,34 +406,70 @@
 
         tbody.innerHTML = paymentsSnapshot.docs.map(doc => {
           const payment = doc.data();
-          const date = payment.createdAt?.toDate ? payment.createdAt.toDate() : new Date();
+          const dateRaw = payment.createdAt || payment.paymentDate || payment.updatedAt;
+          const date = dateRaw?.toDate ? dateRaw.toDate() : (dateRaw ? new Date(dateRaw) : new Date());
+          const amount = Number(payment.amount || 0);
+          const status = (payment.status || 'pending').toLowerCase();
+          const statusClass = ['paid', 'confirmed', 'approved', 'waived'].includes(status) ? 'success' :
+                              status === 'rejected' ? 'danger' : 'warning';
+          const typeLabel = payment.type === 'monthly_dues' ? 'Monthly Dues' : (payment.type || 'Dues');
           
           return `
             <tr>
               <td>${doc.id.substring(0, 8).toUpperCase()}</td>
-              <td>${payment.type || 'Dues'}</td>
-              <td>GHS ${payment.amount?.toFixed(2) || '0.00'}</td>
+              <td>${typeLabel}</td>
+              <td>GHS ${amount.toFixed(2)}</td>
               <td>${payment.paymentMethod || '-'}</td>
               <td>${date.toLocaleDateString()}</td>
-              <td><span class="badge badge-${payment.status === 'confirmed' ? 'success' : 'warning'}">${payment.status || 'pending'}</span></td>
+              <td><span class="badge badge-${statusClass}">${payment.status || 'pending'}</span></td>
             </tr>
           `;
         }).join('');
       } catch (error) {
         console.error('Error loading payments:', error);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No payments found</td></tr>';
       }
     }
 
     async function loadDonations() {
+      const tbody = document.getElementById('donationsTableBody');
+      
       try {
         const db = firebase.firestore();
-        const donationsSnapshot = await db.collection('donations')
-          .where('userId', '==', memberId)
-          .orderBy('createdAt', 'desc')
-          .limit(20)
-          .get();
-
-        const tbody = document.getElementById('donationsTableBody');
+        let donationsSnapshot;
+        
+        // Try with orderBy first
+        try {
+          donationsSnapshot = await db.collection('donations')
+            .where('donorId', '==', memberId)
+            .orderBy('createdAt', 'desc')
+            .limit(20)
+            .get();
+        } catch (indexError) {
+          // If index doesn't exist, try without orderBy
+          console.warn('Firestore index not found, loading without order:', indexError);
+          donationsSnapshot = await db.collection('donations')
+            .where('donorId', '==', memberId)
+            .limit(20)
+            .get();
+        }
+        
+        // Legacy fallback: old docs may store userId
+        if (donationsSnapshot.empty) {
+          try {
+            donationsSnapshot = await db.collection('donations')
+              .where('userId', '==', memberId)
+              .orderBy('createdAt', 'desc')
+              .limit(20)
+              .get();
+          } catch (legacyIndexError) {
+            console.warn('Legacy donations index not found, loading without order:', legacyIndexError);
+            donationsSnapshot = await db.collection('donations')
+              .where('userId', '==', memberId)
+              .limit(20)
+              .get();
+          }
+        }
 
         if (donationsSnapshot.empty) {
           tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No donations found</td></tr>';
@@ -409,32 +478,65 @@
 
         tbody.innerHTML = donationsSnapshot.docs.map(doc => {
           const donation = doc.data();
-          const date = donation.createdAt?.toDate ? donation.createdAt.toDate() : new Date();
+          const dateRaw = donation.createdAt || donation._createdAt || donation.updatedAt;
+          const date = dateRaw?.toDate ? dateRaw.toDate() : (dateRaw ? new Date(dateRaw) : new Date());
+          const amount = Number(donation.amount || 0);
+          const campaignName = donation.campaignName || donation.campaign || donation.purpose || 'General Fund';
+          const status = (donation.status || 'pending').toLowerCase();
+          const statusClass = ['confirmed', 'distributed', 'approved'].includes(status) ? 'success' :
+                              status === 'rejected' ? 'danger' : 'warning';
           
           return `
             <tr>
               <td>${doc.id.substring(0, 8).toUpperCase()}</td>
-              <td>${donation.campaign || 'General Fund'}</td>
-              <td>GHS ${donation.amount?.toFixed(2) || '0.00'}</td>
+              <td>${campaignName}</td>
+              <td>GHS ${amount.toFixed(2)}</td>
               <td>${date.toLocaleDateString()}</td>
-              <td><span class="badge badge-${donation.status === 'confirmed' ? 'success' : 'warning'}">${donation.status || 'pending'}</span></td>
+              <td><span class="badge badge-${statusClass}">${donation.status || 'pending'}</span></td>
             </tr>
           `;
         }).join('');
       } catch (error) {
         console.error('Error loading donations:', error);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No donations found</td></tr>';
       }
     }
 
     async function loadCertificates() {
+      const tbody = document.getElementById('certificatesTableBody');
+      
       try {
         const db = firebase.firestore();
-        const certificatesSnapshot = await db.collection('certificates')
-          .where('memberId', '==', memberId)
-          .orderBy('createdAt', 'desc')
-          .get();
-
-        const tbody = document.getElementById('certificatesTableBody');
+        let certificatesSnapshot;
+        
+        // Try with orderBy first
+        try {
+          certificatesSnapshot = await db.collection('certificates')
+            .where('memberId', '==', memberId)
+            .orderBy('createdAt', 'desc')
+            .get();
+        } catch (indexError) {
+          // If index doesn't exist, try without orderBy
+          console.warn('Firestore index not found, loading without order:', indexError);
+          certificatesSnapshot = await db.collection('certificates')
+            .where('memberId', '==', memberId)
+            .get();
+        }
+        
+        // Legacy fallback: some certificates may use uid instead of memberId
+        if (certificatesSnapshot.empty) {
+          try {
+            certificatesSnapshot = await db.collection('certificates')
+              .where('uid', '==', memberId)
+              .orderBy('createdAt', 'desc')
+              .get();
+          } catch (legacyIndexError) {
+            console.warn('Legacy certificates index not found, loading without order:', legacyIndexError);
+            certificatesSnapshot = await db.collection('certificates')
+              .where('uid', '==', memberId)
+              .get();
+          }
+        }
 
         if (certificatesSnapshot.empty) {
           tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No certificates found</td></tr>';
@@ -443,7 +545,11 @@
 
         tbody.innerHTML = certificatesSnapshot.docs.map(doc => {
           const cert = doc.data();
-          const date = cert.issuedAt ? new Date(cert.issuedAt) : new Date();
+          const issuedRaw = cert.issuedAt || cert.issueDate || cert.createdAt;
+          const date = issuedRaw?.toDate ? issuedRaw.toDate() : (issuedRaw ? new Date(issuedRaw) : new Date());
+          const status = cert.status || 'issued';
+          const statusClass = (status === 'issued' || status === 'active') ? 'success' : 'warning';
+          const verificationUrl = cert.verificationUrl || `/certificate-verify.html?id=${encodeURIComponent(cert.certificateId || doc.id)}`;
           
           return `
             <tr>
@@ -451,26 +557,218 @@
               <td>${cert.type || '-'}</td>
               <td>${cert.title || '-'}</td>
               <td>${date.toLocaleDateString()}</td>
-              <td><span class="badge badge-success">${cert.status || 'issued'}</span></td>
+              <td><span class="badge badge-${statusClass}">${status}</span></td>
               <td>
-                <button class="btn btn-sm btn-outline" onclick="window.open('${cert.verificationUrl}', '_blank')">View</button>
+                <button class="btn btn-sm btn-outline" onclick="window.open('${verificationUrl}', '_blank')">View</button>
               </td>
             </tr>
           `;
         }).join('');
       } catch (error) {
         console.error('Error loading certificates:', error);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No certificates found</td></tr>';
       }
     }
 
     function editMember() {
-      UIModule.showAlert('Edit member functionality - Coming soon', 'info');
+      // Show edit modal
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+          <div class="modal-header">
+            <h2>Edit Member</h2>
+            <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
+          </div>
+          <div class="modal-body">
+            <form id="editMemberForm">
+              <div class="form-group">
+                <label>Full Name *</label>
+                <input type="text" id="editFullName" value="${memberData.fullName || ''}" required class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Email *</label>
+                <input type="email" id="editEmail" value="${memberData.email || ''}" required class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" id="editPhone" value="${memberData.phone || ''}" class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" id="editDob" value="${memberData.dateOfBirth || ''}" class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Region</label>
+                <select id="editRegion" class="form-input">
+                  <option value="">Select Region</option>
+                  <option value="Greater Accra" ${memberData.region === 'Greater Accra' ? 'selected' : ''}>Greater Accra</option>
+                  <option value="Ashanti" ${memberData.region === 'Ashanti' ? 'selected' : ''}>Ashanti</option>
+                  <option value="Western" ${memberData.region === 'Western' ? 'selected' : ''}>Western</option>
+                  <option value="Eastern" ${memberData.region === 'Eastern' ? 'selected' : ''}>Eastern</option>
+                  <option value="Central" ${memberData.region === 'Central' ? 'selected' : ''}>Central</option>
+                  <option value="Northern" ${memberData.region === 'Northern' ? 'selected' : ''}>Northern</option>
+                  <option value="Volta" ${memberData.region === 'Volta' ? 'selected' : ''}>Volta</option>
+                  <option value="Bono" ${memberData.region === 'Bono' ? 'selected' : ''}>Bono</option>
+                  <option value="Upper East" ${memberData.region === 'Upper East' ? 'selected' : ''}>Upper East</option>
+                  <option value="Upper West" ${memberData.region === 'Upper West' ? 'selected' : ''}>Upper West</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="editStatus" class="form-input">
+                  <option value="active" ${memberData.status === 'active' ? 'selected' : ''}>Active</option>
+                  <option value="inactive" ${memberData.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                  <option value="suspended" ${memberData.status === 'suspended' ? 'selected' : ''}>Suspended</option>
+                </select>
+              </div>
+              <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-outline" onclick="this.closest('.modal').remove()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Handle form submission
+      document.getElementById('editMemberForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        
+        try {
+          const updates = {
+            fullName: document.getElementById('editFullName').value.trim(),
+            email: document.getElementById('editEmail').value.trim(),
+            phone: document.getElementById('editPhone').value.trim(),
+            dateOfBirth: document.getElementById('editDob').value,
+            region: document.getElementById('editRegion').value,
+            status: document.getElementById('editStatus').value,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          
+          const db = firebase.firestore();
+          await db.collection('users').doc(memberId).update(updates);
+          
+          UIModule.showAlert('Member updated successfully', 'success');
+          modal.remove();
+          
+          // Reload member details
+          loadMemberDetails();
+        } catch (error) {
+          console.error('Error updating member:', error);
+          UIModule.showAlert('Error updating member: ' + error.message, 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Changes';
+        }
+      });
     }
 
     function suspendMember() {
-      if (confirm(`Are you sure you want to suspend ${memberData.fullName || 'this member'}?`)) {
-        UIModule.showAlert('Suspend member functionality - Coming soon', 'info');
+      if (!confirm(`Are you sure you want to suspend ${memberData.fullName || 'this member'}?`)) {
+        return;
       }
+      
+      // Show suspension modal
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 500px;">
+          <div class="modal-header">
+            <h2>Suspend Member</h2>
+            <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
+          </div>
+          <div class="modal-body">
+            <p>You are about to suspend <strong>${memberData.fullName}</strong></p>
+            <form id="suspendMemberForm">
+              <div class="form-group">
+                <label>Reason for Suspension *</label>
+                <select id="suspendReason" required class="form-input">
+                  <option value="">Select a reason</option>
+                  <option value="Non-payment of dues">Non-payment of dues</option>
+                  <option value="Misconduct">Misconduct</option>
+                  <option value="Violation of code of conduct">Violation of code of conduct</option>
+                  <option value="Inactive membership">Inactive membership</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Additional Notes</label>
+                <textarea id="suspendNotes" rows="4" class="form-input" placeholder="Provide additional details..."></textarea>
+              </div>
+              <div class="form-group">
+                <label>Suspension Duration</label>
+                 <select id="suspendDuration" class="form-input">
+                  <option value="30">30 days</option>
+                  <option value="60">60 days</option>
+                  <option value="90">90 days</option>
+                  <option value="-1">Indefinite</option>
+                </select>
+              </div>
+              <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-outline" onclick="this.closest('.modal').remove()">Cancel</button>
+                <button type="submit" class="btn btn-danger">Suspend Member</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Handle form submission
+      document.getElementById('suspendMemberForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Suspending...';
+        
+        try {
+          const reason = document.getElementById('suspendReason').value;
+          const notes = document.getElementById('suspendNotes').value.trim();
+          const duration = parseInt(document.getElementById('suspendDuration').value);
+          
+          const suspensionData = {
+            status: 'suspended',
+            suspensionReason: reason,
+            suspensionNotes: notes,
+            suspendedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            suspendedBy: firebase.auth().currentUser.uid,
+            suspensionDuration: duration,
+            suspensionExpiresAt: duration > 0 
+              ? firebase.firestore.Timestamp.fromDate(new Date(Date.now() + duration * 24 * 60 * 60 * 1000))
+              : null,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          
+          const db = firebase.firestore();
+          await db.collection('users').doc(memberId).update(suspensionData);
+          
+          // Log the suspension action
+          await db.collection('activity_logs').add({
+            type: 'member_suspended',
+            memberId: memberId,
+            memberName: memberData.fullName,
+            reason: reason,
+            notes: notes,
+            performedBy: firebase.auth().currentUser.uid,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          UIModule.showAlert('Member suspended successfully', 'success');
+          modal.remove();
+          
+          // Reload member details
+          loadMemberDetails();
+        } catch (error) {
+          console.error('Error suspending member:', error);
+          UIModule.showAlert('Error suspending member: ' + error.message, 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Suspend Member';
+        }
+      });
     }
 
     // Wait for Firebase to initialize

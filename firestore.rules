@@ -2,48 +2,80 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check user role
-    function isRole(role) {
-      return request.auth != null && 
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Role helpers used across collections
+    function hasRole(role) {
+      return isAuthenticated() &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
     
+    function isRole(role) {
+      return hasRole(role);
+    }
+    
     function hasAnyRole(roles) {
-      return request.auth != null && 
+      return isAuthenticated() &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in roles;
+    }
+    
+    function isSameRegion(region) {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.region == region;
     }
     
     // Helper to check if user can approve members
     function canApproveMembership() {
-      return request.auth != null && (
+      return isAuthenticated() && (
         hasAnyRole(['super_admin', 'national_executive']) ||
-        (isRole('regional_executive') && 
+        (hasRole('regional_executive') && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.canApproveMembership == true)
       );
     }
     
     // Users collection
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null; // Allow registration
+      allow read: if isAuthenticated();
+      
+      // Allow self-registration only with non-privileged defaults
+      allow create: if isAuthenticated() &&
+                      request.auth.uid == userId &&
+                      request.resource.data.uid == request.auth.uid &&
+                      request.resource.data.email == request.auth.token.email &&
+                      request.resource.data.role == 'member' &&
+                      request.resource.data.status == 'pending';
       
       // Allow updates by user themselves (own profile) or admins
-      allow update: if request.auth.uid == userId || 
-                       hasAnyRole(['super_admin', 'national_executive']) ||
-                       // Regional execs can update if approving members in their region
-                       (isRole('regional_executive') && 
-                        resource.data.status == 'pending' && 
-                        request.resource.data.status == 'active' &&
-                        canApproveMembership() &&
-                        resource.data.region == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.region);
+      allow update: if (
+                        request.auth.uid == userId &&
+                        request.resource.data.uid == resource.data.uid &&
+                        request.resource.data.email == resource.data.email &&
+                        request.resource.data.role == resource.data.role &&
+                        request.resource.data.status == resource.data.status &&
+                        request.resource.data.region == resource.data.region &&
+                        request.resource.data.canApproveMembership == resource.data.canApproveMembership
+                      ) || 
+                      hasAnyRole(['super_admin', 'national_executive']) ||
+                      // Regional execs can update if approving members in their region
+                      (hasRole('regional_executive') && 
+                       resource.data.status == 'pending' && 
+                       request.resource.data.status == 'active' &&
+                       canApproveMembership() &&
+                       resource.data.region == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.region);
       
       allow delete: if hasAnyRole(['super_admin']);
     }
     
     // Members collection
     match /members/{memberId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null; // Allow on registration
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+                      request.auth.uid == memberId &&
+                      request.resource.data.uid == request.auth.uid &&
+                      request.resource.data.role == 'member' &&
+                      request.resource.data.status == 'pending'; // Allow on registration
       
       // Allow updates by executives who can approve
       allow update: if hasAnyRole(['super_admin', 'national_executive', 'regional_executive']) ||
@@ -320,7 +352,7 @@ service cloud.firestore {
         // Members-only meetings
         (resource.data.visibility == 'members' && isAuthenticated()) ||
         // Executives-only meetings
-        (resource.data.visibility == 'executives' && hasAnyRole(['regional_secretary', 'national_executive', 'super_admin'])) ||
+        (resource.data.visibility == 'executives' && hasAnyRole(['regional_executive', 'national_executive', 'super_admin'])) ||
         // National meetings - national executives only
         (resource.data.type == 'national' && hasRole('national_executive')) ||
         // Regional meetings - same region or national exec
@@ -338,7 +370,7 @@ service cloud.firestore {
       // Update: Only host, regional secretary, or national exec
       allow update: if isAuthenticated() && (
         resource.data.hostUid == request.auth.uid ||
-        (hasRole('regional_secretary') && resource.data.type == 'regional' && isSameRegion(resource.data.region)) ||
+        (hasRole('regional_executive') && resource.data.type == 'regional' && isSameRegion(resource.data.region)) ||
         hasAnyRole(['national_executive', 'super_admin'])
       );
       

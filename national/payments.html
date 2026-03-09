@@ -150,7 +150,7 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="paymentsTableBody">
               <tr>
                 <td>
                   <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00453</div>
@@ -240,7 +240,7 @@
           </table>
         </div>
 
-        <div class="pagination">
+        <div class="pagination" id="paymentsPagination">
           <button class="pagination-btn" disabled>Previous</button>
           <button class="pagination-btn active">1</button>
           <button class="pagination-btn">2</button>
@@ -328,22 +328,457 @@
   <script src="/js/ui.js"></script>
 
   <script>
+    let recordPaymentModalId = null;
+    const paymentsPagination = {
+      initialized: false,
+      rows: [],
+      currentPage: 1,
+      rowsPerPage: 2,
+      totalPages: 1
+    };
+
     function signOut() {
       AuthModule.signOut();
     }
 
+    function getPaymentsTableBody() {
+      return document.getElementById('paymentsTableBody');
+    }
+
+    function getPaymentsPaginationControls() {
+      const container = document.getElementById('paymentsPagination');
+      if (!container) return null;
+      const buttons = container.querySelectorAll('.pagination-btn');
+      if (!buttons || buttons.length < 2) return null;
+      return {
+        container,
+        prevBtn: buttons[0],
+        nextBtn: buttons[buttons.length - 1],
+        numberBtns: Array.from(buttons).slice(1, -1)
+      };
+    }
+
+    function updatePaymentsPaginationControls() {
+      const controls = getPaymentsPaginationControls();
+      if (!controls) return;
+
+      controls.prevBtn.disabled = paymentsPagination.currentPage <= 1;
+      controls.nextBtn.disabled = paymentsPagination.currentPage >= paymentsPagination.totalPages;
+
+      controls.numberBtns.forEach((btn, index) => {
+        const pageNumber = index + 1;
+        if (pageNumber > paymentsPagination.totalPages) {
+          btn.style.display = 'none';
+          return;
+        }
+        btn.style.display = '';
+        btn.textContent = String(pageNumber);
+        btn.classList.toggle('active', pageNumber === paymentsPagination.currentPage);
+      });
+    }
+
+    function renderPaymentsPage(page) {
+      if (!paymentsPagination.rows.length) return;
+      const safePage = Math.min(Math.max(1, page), paymentsPagination.totalPages);
+      paymentsPagination.currentPage = safePage;
+
+      const start = (safePage - 1) * paymentsPagination.rowsPerPage;
+      const end = start + paymentsPagination.rowsPerPage;
+
+      paymentsPagination.rows.forEach((row, index) => {
+        row.style.display = index >= start && index < end ? '' : 'none';
+      });
+
+      updatePaymentsPaginationControls();
+    }
+
+    function refreshPaymentsPaginationAfterInsert() {
+      const tbody = getPaymentsTableBody();
+      if (!tbody) return;
+      paymentsPagination.rows = Array.from(tbody.querySelectorAll('tr'));
+      paymentsPagination.totalPages = Math.max(
+        1,
+        Math.ceil(paymentsPagination.rows.length / paymentsPagination.rowsPerPage)
+      );
+      renderPaymentsPage(paymentsPagination.totalPages);
+    }
+
+    function initPaymentsPagination() {
+      const tbody = getPaymentsTableBody();
+      const controls = getPaymentsPaginationControls();
+      if (!tbody || !controls) return;
+
+      paymentsPagination.rows = Array.from(tbody.querySelectorAll('tr'));
+      paymentsPagination.totalPages = Math.max(
+        1,
+        Math.ceil(paymentsPagination.rows.length / paymentsPagination.rowsPerPage)
+      );
+
+      if (!paymentsPagination.initialized) {
+        controls.prevBtn.addEventListener('click', () => {
+          renderPaymentsPage(paymentsPagination.currentPage - 1);
+        });
+        controls.nextBtn.addEventListener('click', () => {
+          renderPaymentsPage(paymentsPagination.currentPage + 1);
+        });
+        controls.numberBtns.forEach((btn, index) => {
+          btn.addEventListener('click', () => {
+            renderPaymentsPage(index + 1);
+          });
+        });
+        paymentsPagination.initialized = true;
+      }
+
+      renderPaymentsPage(1);
+    }
+
+    function sanitizeCsvCell(value) {
+      const text = String(value ?? '').replace(/"/g, '""');
+      return `"${text}"`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getPaymentStatusMeta(status) {
+      const normalized = String(status || '').toLowerCase();
+      const map = {
+        completed: { label: 'Completed', className: 'badge-success' },
+        pending: { label: 'Pending', className: 'badge-warning' },
+        failed: { label: 'Failed', className: 'badge-error' }
+      };
+      return map[normalized] || map.pending;
+    }
+
+    function getPaymentTypeLabel(type) {
+      const normalized = String(type || '').toLowerCase();
+      const map = {
+        dues: 'Membership Dues',
+        membership_dues: 'Membership Dues',
+        membership: 'Membership Dues',
+        event: 'Event Registration',
+        event_registration: 'Event Registration',
+        donation: 'Donation',
+        other: 'Other'
+      };
+      return map[normalized] || (type ? String(type) : 'Other');
+    }
+
+    function getActionButtonHtml(txnId, status) {
+      const normalized = String(status || '').toLowerCase();
+      if (normalized === 'completed') {
+        return `<button class="btn btn-sm btn-outline" onclick="viewReceipt('${txnId}')">View Receipt</button>`;
+      }
+      if (normalized === 'failed') {
+        return `<button class="btn btn-sm" style="background: var(--color-warning); color: white;" onclick="retryPayment('${txnId}')">Retry</button>`;
+      }
+      return `<button class="btn btn-sm btn-outline" onclick="viewPaymentDetails('${txnId}')">View Details</button>`;
+    }
+
+    function formatMoney(amount) {
+      const numericAmount = Number(amount || 0);
+      const safeAmount = Number.isFinite(numericAmount) ? numericAmount : 0;
+      return `GH₵ ${safeAmount.toLocaleString('en-GH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
+    }
+
+    function formatDisplayDate(inputDate) {
+      const parsed = inputDate ? new Date(inputDate) : new Date();
+      if (Number.isNaN(parsed.getTime())) {
+        return String(inputDate || '');
+      }
+      return parsed.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    }
+
+    function parseAmountFromText(text) {
+      const cleaned = String(text || '').replace(/[^0-9.]/g, '');
+      const parsed = Number.parseFloat(cleaned);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function getPaymentsFromTable() {
+      const tbody = getPaymentsTableBody();
+      if (!tbody) return [];
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      return rows.map((row) => {
+        const cells = row.querySelectorAll('td');
+        const statusBadge = cells[6]?.querySelector('.badge');
+        const memberName = cells[1]?.querySelector('div:first-child')?.textContent?.trim() || '';
+        const memberId = cells[1]?.querySelector('div:nth-child(2)')?.textContent?.trim() || '';
+        return {
+          transactionId: cells[0]?.textContent?.trim() || '',
+          memberName,
+          memberId,
+          type: cells[2]?.textContent?.trim() || '',
+          amount: parseAmountFromText(cells[3]?.textContent || ''),
+          method: cells[4]?.textContent?.trim() || '',
+          paymentDate: cells[5]?.textContent?.trim() || '',
+          status: statusBadge?.textContent?.trim() || cells[6]?.textContent?.trim() || ''
+        };
+      });
+    }
+
+    function getPaymentByTransactionId(txnId) {
+      const normalized = String(txnId || '').trim();
+      if (!normalized) return null;
+      return getPaymentsFromTable().find((row) => row.transactionId === normalized) || null;
+    }
+
+    function cacheReceiptPayload(txnId, payment) {
+      if (!txnId || !payment) return;
+      try {
+        const key = `amcag_receipt_${txnId}`;
+        const payload = {
+          ...payment,
+          transactionRef: txnId,
+          cachedAt: Date.now()
+        };
+        localStorage.setItem(key, JSON.stringify(payload));
+      } catch (error) {
+        console.warn('Unable to cache receipt payload:', error);
+      }
+    }
+
+    function downloadCsvFile(content, filename) {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+    }
+
     function exportPaymentsReport() {
-      UIModule.showAlert('Exporting payments report...', 'info');
-      // Generate and download payments report
+      try {
+        const rows = getPaymentsFromTable();
+        if (!rows.length) {
+          UIModule.showAlert('No payments available to export.', 'warning');
+          return;
+        }
+
+        const header = [
+          'Transaction ID',
+          'Member Name',
+          'Member ID',
+          'Type',
+          'Amount (GHS)',
+          'Method',
+          'Date',
+          'Status'
+        ];
+
+        const csvRows = [header.map(sanitizeCsvCell).join(',')];
+        rows.forEach((payment) => {
+          csvRows.push([
+            payment.transactionId,
+            payment.memberName,
+            payment.memberId,
+            payment.type,
+            payment.amount.toFixed(2),
+            payment.method,
+            payment.paymentDate,
+            payment.status
+          ].map(sanitizeCsvCell).join(','));
+        });
+
+        const today = new Date().toISOString().split('T')[0];
+        downloadCsvFile(csvRows.join('\n'), `amcag-payments-report-${today}.csv`);
+        UIModule.showAlert(`Payments report exported (${rows.length} records).`, 'success');
+      } catch (error) {
+        console.error('Payments export failed:', error);
+        UIModule.showAlert('Unable to export payments report. Please try again.', 'error');
+      }
     }
 
     function recordPayment() {
-      UIModule.showAlert('Record Payment modal - Coming soon', 'info');
-      // Open modal to record new payment
+      const today = new Date().toISOString().split('T')[0];
+      const modalContent = `
+        <form id="record-payment-form" onsubmit="submitRecordPayment(event)">
+          <div class="grid grid-2 gap-3">
+            <div class="form-group">
+              <label class="form-label required">Member Name</label>
+              <input class="form-input" name="memberName" required placeholder="e.g., Kwame Mensah">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Member ID</label>
+              <input class="form-input" name="memberId" required placeholder="e.g., AMCAG-2025-001">
+            </div>
+          </div>
+          <div class="grid grid-2 gap-3">
+            <div class="form-group">
+              <label class="form-label required">Type</label>
+              <select class="form-input" name="type" required>
+                <option value="dues">Membership Dues</option>
+                <option value="event">Event Registration</option>
+                <option value="donation">Donation</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Amount (GHS)</label>
+              <input class="form-input" type="number" name="amount" min="0.01" step="0.01" required placeholder="0.00">
+            </div>
+          </div>
+          <div class="grid grid-2 gap-3">
+            <div class="form-group">
+              <label class="form-label required">Payment Method</label>
+              <select class="form-input" name="method" required>
+                <option value="Mobile Money">Mobile Money</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Payment Date</label>
+              <input class="form-input" type="date" name="paymentDate" value="${today}" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Status</label>
+            <select class="form-input" name="status" required>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem;">
+            <button type="button" class="btn btn-outline" onclick="closeRecordPaymentModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Payment</button>
+          </div>
+        </form>
+      `;
+
+      recordPaymentModalId = UIModule.showModal({
+        title: 'Record Payment',
+        content: modalContent,
+        size: 'medium'
+      });
+    }
+
+    function closeRecordPaymentModal() {
+      if (!recordPaymentModalId) return;
+      UIModule.closeModal(recordPaymentModalId);
+      recordPaymentModalId = null;
+    }
+
+    function buildTransactionId() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const serial = String(now.getTime()).slice(-5);
+      return `TXN-${year}-${serial}`;
+    }
+
+    function prependPaymentRow(payment) {
+      const tbody = getPaymentsTableBody();
+      if (!tbody) return;
+      const statusMeta = getPaymentStatusMeta(payment.status);
+      const rowHtml = `
+        <tr>
+          <td><div style="font-family: monospace; font-size: var(--text-sm);">${escapeHtml(payment.transactionId)}</div></td>
+          <td>
+            <div style="font-weight: 600;">${escapeHtml(payment.memberName)}</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">${escapeHtml(payment.memberId)}</div>
+          </td>
+          <td>${escapeHtml(getPaymentTypeLabel(payment.type))}</td>
+          <td style="font-weight: 600;">${formatMoney(payment.amount)}</td>
+          <td>${escapeHtml(payment.method)}</td>
+          <td>${escapeHtml(formatDisplayDate(payment.paymentDate))}</td>
+          <td><span class="badge ${escapeHtml(statusMeta.className)}">${escapeHtml(statusMeta.label)}</span></td>
+          <td>${getActionButtonHtml(escapeHtml(payment.transactionId), payment.status)}</td>
+        </tr>
+      `;
+      tbody.insertAdjacentHTML('afterbegin', rowHtml);
+      refreshPaymentsPaginationAfterInsert();
+    }
+
+    async function submitRecordPayment(event) {
+      event.preventDefault();
+      const form = event.target;
+      const formData = new FormData(form);
+
+      const memberName = String(formData.get('memberName') || '').trim();
+      const memberId = String(formData.get('memberId') || '').trim();
+      const type = String(formData.get('type') || '').trim();
+      const method = String(formData.get('method') || '').trim();
+      const paymentDate = String(formData.get('paymentDate') || '').trim();
+      const status = String(formData.get('status') || '').trim().toLowerCase();
+      const amount = Number.parseFloat(String(formData.get('amount') || ''));
+
+      if (!memberName || !memberId || !type || !method || !paymentDate || !status || !Number.isFinite(amount) || amount <= 0) {
+        UIModule.showAlert('Please complete all required payment fields.', 'error');
+        return;
+      }
+
+      const transactionId = buildTransactionId();
+      const currentUser = AuthModule.getCurrentUser?.();
+
+      const paymentRecord = {
+        transactionId,
+        memberName,
+        memberId,
+        type,
+        method,
+        paymentDate,
+        status,
+        amount,
+        source: 'national_manual_entry',
+        createdByUid: currentUser?.uid || null,
+        createdByName: currentUser?.profile?.fullName || currentUser?.email || 'Unknown'
+      };
+
+      let persisted = false;
+      try {
+        if (window.APIModule && APIModule.Payments && typeof APIModule.Payments.create === 'function') {
+          await APIModule.Payments.create(paymentRecord);
+          persisted = true;
+        }
+      } catch (error) {
+        console.error('Payment persistence failed:', error);
+      }
+
+      prependPaymentRow(paymentRecord);
+      closeRecordPaymentModal();
+
+      if (persisted) {
+        UIModule.showAlert(`Payment recorded successfully: ${transactionId}`, 'success');
+      } else {
+        UIModule.showAlert(
+          `Payment captured in table (${transactionId}), but cloud save failed. Check Firestore permissions.`,
+          'warning'
+        );
+      }
     }
 
     function viewReceipt(txnId) {
-      window.open(`/payment-receipt.html?id=${txnId}`, '_blank');
+      const normalizedTxnId = String(txnId || '').trim();
+      if (!normalizedTxnId) {
+        UIModule.showAlert('Unable to open receipt: missing transaction reference.', 'error');
+        return;
+      }
+
+      const payment = getPaymentByTransactionId(normalizedTxnId);
+      if (payment) {
+        cacheReceiptPayload(normalizedTxnId, payment);
+      }
+
+      const params = new URLSearchParams({
+        id: normalizedTxnId,
+        source: 'national-payments',
+        ts: String(Date.now())
+      });
+      window.open(`/payment-receipt.html?${params.toString()}`, '_blank');
     }
 
     function viewPaymentDetails(txnId) {
@@ -371,9 +806,11 @@
         
         // Process and render payments data
         console.log('Payments loaded:', snapshot.size);
+        initPaymentsPagination();
       } catch (error) {
         console.error('Error loading payments:', error);
         UIModule.showAlert('Error loading payments data', 'error');
+        initPaymentsPagination();
       }
     }
 
@@ -388,19 +825,27 @@
       }
     }
 
-    AuthModule.onAuthStateChanged((user) => {
-      if (!user) {
-        window.location.href = '/membership.html';
-      } else {
-        // Check if user has national executive or super admin role
-        if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
-          window.location.href = '/member-dashboard.html';
+    // Ensure pagination controls respond even if auth/data loading is delayed.
+    initPaymentsPagination();
+
+    if (window.AuthModule && typeof AuthModule.onAuthStateChanged === 'function') {
+      AuthModule.onAuthStateChanged((user) => {
+        if (!user) {
+          window.location.href = '/membership.html';
         } else {
-          loadPayments();
-          loadRevenueSummary();
+          // Check if user has national executive or super admin role
+          if (!AuthModule.hasAnyRole(['national_executive', 'super_admin'])) {
+            window.location.href = '/member-dashboard.html';
+          } else {
+            loadPayments();
+            loadRevenueSummary();
+            initPaymentsPagination();
+          }
         }
-      }
-    });
+      });
+    } else {
+      console.warn('AuthModule unavailable. Running local pagination fallback only.');
+    }
   </script>
   <script src="/js/mobile-menu.js"></script>
 </body>

@@ -565,8 +565,8 @@
       const userDoc = await db.collection('users').doc(user.uid).get();
       const userData = userDoc.data();
       
-      if (userData.role !== 'national_executive') {
-        UIModule.showAlert('Access denied. National Executive role required.', 'error');
+      if (!['national_executive', 'super_admin'].includes(userData.role)) {
+        UIModule.showAlert('Access denied. National Executive or Super Admin role required.', 'error');
         setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
         return;
       }

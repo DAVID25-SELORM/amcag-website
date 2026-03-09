@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>News & Updates | AMCAG</title>
+  <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/mobile.css">
@@ -155,11 +156,63 @@
             <h3 class="card-title mb-2">${data.title || 'Untitled'}</h3>
             <p class="card-body mb-3">${(data.excerpt || data.content || '').substring(0, 120)}...</p>
             <div style="color: var(--text-tertiary); font-size: var(--text-sm); margin-bottom: var(--space-3);">${formattedDate}</div>
-            <a href="#" class="btn btn-outline btn-sm" onclick="alert('Full article coming soon'); return false;">Read More</a>
+            <a href="#" class="btn btn-outline btn-sm" onclick="viewFullArticle('${data.id}'); return false;">Read More</a>
           </div>
         `;
       }).join('');
     }
+    
+    function viewFullArticle(articleId) {
+      const article = allArticles.find(a => a.id === articleId);
+      if (!article) {
+        alert('Article not found');
+        return;
+      }
+      
+      const date = article.createdAt instanceof Date ? article.createdAt : new Date(article.createdAt);
+      const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      
+      const badgeClass = {
+        'announcement': 'badge-primary',
+        'partnership': 'badge-success',
+        'achievement': 'badge-secondary',
+        'event': 'badge-warning'
+      }[article.category?.toLowerCase()] || 'badge-primary';
+      
+      // Create modal for full article
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+          <div class="modal-header">
+            <div>
+              <span class="badge ${badgeClass}">${article.category || 'News'}</span>
+              <h2 style="margin-top: 0.5rem;">${article.title || 'Untitled'}</h2>
+              <div style="color: var(--text-tertiary); font-size: var(--text-sm); margin-top: 0.5rem;">${formattedDate}</div>
+            </div>
+            <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
+          </div>
+          <div class="modal-body">
+            ${article.image ? `<img src="${article.image}" alt="${article.title}" style="width: 100%; height: auto; border-radius: var(--radius-lg); margin-bottom: var(--space-4);">` : ''}
+            <div style="font-size: var(--text-lg); line-height: 1.8; color: var(--text-primary);">
+              ${article.content || article.excerpt || 'No content available.'}
+            </div>
+            ${article.author ? `<div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--color-neutral-90); color: var(--text-secondary);">By ${article.author}</div>` : ''}
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Close modal when clicking outside
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+    }
+    
+    // Store all articles globally for viewFullArticle function
+    let allArticles = [];
 
     async function loadNews() {
       const newsContainer = document.getElementById('news-list');
@@ -184,7 +237,8 @@
         
         if (snapshot.empty) {
           console.log('News collection is empty, showing sample news');
-          newsContainer.innerHTML = renderNews(sampleNews);
+          allArticles = sampleNews.map((article, index) => ({ ...article, id: `sample-${index}` }));
+          newsContainer.innerHTML = renderNews(allArticles);
           return;
         }
         
@@ -194,6 +248,7 @@
           createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(doc.data().createdAt)
         }));
         
+        allArticles = articles;
         newsContainer.innerHTML = renderNews(articles);
         
       } catch (error) {

@@ -98,8 +98,8 @@
               📱 +233 24 123 4567
             </div>
             <div style="display: flex; gap: 0.5rem; justify-content: center;">
-              <button class="btn btn-sm btn-outline" onclick="viewProfile('LDR-001')">View Profile</button>
-              <button class="btn btn-sm btn-outline" onclick="contactLeader('LDR-001')">Contact</button>
+              <button class="btn btn-sm btn-outline" onclick="viewProfile('AMCAG-LDR-0001')">View Profile</button>
+              <button class="btn btn-sm btn-outline" onclick="contactLeader('AMCAG-LDR-0001')">Contact</button>
             </div>
           </div>
 
@@ -114,8 +114,8 @@
               📱 +233 24 234 5678
             </div>
             <div style="display: flex; gap: 0.5rem; justify-content: center;">
-              <button class="btn btn-sm btn-outline" onclick="viewProfile('LDR-002')">View Profile</button>
-              <button class="btn btn-sm btn-outline" onclick="contactLeader('LDR-002')">Contact</button>
+              <button class="btn btn-sm btn-outline" onclick="viewProfile('AMCAG-LDR-0002')">View Profile</button>
+              <button class="btn btn-sm btn-outline" onclick="contactLeader('AMCAG-LDR-0002')">Contact</button>
             </div>
           </div>
 
@@ -130,8 +130,8 @@
               📱 +233 24 345 6789
             </div>
             <div style="display: flex; gap: 0.5rem; justify-content: center;">
-              <button class="btn btn-sm btn-outline" onclick="viewProfile('LDR-003')">View Profile</button>
-              <button class="btn btn-sm btn-outline" onclick="contactLeader('LDR-003')">Contact</button>
+              <button class="btn btn-sm btn-outline" onclick="viewProfile('AMCAG-LDR-0003')">View Profile</button>
+              <button class="btn btn-sm btn-outline" onclick="contactLeader('AMCAG-LDR-0003')">Contact</button>
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="leadershipTableBody">
               <tr>
                 <td>
                   <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -180,7 +180,7 @@
                     </div>
                     <div>
                       <div style="font-weight: 600;">Kwame Mensah</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-001</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0001</div>
                     </div>
                   </div>
                 </td>
@@ -193,7 +193,7 @@
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 123 4567</div>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline">Manage</button>
+                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0001')">Manage</button>
                 </td>
               </tr>
               <tr>
@@ -204,7 +204,7 @@
                     </div>
                     <div>
                       <div style="font-weight: 600;">Akosua Boateng</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-002</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0002</div>
                     </div>
                   </div>
                 </td>
@@ -217,7 +217,7 @@
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 234 5678</div>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline">Manage</button>
+                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0002')">Manage</button>
                 </td>
               </tr>
               <tr>
@@ -228,7 +228,7 @@
                     </div>
                     <div>
                       <div style="font-weight: 600;">Kofi Asante</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-003</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0003</div>
                     </div>
                   </div>
                 </td>
@@ -241,7 +241,7 @@
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 345 6789</div>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline">Manage</button>
+                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0003')">Manage</button>
                 </td>
               </tr>
               <tr>
@@ -252,7 +252,7 @@
                     </div>
                     <div>
                       <div style="font-weight: 600;">Ama Owusu</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-004</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0004</div>
                     </div>
                   </div>
                 </td>
@@ -265,7 +265,7 @@
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 456 7890</div>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline">Manage</button>
+                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0004')">Manage</button>
                 </td>
               </tr>
               <tr>
@@ -276,7 +276,7 @@
                     </div>
                     <div>
                       <div style="font-weight: 600;">Yaw Mohammed</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: LDR-015</div>
+                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0005</div>
                     </div>
                   </div>
                 </td>
@@ -289,14 +289,14 @@
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 567 8901</div>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline">Manage</button>
+                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0005')">Manage</button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="pagination">
+        <div class="pagination" id="leadershipPagination">
           <button class="pagination-btn" disabled>Previous</button>
           <button class="pagination-btn active">1</button>
           <button class="pagination-btn">2</button>
@@ -384,41 +384,1179 @@
   <script src="/js/ui.js"></script>
 
   <script>
+    const leadershipPagination = {
+      initialized: false,
+      rows: [],
+      currentPage: 1,
+      rowsPerPage: 2,
+      totalPages: 1
+    };
+    const committeeDirectory = {
+      'Finance Committee': {
+        chair: 'Akosua Boateng',
+        viceChair: 'Ama Owusu',
+        meetingDay: 'First Monday, 10:00 AM',
+        focus: 'Budget planning, treasury oversight, and financial compliance.',
+        members: [
+          { name: 'Akosua Boateng', role: 'Chair', region: 'National' },
+          { name: 'Ama Owusu', role: 'Vice Chair', region: 'National' },
+          { name: 'Kojo Mensah', role: 'Member', region: 'Greater Accra' },
+          { name: 'Ruth Agyeman', role: 'Member', region: 'Ashanti' },
+          { name: 'Yaw Boadi', role: 'Member', region: 'Central' },
+          { name: 'David Osei', role: 'Member', region: 'Eastern' },
+          { name: 'Esi Kwarteng', role: 'Member', region: 'Western' },
+          { name: 'Naa Lartey', role: 'Secretary', region: 'National' }
+        ]
+      },
+      'Programs & Events': {
+        chair: 'Kofi Asante',
+        viceChair: 'Paulina Tetteh',
+        meetingDay: 'Second Wednesday, 2:00 PM',
+        focus: 'National events planning, program quality, and execution tracking.',
+        members: [
+          { name: 'Kofi Asante', role: 'Chair', region: 'National' },
+          { name: 'Paulina Tetteh', role: 'Vice Chair', region: 'Greater Accra' },
+          { name: 'Felix Owusu', role: 'Member', region: 'Ashanti' },
+          { name: 'Mavis Adjei', role: 'Member', region: 'Western' },
+          { name: 'Nana Aidoo', role: 'Member', region: 'Central' },
+          { name: 'Joyce Mensima', role: 'Member', region: 'Volta' },
+          { name: 'Bernard Bediako', role: 'Member', region: 'Eastern' },
+          { name: 'Yvonne Asante', role: 'Member', region: 'Northern' },
+          { name: 'Kwaku Apea', role: 'Member', region: 'Bono' },
+          { name: 'Selina Ofori', role: 'Member', region: 'Ahafo' },
+          { name: 'Eric Tetteh', role: 'Member', region: 'Western North' },
+          { name: 'Priscilla Ankrah', role: 'Secretary', region: 'National' }
+        ]
+      },
+      'Membership & Growth': {
+        chair: 'Kwame Mensah',
+        viceChair: 'Yaw Mohammed',
+        meetingDay: 'Third Tuesday, 11:00 AM',
+        focus: 'Membership expansion, retention strategy, and onboarding quality.',
+        members: [
+          { name: 'Kwame Mensah', role: 'Chair', region: 'National' },
+          { name: 'Yaw Mohammed', role: 'Vice Chair', region: 'Greater Accra' },
+          { name: 'Abena Ofori', role: 'Member', region: 'Ashanti' },
+          { name: 'Samuel Hagan', role: 'Member', region: 'Northern' },
+          { name: 'Deborah Aidoo', role: 'Member', region: 'Central' },
+          { name: 'Nana Boateng', role: 'Member', region: 'Eastern' },
+          { name: 'Francis Boadu', role: 'Member', region: 'Western' },
+          { name: 'Martha Serwaa', role: 'Member', region: 'Bono East' },
+          { name: 'Isaac Donkor', role: 'Member', region: 'Savannah' },
+          { name: 'Vida Oppong', role: 'Secretary', region: 'National' }
+        ]
+      },
+      Communications: {
+        chair: 'Ama Owusu',
+        viceChair: 'Kofi Asante',
+        meetingDay: 'Every Friday, 9:00 AM',
+        focus: 'Internal updates, media strategy, and stakeholder communication.',
+        members: [
+          { name: 'Ama Owusu', role: 'Chair', region: 'National' },
+          { name: 'Kofi Asante', role: 'Vice Chair', region: 'National' },
+          { name: 'Ernestina Baah', role: 'Member', region: 'Greater Accra' },
+          { name: 'John Biney', role: 'Member', region: 'Western' },
+          { name: 'Grace Kumi', role: 'Member', region: 'Ashanti' },
+          { name: 'Linda Akyea', role: 'Secretary', region: 'National' }
+        ]
+      }
+    };
+    const leaderDirectory = {
+      'AMCAG-LDR-0001': {
+        id: 'AMCAG-LDR-0001',
+        name: 'Kwame Mensah',
+        initials: 'KM',
+        position: 'National President',
+        level: 'National',
+        region: 'Nationwide',
+        termStart: 'Jan 2024',
+        email: 'kwame.mensah@amcag.org',
+        phone: '+233 24 123 4567',
+        responsibilities: [
+          'Strategic leadership and national policy direction',
+          'Oversight of regional coordination and governance',
+          'External stakeholder and partner engagement'
+        ]
+      },
+      'AMCAG-LDR-0002': {
+        id: 'AMCAG-LDR-0002',
+        name: 'Akosua Boateng',
+        initials: 'AB',
+        position: 'Vice President',
+        level: 'National',
+        region: 'Nationwide',
+        termStart: 'Jan 2024',
+        email: 'akosua.boateng@amcag.org',
+        phone: '+233 24 234 5678',
+        responsibilities: [
+          'Operational support for national programs',
+          'Committee coordination and reporting',
+          'Policy implementation across national units'
+        ]
+      },
+      'AMCAG-LDR-0003': {
+        id: 'AMCAG-LDR-0003',
+        name: 'Kofi Asante',
+        initials: 'KA',
+        position: 'General Secretary',
+        level: 'National',
+        region: 'Nationwide',
+        termStart: 'Jan 2024',
+        email: 'kofi.asante@amcag.org',
+        phone: '+233 24 345 6789',
+        responsibilities: [
+          'Secretariat administration and records management',
+          'Communication of executive decisions',
+          'Agenda planning and meeting documentation'
+        ]
+      },
+      'AMCAG-LDR-0004': {
+        id: 'AMCAG-LDR-0004',
+        name: 'Ama Owusu',
+        initials: 'AO',
+        position: 'Chief Financial Officer',
+        level: 'National',
+        region: 'Nationwide',
+        termStart: 'Jan 2024',
+        email: 'ama.owusu@amcag.org',
+        phone: '+233 24 456 7890',
+        responsibilities: [
+          'Budget planning and treasury oversight',
+          'Financial controls and audit readiness',
+          'Resource allocation for national projects'
+        ]
+      },
+      'AMCAG-LDR-0005': {
+        id: 'AMCAG-LDR-0005',
+        name: 'Yaw Mohammed',
+        initials: 'YM',
+        position: 'Regional Chairperson',
+        level: 'Regional',
+        region: 'Greater Accra',
+        termStart: 'Mar 2024',
+        email: 'yaw.mohammed@amcag.org',
+        phone: '+233 24 567 8901',
+        responsibilities: [
+          'Regional leadership and coordination',
+          'Execution of national directives in-region',
+          'Regional performance and compliance reporting'
+        ]
+      }
+    };
+    const ghanaRegions = [
+      'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Northern',
+      'Upper East', 'Upper West', 'Volta', 'Western', 'Western North',
+      'Bono', 'Bono East', 'Ahafo', 'Savannah', 'North East', 'Oti'
+    ];
+
     function signOut() {
       AuthModule.signOut();
     }
 
     function viewOrgChart() {
-      UIModule.showAlert('Organization Chart viewer - Coming soon', 'info');
+      const leaders = Object.values(leaderDirectory);
+      if (!leaders.length) {
+        UIModule.showAlert('No leadership records available for org chart.', 'warning');
+        return;
+      }
+
+      const groupedByLevel = {};
+      leaders.forEach((leader) => {
+        const level = toDisplayCase(leader.level || 'Other');
+        if (!groupedByLevel[level]) {
+          groupedByLevel[level] = [];
+        }
+        groupedByLevel[level].push(leader);
+      });
+
+      const orderedLevels = Object.keys(groupedByLevel).sort(
+        (a, b) => getLeadershipLevelRank(a) - getLeadershipLevelRank(b)
+      );
+
+      const levelSections = orderedLevels.map((level) => {
+        const leaderCards = groupedByLevel[level]
+          .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+          .map((leader) => `
+            <div style="border: 1px solid var(--color-surface); border-radius: var(--radius-md); padding: 0.75rem; background: white;">
+              <div style="font-weight: 600;">${escapeHtml(leader.name)}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-secondary);">${escapeHtml(leader.position)}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: ${escapeHtml(leader.id)}</div>
+              <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                <button class="btn btn-sm btn-outline" onclick="viewProfile('${leader.id}')">Profile</button>
+                <button class="btn btn-sm btn-outline" onclick="contactLeader('${leader.id}')">Contact</button>
+              </div>
+            </div>
+          `)
+          .join('');
+
+        return `
+          <section style="display: grid; gap: 0.75rem;">
+            <div style="font-weight: 700; color: var(--color-primary);">${escapeHtml(level)} Leadership</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+              ${leaderCards}
+            </div>
+          </section>
+        `;
+      }).join('');
+
+      UIModule.showModal({
+        title: 'Organization Chart',
+        content: `
+          <div style="display: grid; gap: 1rem;">
+            <div style="color: var(--text-secondary);">Organizational hierarchy by leadership level</div>
+            ${levelSections}
+          </div>
+        `,
+        size: 'large'
+      });
     }
 
-    function addLeader() {
-      UIModule.showAlert('Add Leader modal - Coming soon', 'info');
+    let addLeaderModalId = null;
+    let addLeaderRegionOptions = [...ghanaRegions];
+
+    async function addLeader() {
+      const nextLeaderId = getNextLeaderId();
+      const today = new Date();
+      const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+      addLeaderModalId = UIModule.showModal({
+        title: 'Add New Leader',
+        content: `
+          <div style="display: grid; gap: 0.75rem;">
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">
+              ID format follows <strong>AMCAG-LDR-0000</strong>.
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem;">
+              <div>
+                <label for="addLeaderId" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Leader ID</label>
+                <input id="addLeaderId" class="form-input" value="${nextLeaderId}" readonly>
+              </div>
+              <div>
+                <label for="addLeaderName" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Full Name</label>
+                <input id="addLeaderName" class="form-input" placeholder="e.g. Jane Doe">
+              </div>
+              <div>
+                <label for="addLeaderPosition" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Position</label>
+                <input id="addLeaderPosition" class="form-input" placeholder="e.g. National Organizer">
+              </div>
+              <div>
+                <label for="addLeaderLevel" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Level</label>
+                <select id="addLeaderLevel" class="form-input">
+                  <option value="National">National</option>
+                  <option value="Regional">Regional</option>
+                  <option value="District">District</option>
+                  <option value="Zonal">Zonal</option>
+                  <option value="Local">Local</option>
+                </select>
+              </div>
+              <div>
+                <label for="addLeaderRegion" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Region/Zone</label>
+                <input id="addLeaderRegion" class="form-input" placeholder="e.g. Nationwide">
+                <select id="addLeaderRegionSelect" class="form-input" style="display: none;" disabled>
+                  <option value="">Select region...</option>
+                </select>
+                <div id="addLeaderRegionHelp" style="display: none; margin-top: 0.35rem; font-size: var(--text-sm); color: var(--text-secondary);">
+                  Select the official region for this regional executive.
+                </div>
+              </div>
+              <div>
+                <label for="addLeaderTermStart" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Term Start</label>
+                <input id="addLeaderTermStart" class="form-input" type="month" value="${defaultMonth}">
+              </div>
+              <div>
+                <label for="addLeaderEmail" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Email</label>
+                <input id="addLeaderEmail" class="form-input" type="email" placeholder="name@amcag.org">
+              </div>
+              <div>
+                <label for="addLeaderPhone" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Phone</label>
+                <input id="addLeaderPhone" class="form-input" placeholder="+233 ...">
+              </div>
+            </div>
+            <div>
+              <label for="addLeaderResponsibilities" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Responsibilities (one per line)</label>
+              <textarea id="addLeaderResponsibilities" class="form-input" rows="3" placeholder="Leadership responsibility"></textarea>
+            </div>
+          </div>
+        `,
+        footer: `
+          <button class="btn btn-outline" onclick="closeAddLeaderModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="submitAddLeader()">Add Leader</button>
+        `,
+        size: 'large'
+      });
+
+      await initializeAddLeaderForm();
+    }
+
+    function closeAddLeaderModal() {
+      if (!addLeaderModalId) return;
+      UIModule.closeModal(addLeaderModalId);
+      addLeaderModalId = null;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function toDisplayCase(value) {
+      const text = String(value || '').trim();
+      if (!text) return '';
+      return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    }
+
+    async function getRegionOptionsForAddLeader() {
+      try {
+        if (!firebase || !firebase.apps || firebase.apps.length === 0) {
+          return [...ghanaRegions];
+        }
+
+        const db = firebase.firestore();
+        const snapshot = await db.collection('regions').get();
+        const names = snapshot.docs
+          .map((doc) => String(doc.data()?.name || doc.id || '').trim())
+          .filter(Boolean);
+
+        if (!names.length) {
+          return [...ghanaRegions];
+        }
+
+        return [...new Set(names)].sort((a, b) => a.localeCompare(b));
+      } catch (error) {
+        console.error('Unable to load region options for add leader:', error);
+        return [...ghanaRegions];
+      }
+    }
+
+    function renderAddLeaderRegionSelectOptions(regionNames) {
+      const select = document.getElementById('addLeaderRegionSelect');
+      if (!select) return;
+
+      select.innerHTML = `
+        <option value="">Select region...</option>
+        ${regionNames.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')}
+      `;
+    }
+
+    function syncAddLeaderRegionInputMode() {
+      const levelSelect = document.getElementById('addLeaderLevel');
+      const regionInput = document.getElementById('addLeaderRegion');
+      const regionSelect = document.getElementById('addLeaderRegionSelect');
+      const regionHelp = document.getElementById('addLeaderRegionHelp');
+      if (!levelSelect || !regionInput || !regionSelect || !regionHelp) return;
+
+      const normalizedLevel = String(levelSelect.value || '').toLowerCase();
+      const isRegional = normalizedLevel === 'regional';
+
+      if (isRegional) {
+        regionInput.style.display = 'none';
+        regionInput.disabled = true;
+        regionSelect.style.display = '';
+        regionSelect.disabled = false;
+        regionHelp.style.display = '';
+
+        if (!regionSelect.value && regionSelect.options.length > 1) {
+          regionSelect.selectedIndex = 1;
+        }
+      } else {
+        regionSelect.style.display = 'none';
+        regionSelect.disabled = true;
+        regionHelp.style.display = 'none';
+        regionInput.style.display = '';
+        regionInput.disabled = false;
+
+        if (!regionInput.value) {
+          if (normalizedLevel === 'national') {
+            regionInput.value = 'Nationwide';
+          } else if (normalizedLevel === 'district') {
+            regionInput.placeholder = 'e.g. Kumasi Metro';
+          } else if (normalizedLevel === 'zonal' || normalizedLevel === 'local') {
+            regionInput.placeholder = 'e.g. East Zone';
+          } else {
+            regionInput.placeholder = 'e.g. Region/Zone';
+          }
+        }
+      }
+    }
+
+    async function initializeAddLeaderForm() {
+      addLeaderRegionOptions = await getRegionOptionsForAddLeader();
+      renderAddLeaderRegionSelectOptions(addLeaderRegionOptions);
+      syncAddLeaderRegionInputMode();
+
+      const levelSelect = document.getElementById('addLeaderLevel');
+      if (levelSelect) {
+        levelSelect.addEventListener('change', syncAddLeaderRegionInputMode);
+      }
+    }
+
+    function getAddLeaderRegionValue(level) {
+      const normalizedLevel = String(level || '').toLowerCase();
+      const regionInput = document.getElementById('addLeaderRegion');
+      const regionSelect = document.getElementById('addLeaderRegionSelect');
+      if (normalizedLevel === 'regional') {
+        return String(regionSelect?.value || '').trim();
+      }
+      return String(regionInput?.value || '').trim();
+    }
+
+    function getLeaderInitials(name) {
+      const initials = String(name || '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('');
+      return initials || 'NA';
+    }
+
+    function getNextLeaderId() {
+      let highest = 0;
+      Object.keys(leaderDirectory).forEach((id) => {
+        const match = /^AMCAG-LDR-(\d+)$/.exec(id);
+        if (!match) return;
+        const numeric = Number.parseInt(match[1], 10);
+        if (Number.isFinite(numeric) && numeric > highest) {
+          highest = numeric;
+        }
+      });
+      return `AMCAG-LDR-${String(highest + 1).padStart(4, '0')}`;
+    }
+
+    function formatTermStart(monthValue) {
+      if (!monthValue) return '';
+      const parts = String(monthValue).split('-');
+      if (parts.length !== 2) return monthValue;
+      const year = Number.parseInt(parts[0], 10);
+      const month = Number.parseInt(parts[1], 10);
+      if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+        return monthValue;
+      }
+      const formatted = new Date(year, month - 1, 1);
+      return formatted.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+
+    function getLevelBadgeStyle(level) {
+      const normalized = String(level || '').toLowerCase();
+      if (normalized === 'regional') {
+        return {
+          background: 'var(--color-secondary-95)',
+          color: 'var(--color-secondary)'
+        };
+      }
+      if (normalized === 'district') {
+        return {
+          background: 'var(--color-surface)',
+          color: 'var(--text-primary)'
+        };
+      }
+      return {
+        background: 'var(--color-primary-95)',
+        color: 'var(--color-primary)'
+      };
+    }
+
+    function getAvatarGradient(level) {
+      const normalized = String(level || '').toLowerCase();
+      if (normalized === 'regional') return 'linear-gradient(135deg, var(--color-info), var(--color-primary))';
+      if (normalized === 'district') return 'linear-gradient(135deg, var(--color-warning), var(--color-primary))';
+      return 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))';
+    }
+
+    function buildLeaderRow(leader) {
+      const badgeStyle = getLevelBadgeStyle(leader.level);
+      return `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: ${getAvatarGradient(leader.level)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                ${escapeHtml(leader.initials)}
+              </div>
+              <div>
+                <div style="font-weight: 600;">${escapeHtml(leader.name)}</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: ${escapeHtml(leader.id)}</div>
+              </div>
+            </div>
+          </td>
+          <td>${escapeHtml(leader.position)}</td>
+          <td><span class="badge" style="background: ${badgeStyle.background}; color: ${badgeStyle.color};">${escapeHtml(toDisplayCase(leader.level))}</span></td>
+          <td>${escapeHtml(leader.region)}</td>
+          <td>${escapeHtml(leader.termStart)}</td>
+          <td>
+            <div style="font-size: var(--text-sm);">${escapeHtml(leader.email)}</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">${escapeHtml(leader.phone)}</div>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="manageLeader('${leader.id}')">Manage</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    function refreshPaginationAfterInsert() {
+      const tbody = document.getElementById('leadershipTableBody');
+      if (!tbody) return;
+      leadershipPagination.rows = Array.from(tbody.querySelectorAll('tr'));
+      leadershipPagination.totalPages = Math.max(
+        1,
+        Math.ceil(leadershipPagination.rows.length / leadershipPagination.rowsPerPage)
+      );
+      renderLeadershipPage(leadershipPagination.totalPages);
+    }
+
+    function incrementLeaderStat(level) {
+      const statValues = document.querySelectorAll('.grid.grid-4 .stat-card .stat-value');
+      if (!statValues || statValues.length < 3) return;
+
+      const normalized = String(level || '').toLowerCase();
+      const indexMap = { national: 0, regional: 1, district: 2 };
+      const targetIndex = indexMap[normalized];
+      if (targetIndex === undefined) return;
+
+      const currentValue = Number.parseInt(statValues[targetIndex].textContent.replace(/,/g, ''), 10);
+      if (!Number.isFinite(currentValue)) return;
+      statValues[targetIndex].textContent = String(currentValue + 1);
+    }
+
+    async function addRegionalExecutiveToRegion(leader) {
+      const normalizedLevel = String(leader?.level || '').toLowerCase();
+      if (normalizedLevel !== 'regional') {
+        return { synced: false, skipped: true };
+      }
+
+      try {
+        if (!firebase || !firebase.apps || firebase.apps.length === 0) {
+          return { synced: false, message: 'Firebase is not initialized.' };
+        }
+
+        const db = firebase.firestore();
+        const fieldValue = firebase.firestore.FieldValue;
+        const currentUser = firebase.auth?.().currentUser || null;
+        const regionRef = db.collection('regions').doc(leader.region);
+
+        await regionRef.set({
+          name: leader.region,
+          executiveIds: fieldValue.arrayUnion(leader.id),
+          updatedAt: fieldValue.serverTimestamp()
+        }, { merge: true });
+
+        await regionRef.collection('executives').doc(leader.id).set({
+          leaderId: leader.id,
+          name: leader.name,
+          position: leader.position,
+          level: leader.level,
+          region: leader.region,
+          email: leader.email,
+          phone: leader.phone,
+          status: 'active',
+          source: 'national_leadership',
+          addedByUid: currentUser?.uid || null,
+          addedByEmail: currentUser?.email || null,
+          createdAt: fieldValue.serverTimestamp(),
+          updatedAt: fieldValue.serverTimestamp()
+        }, { merge: true });
+
+        return { synced: true };
+      } catch (error) {
+        console.error('Failed to link regional leader to region executives:', error);
+        return { synced: false, message: error.message || 'Unknown error' };
+      }
+    }
+
+    function getRoleForLeadershipLevel(level) {
+      const normalizedLevel = String(level || '').toLowerCase();
+      if (normalizedLevel === 'national') return 'national_executive';
+      if (normalizedLevel === 'regional') return 'regional_executive';
+      return null;
+    }
+
+    async function flagLeaderForProfileCompletion(leader) {
+      try {
+        if (!firebase || !firebase.apps || firebase.apps.length === 0) {
+          return { linked: false, message: 'Firebase is not initialized.' };
+        }
+
+        const leaderEmail = String(leader?.email || '').trim().toLowerCase();
+        if (!leaderEmail) {
+          return { linked: false, message: 'Leader email is missing.' };
+        }
+
+        const db = firebase.firestore();
+        const usersSnapshot = await db.collection('users')
+          .where('email', '==', leaderEmail)
+          .limit(1)
+          .get();
+
+        if (usersSnapshot.empty) {
+          return {
+            linked: false,
+            message: `No user account found for ${leaderEmail}.`
+          };
+        }
+
+        const userDoc = usersSnapshot.docs[0];
+        const userData = userDoc.data() || {};
+        const targetRole = getRoleForLeadershipLevel(leader.level);
+        const currentRole = String(userData.role || '').toLowerCase();
+        const updates = {
+          fullName: leader.name,
+          phone: leader.phone,
+          region: leader.region,
+          leadershipId: leader.id,
+          leadershipLevel: toDisplayCase(leader.level),
+          leadershipPosition: leader.position,
+          leadershipRegion: leader.region,
+          mustCompleteProfile: true,
+          profileCompletionStatus: 'required',
+          profileCompletionRequiredAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (targetRole && currentRole !== 'super_admin' && currentRole !== targetRole) {
+          updates.role = targetRole;
+        }
+
+        await userDoc.ref.set(updates, { merge: true });
+
+        return {
+          linked: true,
+          uid: userDoc.id,
+          roleAssigned: updates.role || null
+        };
+      } catch (error) {
+        console.error('Failed to flag leader for profile completion:', error);
+        return { linked: false, message: error.message || 'Unknown error' };
+      }
+    }
+
+    async function submitAddLeader() {
+      const leaderId = document.getElementById('addLeaderId')?.value.trim();
+      const name = document.getElementById('addLeaderName')?.value.trim();
+      const position = document.getElementById('addLeaderPosition')?.value.trim();
+      const level = document.getElementById('addLeaderLevel')?.value.trim();
+      const region = getAddLeaderRegionValue(level);
+      const termStartInput = document.getElementById('addLeaderTermStart')?.value.trim();
+      const email = document.getElementById('addLeaderEmail')?.value.trim().toLowerCase();
+      const phone = document.getElementById('addLeaderPhone')?.value.trim();
+      const responsibilitiesInput = document.getElementById('addLeaderResponsibilities')?.value || '';
+      const normalizedLevel = String(level || '').toLowerCase();
+
+      if (!leaderId || !name || !position || !level || !region || !email || !phone) {
+        UIModule.showAlert('Please complete all required fields.', 'error');
+        return;
+      }
+
+      if (normalizedLevel === 'regional' && !addLeaderRegionOptions.includes(region)) {
+        UIModule.showAlert('Please select a valid region from the dropdown.', 'error');
+        return;
+      }
+
+      if (!/^AMCAG-LDR-\d{4,}$/.test(leaderId)) {
+        UIModule.showAlert('Leader ID must match AMCAG-LDR-0000 format.', 'error');
+        return;
+      }
+
+      if (leaderDirectory[leaderId]) {
+        UIModule.showAlert(`Leader ID already exists: ${leaderId}`, 'error');
+        return;
+      }
+
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        UIModule.showAlert('Please enter a valid email address.', 'error');
+        return;
+      }
+
+      const responsibilities = responsibilitiesInput
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      const leader = {
+        id: leaderId,
+        name,
+        initials: getLeaderInitials(name),
+        position,
+        level: toDisplayCase(level),
+        region,
+        termStart: formatTermStart(termStartInput) || 'Not set',
+        email,
+        phone,
+        responsibilities: responsibilities.length
+          ? responsibilities
+          : ['Leadership responsibilities pending assignment']
+      };
+
+      leaderDirectory[leader.id] = leader;
+
+      const tableBody = document.getElementById('leadershipTableBody');
+      if (tableBody) {
+        tableBody.insertAdjacentHTML('beforeend', buildLeaderRow(leader));
+        refreshPaginationAfterInsert();
+      }
+
+      const regionSync = await addRegionalExecutiveToRegion(leader);
+      const profileCompletionSync = await flagLeaderForProfileCompletion(leader);
+      incrementLeaderStat(leader.level);
+      closeAddLeaderModal();
+
+      const warnings = [];
+      if (normalizedLevel === 'regional' && !regionSync.synced) {
+        warnings.push(`regional executive sync failed (${regionSync.message || 'permission issue'})`);
+      }
+      if (!profileCompletionSync.linked) {
+        warnings.push(`profile-completion link pending (${profileCompletionSync.message || 'account not found'})`);
+      }
+
+      if (warnings.length > 0) {
+        UIModule.showAlert(
+          `Leader added: ${leader.name} (${leader.id}). ${warnings.join('; ')}.`,
+          'warning'
+        );
+        return;
+      }
+
+      if (normalizedLevel === 'regional') {
+        UIModule.showAlert(
+          `Leader added: ${leader.name} (${leader.id}); assigned to ${leader.region} executives. Profile completion required at next login.`,
+          'success'
+        );
+        return;
+      }
+
+      UIModule.showAlert(
+        `Leader added: ${leader.name} (${leader.id}). Profile completion required at next login.`,
+        'success'
+      );
+    }
+
+    function getLeaderRecord(leaderId) {
+      return leaderDirectory[leaderId] || null;
+    }
+
+    function getDialLink(phone) {
+      return String(phone || '').replace(/\s+/g, '');
     }
 
     function viewProfile(leaderId) {
-      UIModule.showAlert(`Viewing profile: ${leaderId}`, 'info');
+      const leader = getLeaderRecord(leaderId);
+      if (!leader) {
+        UIModule.showAlert(`Leader not found: ${leaderId}`, 'error');
+        return;
+      }
+
+      const responsibilities = leader.responsibilities
+        .map((item) => `<li>${item}</li>`)
+        .join('');
+
+      UIModule.showModal({
+        title: `${leader.name} Profile`,
+        content: `
+          <div style="display: grid; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 64px; height: 64px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: var(--text-xl);">
+                ${leader.initials}
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: var(--text-xl);">${leader.name}</div>
+                <div style="color: var(--color-primary); font-weight: 600;">${leader.position}</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: ${leader.id}</div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem;">
+              <div><strong>Level:</strong> ${leader.level}</div>
+              <div><strong>Region:</strong> ${leader.region}</div>
+              <div><strong>Term Start:</strong> ${leader.termStart}</div>
+              <div><strong>Email:</strong> ${leader.email}</div>
+              <div><strong>Phone:</strong> ${leader.phone}</div>
+            </div>
+            <div>
+              <strong>Key Responsibilities</strong>
+              <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem;">
+                ${responsibilities}
+              </ul>
+            </div>
+          </div>
+        `,
+        footer: `
+          <button class="btn btn-outline" onclick="contactLeader('${leader.id}')">Contact</button>
+        `,
+        size: 'large'
+      });
+    }
+
+    async function copyLeaderContact(leaderId) {
+      const leader = getLeaderRecord(leaderId);
+      if (!leader) {
+        UIModule.showAlert(`Leader not found: ${leaderId}`, 'error');
+        return;
+      }
+
+      const text = `${leader.name}\n${leader.position}\nEmail: ${leader.email}\nPhone: ${leader.phone}\nID: ${leader.id}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        UIModule.showAlert(`Contact copied for ${leader.name}`, 'success');
+      } catch (error) {
+        UIModule.showAlert('Unable to copy contact details on this browser.', 'warning');
+      }
     }
 
     function contactLeader(leaderId) {
-      UIModule.showAlert(`Contact feature for ${leaderId} - Coming soon`, 'info');
+      const leader = getLeaderRecord(leaderId);
+      if (!leader) {
+        UIModule.showAlert(`Leader not found: ${leaderId}`, 'error');
+        return;
+      }
+
+      UIModule.showModal({
+        title: `Contact ${leader.name}`,
+        content: `
+          <div style="display: grid; gap: 0.75rem;">
+            <div><strong>Leader ID:</strong> ${leader.id}</div>
+            <div><strong>Position:</strong> ${leader.position}</div>
+            <div><strong>Email:</strong> <a href="mailto:${leader.email}?subject=AMCAG%20Leadership%20Communication">${leader.email}</a></div>
+            <div><strong>Phone:</strong> <a href="tel:${getDialLink(leader.phone)}">${leader.phone}</a></div>
+          </div>
+        `,
+        footer: `
+          <a class="btn btn-outline" href="mailto:${leader.email}?subject=AMCAG%20Leadership%20Communication">Send Email</a>
+          <a class="btn btn-outline" href="tel:${getDialLink(leader.phone)}">Call</a>
+          <button class="btn btn-primary" onclick="copyLeaderContact('${leader.id}')">Copy Details</button>
+        `,
+        size: 'medium'
+      });
     }
 
     function manageLeader(leaderId) {
-      UIModule.showAlert(`Manage ${leaderId} - Coming soon`, 'info');
+      const leader = leadershipDirectory.find(l => l.id === leaderId);
+      if (!leader) {
+        UIModule.showAlert('Leader not found', 'error');
+        return;
+      }
+      
+      // Show manage leader modal
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 600px;">
+          <div class="modal-header">
+            <h2>Manage Leader: ${leader.name}</h2>
+            <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
+          </div>
+          <div class="modal-body">
+            <form id="manageLeaderForm">
+              <div class="form-group">
+                <label>Name *</label>
+                <input type="text" id="leaderName" value="${leader.name}" required class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Position *</label>
+                <input type="text" id="leaderPosition" value="${leader.position}" required class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Email *</label>
+                <input type="email" id="leaderEmail" value="${leader.email}" required class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Phone *</label>
+                <input type="tel" id="leaderPhone" value="${leader.phone}" required class="form-input">
+              </div>
+              <div class="form-group">
+                <label>Region</label>
+                <select id="leaderRegion" class="form-input">
+                  <option value="">National</option>
+                  <option value="Greater Accra" ${leader.region === 'Greater Accra' ? 'selected' : ''}>Greater Accra</option>
+                  <option value="Ashanti" ${leader.region === 'Ashanti' ? 'selected' : ''}>Ashanti</option>
+                  <option value="Western" ${leader.region === 'Western' ? 'selected' : ''}>Western</option>
+                  <option value="Eastern" ${leader.region === 'Eastern' ? 'selected' : ''}>Eastern</option>
+                  <option value="Central" ${leader.region === 'Central' ? 'selected' : ''}>Central</option>
+                  <option value="Northern" ${leader.region === 'Northern' ? 'selected' : ''}>Northern</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Bio</label>
+                <textarea id="leaderBio" rows="3" class="form-input">${leader.bio || ''}</textarea>
+              </div>
+              <div class="form-actions" style="display: flex; gap: 1rem; justify-content: space-between; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-danger" onclick="removeLeader('${leaderId}')">Remove Leader</button>
+                <div style="display: flex; gap: 1rem;">
+                  <button type="button" class="btn btn-outline" onclick="this.closest('.modal').remove()">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Handle form submission
+      document.getElementById('manageLeaderForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        
+        try {
+          const updates = {
+            name: document.getElementById('leaderName').value.trim(),
+            position: document.getElementById('leaderPosition').value.trim(),
+            email: document.getElementById('leaderEmail').value.trim(),
+            phone: document.getElementById('leaderPhone').value.trim(),
+            region: document.getElementById('leaderRegion').value || null,
+            bio: document.getElementById('leaderBio').value.trim() || null,
+            updatedAt: new Date()
+          };
+          
+          // Update in the directory
+          const index = leadershipDirectory.findIndex(l => l.id === leaderId);
+          if (index !== -1) {
+            leadershipDirectory[index] = { ...leadershipDirectory[index], ...updates };
+            renderLeadershipCards();
+          }
+          
+          // In production, save to Firestore
+          // const db = firebase.firestore();
+          // await db.collection('leadership').doc(leaderId).update(updates);
+          
+          UIModule.showAlert('Leader updated successfully', 'success');
+          modal.remove();
+        } catch (error) {
+          console.error('Error updating leader:', error);
+          UIModule.showAlert('Error updating leader: ' + error.message, 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Changes';
+        }
+      });
+    }
+    
+    function removeLeader(leaderId) {
+      if (!confirm('Are you sure you want to remove this leader? This action cannot be undone.')) {
+        return;
+      }
+      
+      try {
+        const index = leadershipDirectory.findIndex(l => l.id === leaderId);
+        if (index !== -1) {
+          const leaderName = leadershipDirectory[index].name;
+          leadershipDirectory.splice(index, 1);
+          renderLeadershipCards();
+          
+          // Close any open modals
+          document.querySelectorAll('.modal').forEach(m => m.remove());
+          
+          // In production, delete from Firestore
+          // const db = firebase.firestore();
+          // await db.collection('leadership').doc(leaderId).delete();
+          
+          UIModule.showAlert(`${leaderName} removed from leadership directory`, 'success');
+        }
+      } catch (error) {
+        console.error('Error removing leader:', error);
+        UIModule.showAlert('Error removing leader: ' + error.message, 'error');
+        }
     }
 
     function viewCommittee(committeeName) {
-      UIModule.showAlert(`Viewing committee: ${committeeName}`, 'info');
+      const committee = committeeDirectory[committeeName];
+      if (!committee) {
+        UIModule.showAlert(`Committee not found: ${committeeName}`, 'error');
+        return;
+      }
+
+      const rows = committee.members.map((member, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${member.name}</td>
+          <td>${member.role}</td>
+          <td>${member.region}</td>
+        </tr>
+      `).join('');
+
+      const modalContent = `
+        <div style="display: grid; gap: 1rem;">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem;">
+            <div><strong>Chair:</strong> ${committee.chair}</div>
+            <div><strong>Vice Chair:</strong> ${committee.viceChair}</div>
+            <div><strong>Members:</strong> ${committee.members.length}</div>
+            <div><strong>Meeting:</strong> ${committee.meetingDay}</div>
+          </div>
+          <div style="color: var(--text-secondary);">${committee.focus}</div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Region</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      UIModule.showModal({
+        title: committeeName,
+        content: modalContent,
+        size: 'large'
+      });
+    }
+
+    function getLeadershipPaginationControls() {
+      const container = document.getElementById('leadershipPagination');
+      if (!container) return null;
+
+      const buttons = container.querySelectorAll('.pagination-btn');
+      if (!buttons || buttons.length < 2) return null;
+
+      return {
+        container,
+        prevBtn: buttons[0],
+        nextBtn: buttons[buttons.length - 1],
+        numberBtns: Array.from(buttons).slice(1, -1)
+      };
+    }
+
+    function updateLeadershipPaginationControls() {
+      const controls = getLeadershipPaginationControls();
+      if (!controls) return;
+
+      controls.prevBtn.disabled = leadershipPagination.currentPage <= 1;
+      controls.nextBtn.disabled = leadershipPagination.currentPage >= leadershipPagination.totalPages;
+
+      controls.numberBtns.forEach((btn, index) => {
+        const pageNumber = index + 1;
+        if (pageNumber > leadershipPagination.totalPages) {
+          btn.style.display = 'none';
+          return;
+        }
+
+        btn.style.display = '';
+        btn.textContent = String(pageNumber);
+        btn.classList.toggle('active', pageNumber === leadershipPagination.currentPage);
+      });
+    }
+
+    function renderLeadershipPage(page) {
+      if (!leadershipPagination.rows.length) return;
+
+      const safePage = Math.min(
+        Math.max(1, page),
+        leadershipPagination.totalPages
+      );
+      leadershipPagination.currentPage = safePage;
+
+      const start = (safePage - 1) * leadershipPagination.rowsPerPage;
+      const end = start + leadershipPagination.rowsPerPage;
+
+      leadershipPagination.rows.forEach((row, index) => {
+        row.style.display = index >= start && index < end ? '' : 'none';
+      });
+
+      updateLeadershipPaginationControls();
+    }
+
+    function initLeadershipPagination() {
+      const tbody = document.getElementById('leadershipTableBody');
+      const controls = getLeadershipPaginationControls();
+      if (!tbody || !controls) return;
+
+      leadershipPagination.rows = Array.from(tbody.querySelectorAll('tr'));
+      leadershipPagination.totalPages = Math.max(
+        1,
+        Math.ceil(leadershipPagination.rows.length / leadershipPagination.rowsPerPage)
+      );
+
+      if (!leadershipPagination.initialized) {
+        controls.prevBtn.addEventListener('click', () => {
+          renderLeadershipPage(leadershipPagination.currentPage - 1);
+        });
+
+        controls.nextBtn.addEventListener('click', () => {
+          renderLeadershipPage(leadershipPagination.currentPage + 1);
+        });
+
+        controls.numberBtns.forEach((btn, index) => {
+          btn.addEventListener('click', () => {
+            renderLeadershipPage(index + 1);
+          });
+        });
+
+        leadershipPagination.initialized = true;
+      }
+
+      renderLeadershipPage(1);
+    }
+
+    function isMissingIndexError(error) {
+      const code = String(error?.code || '').toLowerCase();
+      const message = String(error?.message || '').toLowerCase();
+      return code.includes('failed-precondition') || message.includes('requires an index');
+    }
+
+    function getTimestampMs(value) {
+      if (!value) return 0;
+      if (typeof value.toDate === 'function') {
+        return value.toDate().getTime();
+      }
+      const parsed = new Date(value).getTime();
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function getLeadershipLevelRank(level) {
+      const ranks = {
+        national: 0,
+        regional: 1,
+        zonal: 2,
+        district: 3,
+        local: 4
+      };
+      const normalized = String(level || '').toLowerCase();
+      return Object.prototype.hasOwnProperty.call(ranks, normalized) ? ranks[normalized] : 99;
     }
 
     async function loadLeadership() {
       try {
-        // Load leadership data from Firestore
         const db = firebase.firestore();
-        const leadersRef = db.collection('leadership').orderBy('level').orderBy('createdAt', 'desc');
-        const snapshot = await leadersRef.get();
-        
+        let snapshot;
+
+        try {
+          // Primary query (fast path when composite index exists)
+          snapshot = await db.collection('leadership')
+            .orderBy('level')
+            .orderBy('createdAt', 'desc')
+            .get();
+        } catch (queryError) {
+          if (!isMissingIndexError(queryError)) {
+            throw queryError;
+          }
+
+          // Fallback when composite index is missing:
+          // load without ordering and sort client-side.
+          const fallbackSnapshot = await db.collection('leadership').get();
+          const sortedDocs = [...fallbackSnapshot.docs].sort((a, b) => {
+            const aData = a.data() || {};
+            const bData = b.data() || {};
+            const levelDiff = getLeadershipLevelRank(aData.level) - getLeadershipLevelRank(bData.level);
+            if (levelDiff !== 0) return levelDiff;
+            return getTimestampMs(bData.createdAt) - getTimestampMs(aData.createdAt);
+          });
+
+          snapshot = {
+            size: sortedDocs.length,
+            docs: sortedDocs
+          };
+        }
+
         // Process and render leadership data
         console.log('Leadership loaded:', snapshot.size);
       } catch (error) {
@@ -449,6 +1587,7 @@
         } else {
           loadLeadership();
           loadCommittees();
+          initLeadershipPagination();
         }
       }
     });

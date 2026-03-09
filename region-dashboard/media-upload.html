@@ -183,22 +183,74 @@
     window.AuthModule.requireAnyRole(['regional_executive', 'national_executive', 'super_admin']);
     
     let userRegion = '';
-    
-    // Get user region
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (user) {
-        const db = firebase.firestore();
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
-          userRegion = userDoc.data().region || '';
-          const regionBadge = document.querySelector('[data-user-region]');
-          if (regionBadge && userRegion) {
-            regionBadge.textContent = `📸 ${userRegion}`;
-          }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function normalizeDate(value) {
+      if (!value) return null;
+      if (value instanceof Date) return value;
+      if (typeof value?.toDate === 'function') {
+        try {
+          return value.toDate();
+        } catch {
+          return null;
         }
       }
-    });
+      if (typeof value === 'number') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      if (typeof value === 'string') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    }
+
+    function dateToMs(value) {
+      const date = normalizeDate(value);
+      return date ? date.getTime() : 0;
+    }
+
+    function formatDate(value) {
+      const date = normalizeDate(value);
+      return date ? date.toLocaleDateString() : 'Recently';
+    }
+
+    function getErrorMessage(error) {
+      if (!error) return 'Unknown error';
+      if (typeof error.details === 'string') return error.details;
+      if (error.details && typeof error.details.message === 'string') return error.details.message;
+      if (typeof error.message === 'string') return error.message;
+      return 'Unknown error';
+    }
     
+    // Get user region
+    AuthModule.onAuthStateChanged(async (user) => {
+      if (!user) return;
+
+      try {
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) return;
+
+        userRegion = userDoc.data().region || '';
+        const regionBadge = document.querySelector('[data-user-region]');
+        if (regionBadge && userRegion) {
+          regionBadge.textContent = `Region: ${userRegion}`;
+        }
+      } catch (error) {
+        console.error('Error loading regional context:', error);
+      }
+    });
+
     // Photo preview
     document.getElementById('photo-file').addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -226,6 +278,11 @@
       
       if (!file) {
         UIModule.showAlert('Please select a photo to upload', 'error');
+        return;
+      }
+
+      if (!userRegion) {
+        UIModule.showAlert('Region context is still loading. Please retry in a moment.', 'error');
         return;
       }
       
@@ -259,7 +316,7 @@
           },
           (error) => {
             console.error('Upload error:', error);
-            UIModule.showAlert('Upload failed: ' + error.message, 'error');
+            UIModule.showAlert(`Upload failed: ${getErrorMessage(error)}`, 'error');
             uploadBtn.disabled = false;
             uploadBtn.textContent = 'Upload Photo';
             progressDiv.style.display = 'none';
@@ -299,7 +356,7 @@
         
       } catch (error) {
         console.error('Error uploading photo:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert(`Error: ${getErrorMessage(error)}`, 'error');
         uploadBtn.disabled = false;
         uploadBtn.textContent = 'Upload Photo';
         progressDiv.style.display = 'none';
@@ -314,6 +371,11 @@
       const description = document.getElementById('video-youtube-description').value;
       const youtubeUrl = document.getElementById('youtube-url').value;
       const duration = document.getElementById('video-duration').value;
+
+      if (!userRegion) {
+        UIModule.showAlert('Region context is still loading. Please retry in a moment.', 'error');
+        return;
+      }
       
       try {
         let videoId = '';
@@ -351,7 +413,7 @@
         
       } catch (error) {
         console.error('Error adding video:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert(`Error: ${getErrorMessage(error)}`, 'error');
       }
     });
     
@@ -364,29 +426,36 @@
       
       try {
         const db = firebase.firestore();
-        
-        const photosSnapshot = await db.collection('gallery')
-          .where('uploadedBy', '==', user.uid)
-          .orderBy('createdAt', 'desc')
-          .limit(10)
-          .get();
-        
-        const videosSnapshot = await db.collection('videos')
-          .where('uploadedBy', '==', user.uid)
-          .orderBy('createdAt', 'desc')
-          .limit(10)
-          .get();
+
+        const fetchUserUploads = async (collectionName) => {
+          try {
+            return await db.collection(collectionName)
+              .where('uploadedBy', '==', user.uid)
+              .orderBy('createdAt', 'desc')
+              .limit(10)
+              .get();
+          } catch (queryError) {
+            const message = String(queryError?.message || '').toLowerCase();
+            if (!message.includes('index')) {
+              throw queryError;
+            }
+            console.warn(`Index missing for ${collectionName} uploads. Using fallback query.`, queryError);
+            return await db.collection(collectionName)
+              .where('uploadedBy', '==', user.uid)
+              .limit(10)
+              .get();
+          }
+        };
+
+        const photosSnapshot = await fetchUserUploads('gallery');
+        const videosSnapshot = await fetchUserUploads('videos');
         
         const uploads = [];
         
         photosSnapshot.forEach(doc => uploads.push({ id: doc.id, ...doc.data(), mediaType: 'photo' }));
         videosSnapshot.forEach(doc => uploads.push({ id: doc.id, ...doc.data(), mediaType: 'video' }));
         
-        uploads.sort((a, b) => {
-          const aTime = a.createdAt ? a.createdAt.toMillis() : 0;
-          const bTime = b.createdAt ? b.createdAt.toMillis() : 0;
-          return bTime - aTime;
-        });
+        uploads.sort((a, b) => dateToMs(b.createdAt) - dateToMs(a.createdAt));
         
         if (uploads.length === 0) {
           container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: var(--space-4);">No uploads yet</p>';
@@ -399,9 +468,9 @@
               ${item.mediaType === 'photo' ? '📷' : '🎥'}
             </div>
             <div style="flex: 1;">
-              <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">${item.title}</div>
+              <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">${escapeHtml(item.title || 'Untitled')}</div>
               <div style="font-size: var(--text-sm); color: var(--text-secondary);">
-                ${item.region || item.location || ''} • ${item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString() : 'Recently'}
+                ${escapeHtml(item.region || item.location || '')} • ${escapeHtml(formatDate(item.createdAt))}
               </div>
             </div>
             <span class="badge badge-success">Uploaded</span>
@@ -410,6 +479,7 @@
         
       } catch (error) {
         console.error('Error loading uploads:', error);
+        UIModule.showAlert(`Unable to load recent uploads: ${getErrorMessage(error)}`, 'error');
       }
     }
     

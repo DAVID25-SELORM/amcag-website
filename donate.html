@@ -436,41 +436,94 @@
     async function loadDistributionGallery() {
       try {
         const db = firebase.firestore();
-        const snapshot = await db.collection('donations')
-          .where('status', '==', 'distributed')
-          .orderBy('distribution.distributedAt', 'desc')
-          .limit(6)
-          .get();
+        let snapshot;
+        
+        try {
+          snapshot = await db.collection('donations')
+            .where('status', '==', 'distributed')
+            .orderBy('distribution.distributedAt', 'desc')
+            .limit(6)
+            .get();
+        } catch (indexError) {
+          console.warn('Distribution gallery index not found, loading without orderBy');
+          snapshot = await db.collection('donations')
+            .where('status', '==', 'distributed')
+            .limit(6)
+            .get();
+        }
 
         const gallery = document.getElementById('distributionGallery');
 
+        // Sample distribution photos (use actual event photos from gallery)
+        const samplePhotos = [
+          { image: '/images/certificate-award-1.jpg', caption: 'Certificate Awards Ceremony', date: '2024-03-15' },
+          { image: '/images/regional-conference-1.jpg', caption: 'Regional Conference Support', date: '2024-02-20' },
+          { image: '/images/leadership-training-1.jpg', caption: 'Leadership Training Program', date: '2024-01-10' },
+          { image: '/images/agm-2026-1.jpg', caption: 'Annual General Meeting 2026', date: '2024-05-22' },
+          { image: '/images/certificate-award-2.jpg', caption: 'Excellence Awards Distribution', date: '2024-04-12' },
+          { image: '/images/regional-conference-2.jpg', caption: 'Regional Development Fund', date: '2024-03-05' }
+        ];
+
         if (snapshot.empty) {
-          gallery.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-secondary);">Distribution photos coming soon!</div>';
+          // Show sample distribution photos
+          gallery.innerHTML = samplePhotos.map(photo => `
+            <div class="card" style="padding: 0; overflow: hidden; cursor: pointer;" onclick="viewDistributionPhoto('${photo.image}', '${photo.caption}')">
+              <div style="height: 200px; background: var(--color-neutral-95); background-image: url('${photo.image}'); background-size: cover; background-position: center;"></div>
+              <div style="padding: 1rem;">
+                <div style="font-weight: 500; margin-bottom: 0.25rem;">${photo.caption}</div>
+                <div style="color: var(--text-secondary); font-size: var(--text-sm);">${new Date(photo.date).toLocaleDateString()}</div>
+              </div>
+            </div>
+          `).join('');
           return;
         }
 
         gallery.innerHTML = snapshot.docs.map(doc => {
           const donation = doc.data();
+          const distributionImage = donation.distribution?.photo || samplePhotos[0].image;
+          const caption = donation.campaignName || 'Distribution Event';
+          const date = donation.distribution?.distributedAt?.toDate ? donation.distribution.distributedAt.toDate() : new Date();
+          
           return `
-            <div class="card" style="padding: 0; overflow: hidden;">
-              <div style="padding: 1rem; height: 200px; background: var(--color-neutral-95); display: flex; align-items: center; justify-content: center;">
-                <div style="text-align: center; color: var(--text-secondary);">
-                  <div style="font-size: 3rem; margin-bottom: 0.5rem;">📸</div>
-                  <div>Photo Gallery</div>
-                </div>
-              </div>
+            <div class="card" style="padding: 0; overflow: hidden; cursor: pointer;" onclick="viewDistributionPhoto('${distributionImage}', '${caption}')">
+              <div style="height: 200px; background: var(--color-neutral-95); background-image: url('${distributionImage}'); background-size: cover; background-position: center;"></div>
               <div style="padding: 1rem;">
-                <strong>${donation.distribution.location}</strong>
-                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                  ${donation.distribution.beneficiaries} beneficiaries
-                </div>
+                <div style="font-weight: 500; margin-bottom: 0.25rem;">${caption}</div>
+                <div style="color: var(--text-secondary); font-size: var(--text-sm);">${date.toLocaleDateString()}</div>
               </div>
             </div>
           `;
         }).join('');
       } catch (error) {
-        console.error('Error loading gallery:', error);
+        console.error('Error loading distribution gallery:', error);
+        const gallery = document.getElementById('distributionGallery');
+        gallery.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-secondary);">Unable to load distribution photos</div>';
       }
+    }
+    
+    function viewDistributionPhoto(imageUrl, caption) {
+      // Create modal to view full size photo
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width: 900px; padding: 0; background: transparent;">
+          <div style="position: relative;">
+            <button class="btn-close" onclick="this.closest('.modal').remove()" style="position: absolute; top: 1rem; right: 1rem; background: white; border-radius: 50%; width: 40px; height: 40px; z-index: 10;">×</button>
+            <img src="${imageUrl}" alt="${caption}" style="width: 100%; height: auto; border-radius: var(--radius-lg);">
+            <div style="background: white; padding: 1.5rem; border-radius: 0 0 var(--radius-lg) var(--radius-lg);">
+              <h3 style="margin: 0;">${caption}</h3>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Close modal when clicking outside
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
     }
 
     document.getElementById('donationForm').addEventListener('submit', async (e) => {

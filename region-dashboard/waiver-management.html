@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Waiver Management | AMCAG Regional Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
@@ -302,26 +301,86 @@
     let regionMembers = [];
     let selectedRequest = null;
     let reviewWaiverRequestFunction = null;
+    let waiveDuesPaymentFunction = null;
+    let reviewActionInProgress = false;
+    let directWaiverActionInProgress = false;
 
-    // Get month name
     function getMonthName(month) {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return months[month - 1];
+      const index = Number(month) - 1;
+      return months[index] || 'Unknown';
     }
 
-    // Initialize Cloud Functions
-    firebase.auth().onAuthStateChanged(user => {
-      if (user && !reviewWaiverRequestFunction) {
-        const functions = firebase.functions();
-        reviewWaiverRequestFunction = functions.httpsCallable('reviewWaiverRequest');
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function parseAmount(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function normalizeDate(value) {
+      if (!value) return null;
+      if (value instanceof Date) return value;
+      if (typeof value?.toDate === 'function') {
+        try {
+          return value.toDate();
+        } catch {
+          return null;
+        }
       }
-    });
+      if (typeof value === 'number') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      if (typeof value === 'string') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      return null;
+    }
+
+    function dateToMs(value) {
+      const date = normalizeDate(value);
+      return date ? date.getTime() : 0;
+    }
+
+    function formatDate(value) {
+      const date = normalizeDate(value);
+      return date ? date.toLocaleDateString() : 'N/A';
+    }
+
+    function getCallableErrorMessage(error) {
+      if (!error) return 'Unknown error';
+      if (typeof error.details === 'string') return error.details;
+      if (error.details && typeof error.details.message === 'string') return error.details.message;
+      if (typeof error.message === 'string') return error.message;
+      return 'Unknown error';
+    }
+
+    function initializeCallables() {
+      if (!reviewWaiverRequestFunction || !waiveDuesPaymentFunction) {
+        const functions = firebase.functions();
+        reviewWaiverRequestFunction = reviewWaiverRequestFunction || functions.httpsCallable('reviewWaiverRequest');
+        waiveDuesPaymentFunction = waiveDuesPaymentFunction || functions.httpsCallable('waiveDuesPayment');
+      }
+    }
+
+    function setReviewButtonsDisabled(isDisabled) {
+      document.getElementById('approveBtn').disabled = isDisabled;
+      document.getElementById('rejectBtn').disabled = isDisabled;
+    }
 
     // Load waiver requests
     async function loadWaiverRequests() {
       try {
         UIModule.showLoader('Loading waiver requests...');
-        
         const db = firebase.firestore();
 
         // Load requests for this region
@@ -357,13 +416,11 @@
 
         calculateStatistics();
         applyFilters();
-
-        UIModule.hideLoader();
-        
       } catch (error) {
-        UIModule.hideLoader();
         console.error('Error loading requests:', error);
-        UIModule.showAlert('Error loading data: ' + error.message, 'error');
+        UIModule.showAlert(`Error loading data: ${getCallableErrorMessage(error)}`, 'error');
+      } finally {
+        UIModule.hideLoader();
       }
     }
 
@@ -376,27 +433,30 @@
       const pending = allRequests.filter(r => r.status === 'pending').length;
       
       const approvedThisMonth = allRequests.filter(r => {
-        if (r.status !== 'approved' || !r.reviewedAt) return false;
-        const reviewDate = r.reviewedAt.toDate();
-        return reviewDate.getMonth() + 1 === currentMonth && 
+        if (r.status !== 'approved') return false;
+        const reviewDate = normalizeDate(r.reviewedAt);
+        if (!reviewDate) return false;
+        return reviewDate.getMonth() + 1 === currentMonth &&
                reviewDate.getFullYear() === currentYear;
       }).length;
 
       const rejectedThisMonth = allRequests.filter(r => {
-        if (r.status !== 'rejected' || !r.reviewedAt) return false;
-        const reviewDate = r.reviewedAt.toDate();
-        return reviewDate.getMonth() + 1 === currentMonth && 
+        if (r.status !== 'rejected') return false;
+        const reviewDate = normalizeDate(r.reviewedAt);
+        if (!reviewDate) return false;
+        return reviewDate.getMonth() + 1 === currentMonth &&
                reviewDate.getFullYear() === currentYear;
       }).length;
 
       const totalWaivedThisMonth = allRequests
         .filter(r => {
-          if (r.status !== 'approved' || !r.reviewedAt) return false;
-          const reviewDate = r.reviewedAt.toDate();
-          return reviewDate.getMonth() + 1 === currentMonth && 
+          if (r.status !== 'approved') return false;
+          const reviewDate = normalizeDate(r.reviewedAt);
+          if (!reviewDate) return false;
+          return reviewDate.getMonth() + 1 === currentMonth &&
                  reviewDate.getFullYear() === currentYear;
         })
-        .reduce((sum, r) => sum + (r.totalAmount || 0), 0);
+        .reduce((sum, r) => sum + parseAmount(r.totalAmount), 0);
 
       document.getElementById('pendingCount').textContent = pending;
       document.getElementById('approvedCount').textContent = approvedThisMonth;
@@ -408,15 +468,13 @@
     function applyFilters() {
       const statusFilter = document.getElementById('statusFilter').value;
       const sortFilter = document.getElementById('sortFilter').value;
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
 
       let filteredRequests = allRequests.filter(request => {
-        // Status filter
         if (statusFilter && request.status !== statusFilter) {
           return false;
         }
 
-        // Search filter
         if (searchTerm) {
           const searchableText = `${request.memberName || ''} ${request.memberId || ''}`.toLowerCase();
           if (!searchableText.includes(searchTerm)) {
@@ -427,17 +485,16 @@
         return true;
       });
 
-      // Sort
       filteredRequests.sort((a, b) => {
         switch (sortFilter) {
           case 'newest':
-            return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
+            return dateToMs(b.createdAt) - dateToMs(a.createdAt);
           case 'oldest':
-            return (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
+            return dateToMs(a.createdAt) - dateToMs(b.createdAt);
           case 'amount_high':
-            return (b.totalAmount || 0) - (a.totalAmount || 0);
+            return parseAmount(b.totalAmount) - parseAmount(a.totalAmount);
           case 'amount_low':
-            return (a.totalAmount || 0) - (b.totalAmount || 0);
+            return parseAmount(a.totalAmount) - parseAmount(b.totalAmount);
           default:
             return 0;
         }
@@ -449,7 +506,7 @@
     // Render requests table
     function renderRequestsTable(requests) {
       const tbody = document.getElementById('requestsTableBody');
-      document.getElementById('requestCount').textContent = `${requests.length} requests`;
+      document.getElementById('requestCount').textContent = `${requests.length} request${requests.length === 1 ? '' : 's'}`;
 
       if (requests.length === 0) {
         tbody.innerHTML = `
@@ -463,13 +520,12 @@
       }
 
       tbody.innerHTML = requests.map(request => {
-        const requestDate = request.createdAt ? 
-          new Date(request.createdAt.toDate()).toLocaleDateString() : 
-          'N/A';
-        
-        const monthsText = request.months.map(m => `${getMonthName(m.month)} ${m.year}`).join(', ');
-        
-        let statusBadge;
+        const requestDate = formatDate(request.createdAt);
+        const monthsText = Array.isArray(request.months) && request.months.length > 0
+          ? request.months.map(m => `${getMonthName(m.month)} ${escapeHtml(m.year)}`).join(', ')
+          : 'N/A';
+
+        let statusBadge = '<span class="badge">Unknown</span>';
         if (request.status === 'pending') {
           statusBadge = '<span class="badge badge-warning">Pending</span>';
         } else if (request.status === 'approved') {
@@ -480,15 +536,15 @@
 
         return `
           <tr>
-            <td>${requestDate}</td>
-            <td>${request.memberName || 'Unknown'}</td>
-            <td>${request.memberId || 'N/A'}</td>
+            <td>${escapeHtml(requestDate)}</td>
+            <td>${escapeHtml(request.memberName || 'Unknown')}</td>
+            <td>${escapeHtml(request.memberId || 'N/A')}</td>
             <td>${monthsText}</td>
-            <td style="font-weight: 600;">GHS ${(request.totalAmount || 0).toFixed(2)}</td>
-            <td><small>${request.reasonCategory || 'N/A'}</small></td>
+            <td style="font-weight: 600;">GHS ${parseAmount(request.totalAmount).toFixed(2)}</td>
+            <td><small>${escapeHtml(request.reasonCategory || 'N/A')}</small></td>
             <td>${statusBadge}</td>
             <td>
-              <button class="btn btn-sm btn-primary" onclick='reviewRequest(${JSON.stringify(request).replace(/'/g, "&apos;")})'>
+              <button class="btn btn-sm btn-primary" data-action="review-request" data-request-id="${escapeHtml(request.id)}">
                 ${request.status === 'pending' ? 'Review' : 'View'}
               </button>
             </td>
@@ -498,21 +554,27 @@
     }
 
     // Review request
-    function reviewRequest(request) {
+    function reviewRequest(requestOrId) {
+      const requestId = typeof requestOrId === 'string' ? requestOrId : requestOrId?.id;
+      const request = allRequests.find(item => item.id === requestId) || (typeof requestOrId === 'object' ? requestOrId : null);
+      if (!request) {
+        UIModule.showAlert('Unable to load request details.', 'error');
+        return;
+      }
+
       selectedRequest = request;
 
       document.getElementById('modalMemberName').textContent = request.memberName || 'Unknown';
       document.getElementById('modalMemberId').textContent = request.memberId || 'N/A';
       
-      const requestDate = request.createdAt ? 
-        new Date(request.createdAt.toDate()).toLocaleDateString() : 
-        'N/A';
-      document.getElementById('modalRequestDate').textContent = requestDate;
+      document.getElementById('modalRequestDate').textContent = formatDate(request.createdAt);
       document.getElementById('modalRecoveryDate').textContent = request.recoveryDate || 'Not specified';
       
-      const monthsText = request.months.map(m => `${getMonthName(m.month)} ${m.year}`).join(', ');
+      const monthsText = Array.isArray(request.months) && request.months.length > 0
+        ? request.months.map(m => `${getMonthName(m.month)} ${m.year}`).join(', ')
+        : 'N/A';
       document.getElementById('modalMonths').textContent = monthsText;
-      document.getElementById('modalAmount').textContent = (request.totalAmount || 0).toFixed(2);
+      document.getElementById('modalAmount').textContent = parseAmount(request.totalAmount).toFixed(2);
       document.getElementById('modalReasonCategory').textContent = request.reasonCategory || 'N/A';
       document.getElementById('modalExplanation').textContent = request.explanation || 'No explanation provided';
 
@@ -522,17 +584,17 @@
         document.getElementById('reviewedSection').style.display = 'none';
         document.getElementById('modalFooter').style.display = 'flex';
         document.getElementById('reviewNotes').value = '';
-        document.querySelectorAll('input[name="decision"]').forEach(r => r.checked = false);
+        document.querySelectorAll('input[name="decision"]').forEach(radio => {
+          radio.checked = false;
+        });
+        setReviewButtonsDisabled(false);
       } else {
         document.getElementById('reviewFormSection').style.display = 'none';
         document.getElementById('reviewedSection').style.display = 'block';
         document.getElementById('modalFooter').style.display = 'none';
         
         document.getElementById('reviewedByName').textContent = request.reviewedByName || 'Unknown';
-        const reviewDate = request.reviewedAt ? 
-          new Date(request.reviewedAt.toDate()).toLocaleDateString() : 
-          'N/A';
-        document.getElementById('reviewedDate').textContent = reviewDate;
+        document.getElementById('reviewedDate').textContent = formatDate(request.reviewedAt);
         document.getElementById('existingReviewNotes').textContent = request.reviewNotes || 'No notes provided';
       }
 
@@ -542,11 +604,19 @@
     function closeRequestModal() {
       document.getElementById('requestModal').style.display = 'none';
       selectedRequest = null;
+      reviewActionInProgress = false;
+      setReviewButtonsDisabled(false);
     }
 
     // Submit review
     async function submitReview(decision) {
-      if (!selectedRequest) return;
+      if (reviewActionInProgress) return;
+      if (!selectedRequest || !selectedRequest.id) return;
+
+      if (!reviewWaiverRequestFunction) {
+        UIModule.showAlert('Review service is still loading. Please retry in a moment.', 'error');
+        return;
+      }
 
       const reviewNotes = document.getElementById('reviewNotes').value.trim();
 
@@ -556,33 +626,37 @@
       }
 
       const actionText = decision === 'approve' ? 'approve' : 'reject';
-      if (!confirm(`${actionText.toUpperCase()} this waiver request?\n\nMember: ${selectedRequest.memberName}\nAmount: GHS ${(selectedRequest.totalAmount || 0).toFixed(2)}\n\nThis action cannot be undone.`)) {
+      if (!confirm(`${actionText.toUpperCase()} this waiver request?\n\nMember: ${selectedRequest.memberName || 'Unknown'}\nAmount: GHS ${parseAmount(selectedRequest.totalAmount).toFixed(2)}\n\nThis action cannot be undone.`)) {
         return;
       }
+
+      reviewActionInProgress = true;
+      setReviewButtonsDisabled(true);
 
       try {
         UIModule.showLoader(`${actionText}ing request...`);
 
         const result = await reviewWaiverRequestFunction({
           requestId: selectedRequest.id,
-          decision: decision,
-          reviewNotes: reviewNotes
+          decision,
+          reviewNotes
         });
 
-        UIModule.hideLoader();
-
-        if (result.data.success) {
+        if (result?.data?.success) {
           UIModule.showAlert(`✅ Request ${decision}ed successfully!`, 'success');
           closeRequestModal();
-          setTimeout(() => loadWaiverRequests(), 1000);
+          await loadWaiverRequests();
         } else {
-          UIModule.showAlert('Error: ' + (result.data.error || 'Unknown error'), 'error');
+          UIModule.showAlert(`Error: ${result?.data?.error || 'Unknown error'}`, 'error');
         }
 
       } catch (error) {
-        UIModule.hideLoader();
         console.error('Error reviewing request:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert(`Error: ${getCallableErrorMessage(error)}`, 'error');
+      } finally {
+        reviewActionInProgress = false;
+        setReviewButtonsDisabled(false);
+        UIModule.hideLoader();
       }
     }
 
@@ -595,6 +669,7 @@
 
     function closeDirectWaiverModal() {
       document.getElementById('directWaiverModal').style.display = 'none';
+      directWaiverActionInProgress = false;
     }
 
     // Load member overdue months
@@ -625,11 +700,10 @@
           }
         });
 
-        // Calculate overdue
         const now = new Date();
-        const regDate = member.registrationDate ? member.registrationDate.toDate() : new Date();
+        const regDate = normalizeDate(member.registrationDate) || now;
         const overdueMonths = [];
-        let checkDate = new Date(regDate);
+        const checkDate = new Date(regDate.getFullYear(), regDate.getMonth(), 1);
 
         while (checkDate < now) {
           const month = checkDate.getMonth() + 1;
@@ -660,21 +734,44 @@
 
       } catch (error) {
         console.error('Error loading overdue months:', error);
+        UIModule.showAlert(`Unable to load overdue months: ${getCallableErrorMessage(error)}`, 'error');
       }
     }
 
+    document.getElementById('requestsTableBody').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action="review-request"]');
+      if (!button) return;
+      reviewRequest(button.dataset.requestId);
+    });
+
     // Direct waiver form submission
-    document.getElementById('directWaiverForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    document.getElementById('directWaiverForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (directWaiverActionInProgress) return;
 
       const memberUid = document.getElementById('memberSelect').value;
       const reason = document.getElementById('directWaiverReason').value;
-      const explanation = document.getElementById('directWaiverExplanation').value;
+      const explanation = document.getElementById('directWaiverExplanation').value.trim();
       
       const selectedMonths = Array.from(document.querySelectorAll('.direct-waiver-month:checked')).map(cb => ({
-        month: parseInt(cb.dataset.month),
-        year: parseInt(cb.dataset.year)
+        month: Number(cb.dataset.month),
+        year: Number(cb.dataset.year)
       }));
+
+      if (!memberUid) {
+        UIModule.showAlert('Please select a member', 'error');
+        return;
+      }
+
+      if (!reason) {
+        UIModule.showAlert('Please select a waiver reason', 'error');
+        return;
+      }
+
+      if (!explanation || explanation.length < 10) {
+        UIModule.showAlert('Please provide a clear explanation (minimum 10 characters)', 'error');
+        return;
+      }
 
       if (selectedMonths.length === 0) {
         UIModule.showAlert('Please select at least one month to waive', 'error');
@@ -682,36 +779,55 @@
       }
 
       const member = regionMembers.find(m => m.uid === memberUid);
+      if (!member) {
+        UIModule.showAlert('Selected member not found.', 'error');
+        return;
+      }
+
+      if (!waiveDuesPaymentFunction) {
+        UIModule.showAlert('Waiver service is still loading. Please retry in a moment.', 'error');
+        return;
+      }
       
-      if (!confirm(`Grant direct waiver to ${member.fullName}?\n\n${selectedMonths.length} month(s) - GHS ${(selectedMonths.length * MONTHLY_DUES_AMOUNT).toFixed(2)}`)) {
+      const memberName = member.fullName || 'this member';
+      const totalAmount = selectedMonths.length * MONTHLY_DUES_AMOUNT;
+      if (!confirm(`Grant direct waiver to ${memberName}?\n\n${selectedMonths.length} month(s) - GHS ${totalAmount.toFixed(2)}`)) {
         return;
       }
 
       try {
+        const submitButton = event.target.querySelector('button[type="submit"]');
+        directWaiverActionInProgress = true;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Granting...';
+
         UIModule.showLoader('Granting waiver...');
 
-        const functions = firebase.functions();
-        const waiveDuesPayment = functions.httpsCallable('waiveDuesPayment');
-
-        const result = await waiveDuesPayment({
-          memberUid: memberUid,
+        const result = await waiveDuesPaymentFunction({
+          memberUid,
           months: selectedMonths,
           reason: `${reason}: ${explanation}`
         });
 
-        UIModule.hideLoader();
-
-        if (result.data.success) {
+        if (result?.data?.success) {
           UIModule.showAlert('✅ Waiver granted successfully!', 'success');
           closeDirectWaiverModal();
+          await loadWaiverRequests();
         } else {
-          UIModule.showAlert('Error: ' + (result.data.error || 'Unknown error'), 'error');
+          UIModule.showAlert(`Error: ${result?.data?.error || 'Unknown error'}`, 'error');
         }
 
       } catch (error) {
-        UIModule.hideLoader();
         console.error('Error granting waiver:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert(`Error: ${getCallableErrorMessage(error)}`, 'error');
+      } finally {
+        directWaiverActionInProgress = false;
+        const submitButton = document.querySelector('#directWaiverForm button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Grant Waiver';
+        }
+        UIModule.hideLoader();
       }
     });
 
@@ -726,41 +842,44 @@
         return;
       }
 
-      // Check for suspension
-      await SuspensionCheckModule.initRegionalDashboardCheck();
+      try {
+        await SuspensionCheckModule.initRegionalDashboardCheck();
+        currentUser = user;
 
-      currentUser = user;
-      
-      const db = firebase.firestore();
-      const userDoc = await db.collection('users').doc(user.uid).get();
-      
-      if (!userDoc.exists) {
-        UIModule.showAlert('User profile not found', 'error');
-        return;
+        const db = firebase.firestore();
+        const userDoc = await db.collection('users').doc(user.uid).get();
+
+        if (!userDoc.exists) {
+          UIModule.showAlert('User profile not found', 'error');
+          return;
+        }
+
+        const userData = userDoc.data();
+
+        if (!userData.role || userData.role !== 'regional_executive') {
+          UIModule.showAlert('Access denied. Regional executive access required.', 'error');
+          setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+          return;
+        }
+
+        if (!userData.region) {
+          UIModule.showAlert('No region assigned to your account', 'error');
+          return;
+        }
+
+        userRegion = userData.region;
+        document.getElementById('regionName').textContent = `${userRegion} Region - Waiver Management`;
+
+        initializeCallables();
+        await loadWaiverRequests();
+      } catch (error) {
+        console.error('Error initializing waiver management:', error);
+        UIModule.showAlert(`Error initializing page: ${getCallableErrorMessage(error)}`, 'error');
       }
-
-      const userData = userDoc.data();
-
-      // Check permissions
-      if (!userData.role || userData.role !== 'regional_executive') {
-        UIModule.showAlert('Access denied. Regional executive access required.', 'error');
-        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
-        return;
-      }
-
-      if (!userData.region) {
-        UIModule.showAlert('No region assigned to your account', 'error');
-        return;
-      }
-
-      userRegion = userData.region;
-      document.getElementById('regionName').textContent = `${userRegion} Region - Waiver Management`;
-
-      loadWaiverRequests();
     });
 
     // Close modals when clicking outside
-    window.onclick = (event) => {
+    window.addEventListener('click', (event) => {
       const requestModal = document.getElementById('requestModal');
       const directWaiverModal = document.getElementById('directWaiverModal');
       
@@ -770,7 +889,7 @@
       if (event.target === directWaiverModal) {
         closeDirectWaiverModal();
       }
-    };
+    });
   </script>
   <script src="/js/mobile-menu.js"></script>
 </body>

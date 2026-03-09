@@ -545,14 +545,14 @@
           const time = new Date(alert.createdAt).toLocaleString();
           
           html += `
-            <tr onclick="viewAlert('${doc.id}')">
+            <tr onclick="if (!this.dataset.skipNextClick) viewAlert('${doc.id}')">
               <td>${time}</td>
               <td>${alert.title}</td>
               <td><span class="scc-badge ${alert.severity.toLowerCase()}">${alert.severity}</span></td>
               <td><span class="scc-badge ${alert.status.toLowerCase()}">${alert.status}</span></td>
               <td>
-                ${alert.status === 'OPEN' ? `<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); acknowledgeAlert('${doc.id}')">Acknowledge</button>` : ''}
-                ${alert.status === 'ACK' ? `<button class="btn btn-sm btn-success" onclick="event.stopPropagation(); resolveAlert('${doc.id}')">Resolve</button>` : ''}
+                ${alert.status === 'OPEN' ? `<button class="btn btn-sm btn-primary" onclick="handleAlertAction(this, 'ack', '${doc.id}')">Acknowledge</button>` : ''}
+                ${alert.status === 'ACK' ? `<button class="btn btn-sm btn-success" onclick="handleAlertAction(this, 'resolve', '${doc.id}')">Resolve</button>` : ''}
               </td>
             </tr>
           `;
@@ -564,6 +564,24 @@
       } catch (error) {
         console.error('Error loading alerts:', error);
         document.getElementById('alerts-container').innerHTML = '<div class="no-data">Error loading alerts</div>';
+      }
+    }
+
+    function handleAlertAction(button, action, alertId) {
+      const row = button && typeof button.closest === 'function' ? button.closest('tr') : null;
+      if (row) {
+        row.dataset.skipNextClick = '1';
+        setTimeout(() => {
+          if (row.dataset) {
+            delete row.dataset.skipNextClick;
+          }
+        }, 0);
+      }
+
+      if (action === 'ack') {
+        acknowledgeAlert(alertId);
+      } else if (action === 'resolve') {
+        resolveAlert(alertId);
       }
     }
     

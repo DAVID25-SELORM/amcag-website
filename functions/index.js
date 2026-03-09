@@ -8,7 +8,16 @@ const axios = require("axios");
 admin.initializeApp();
 
 // Paystack Configuration
-const PAYSTACK_SECRET_KEY = 'sk_test_xxxxxxxxxxxxxxxxxxxx'; // Replace with your Paystack secret key
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
+
+function ensurePaystackKeyConfigured() {
+  if (!PAYSTACK_SECRET_KEY) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "Paystack secret key is not configured."
+    );
+  }
+}
 
 // ===== HELPER: Security Event Logger =====
 async function logSecurityEvent(eventData) {
@@ -540,43 +549,65 @@ exports.resetDailyCounters = onSchedule(
 // ===============================================
 
 // ===== GENERATE MEMBERSHIP ID =====
+function getMembershipSequenceFromId(memberId, expectedYear) {
+  const match = String(memberId || '').match(/^AMCAG-(\d{4})-(\d{3,6})$/i);
+  if (!match) return 0;
+
+  const idYear = parseInt(match[1], 10);
+  const seq = parseInt(match[2], 10);
+  if (!Number.isFinite(idYear) || !Number.isFinite(seq)) return 0;
+  if (idYear !== expectedYear) return 0;
+  return seq > 0 ? seq : 0;
+}
+
 async function generateMembershipId(db) {
   const currentYear = new Date().getFullYear();
   const counterRef = db.collection('system_counters').doc('membership_id');
+  const memberIdPrefix = `AMCAG-${currentYear}-`;
   
   try {
     const result = await db.runTransaction(async (transaction) => {
-      const counterDoc = await transaction.get(counterRef);
+      const [counterDoc, latestMemberForYear] = await Promise.all([
+        transaction.get(counterRef),
+        transaction.get(
+          db.collection('users')
+            .where('memberId', '>=', memberIdPrefix)
+            .where('memberId', '<=', `${memberIdPrefix}\uf8ff`)
+            .orderBy('memberId', 'desc')
+            .limit(1)
+        )
+      ]);
       
-      let nextNumber;
-      let lastYear;
+      let counterNumber = 0;
+      let existingNumber = 0;
       
-      if (!counterDoc.exists) {
-        // Initialize counter
-        nextNumber = 1;
-        lastYear = currentYear;
-      } else {
+      if (counterDoc.exists) {
         const data = counterDoc.data();
-        lastYear = data.year || currentYear;
-        
-        if (lastYear !== currentYear) {
-          // New year, reset counter
-          nextNumber = 1;
-          lastYear = currentYear;
-        } else {
-          nextNumber = (data.lastNumber || 0) + 1;
+        if (data.year === currentYear) {
+          const parsedCounter = parseInt(data.lastNumber || 0, 10);
+          if (Number.isFinite(parsedCounter) && parsedCounter > 0) {
+            counterNumber = parsedCounter;
+          }
         }
       }
+
+      if (!latestMemberForYear.empty) {
+        const latestMemberData = latestMemberForYear.docs[0].data() || {};
+        existingNumber = getMembershipSequenceFromId(latestMemberData.memberId, currentYear);
+      }
+
+      // Keep sequence strictly increasing even if counter was reset/deleted.
+      const nextNumber = Math.max(counterNumber, existingNumber) + 1;
       
       // Update counter
       transaction.set(counterRef, {
         lastNumber: nextNumber,
-        year: lastYear,
+        year: currentYear,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
       
-      // Generate ID in format: AMCAG-2026-001
-      const memberId = `AMCAG-${currentYear}-${String(nextNumber).padStart(3, '0')}`;
+      // Generate ID in format: AMCAG-2026-0001
+      const memberId = `AMCAG-${currentYear}-${String(nextNumber).padStart(4, '0')}`;
       
       return memberId;
     });
@@ -937,6 +968,8 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
     let paystackVerification = null;
     if (paymentMethod === 'paystack' && paystackReference) {
       try {
+        ensurePaystackKeyConfigured();
+
         const response = await axios.get(
           `https://api.paystack.co/transaction/verify/${paystackReference}`,
           {
@@ -1228,6 +1261,11 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
 
 // ===== PAYSTACK WEBHOOK HANDLER =====
 exports.paystackWebhook = functions.https.onRequest(async (req, res) => {
+  if (!PAYSTACK_SECRET_KEY) {
+    console.error("Paystack webhook called without PAYSTACK_SECRET_KEY configured");
+    return res.status(500).send("Paystack is not configured");
+  }
+
   const hash = crypto.createHmac('sha512', PAYSTACK_SECRET_KEY)
     .update(JSON.stringify(req.body))
     .digest('hex');
@@ -2732,7 +2770,7 @@ exports.submitDonation = functions.https.onCall(async (data, context) => {
     // Create notification for regional officers
     const regionalOfficersSnapshot = await db.collection('users')
       .where('region', '==', userData.region)
-      .where('role', 'in', ['regional_admin', 'super_admin'])
+      .where('role', 'in', ['regional_executive', 'super_admin'])
       .get();
 
     const notificationPromises = [];
@@ -2782,8 +2820,8 @@ exports.confirmDonationReceipt = functions.https.onCall(async (data, context) =>
     }
     const userData = userDoc.data();
 
-    // Check if user has permission (regional_admin or super_admin)
-    if (!['regional_admin', 'super_admin'].includes(userData.role)) {
+    // Check if user has permission
+    if (!['regional_executive', 'national_executive', 'super_admin'].includes(userData.role)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions');
     }
 
@@ -2797,7 +2835,8 @@ exports.confirmDonationReceipt = functions.https.onCall(async (data, context) =>
     const donation = donationDoc.data();
 
     // Check if user is in same region
-    if (userData.role !== 'super_admin' && donation.donorRegion !== userData.region) {
+    if (!['super_admin', 'national_executive'].includes(userData.role) &&
+        donation.donorRegion !== userData.region) {
       throw new functions.https.HttpsError('permission-denied', 'Can only confirm donations in your region');
     }
 
@@ -2892,7 +2931,7 @@ exports.recordDonationDistribution = functions.https.onCall(async (data, context
     const userData = userDoc.data();
 
     // Check permissions
-    if (!['regional_admin', 'super_admin'].includes(userData.role)) {
+    if (!['regional_executive', 'national_executive', 'super_admin'].includes(userData.role)) {
       throw new functions.https.HttpsError('permission-denied', 'Insufficient permissions');
     }
 
@@ -2906,7 +2945,8 @@ exports.recordDonationDistribution = functions.https.onCall(async (data, context
     const donation = donationDoc.data();
 
     // Check region
-    if (userData.role !== 'super_admin' && donation.donorRegion !== userData.region) {
+    if (!['super_admin', 'national_executive'].includes(userData.role) &&
+        donation.donorRegion !== userData.region) {
       throw new functions.https.HttpsError('permission-denied', 'Can only record distributions in your region');
     }
 
@@ -3075,6 +3115,7 @@ exports.scheduleMeeting = functions.https.onCall(async (data, context) => {
   }
 
   const uid = context.auth.uid;
+  const db = admin.firestore();
 
   try {
     const userDoc = await db.collection('users').doc(uid).get();
@@ -3087,12 +3128,14 @@ exports.scheduleMeeting = functions.https.onCall(async (data, context) => {
     // Check permissions
     const { type } = data;
     
-    if (type === 'national' && !userData.roles?.includes('national_executive')) {
+    if (type === 'national' &&
+        !['national_executive', 'super_admin'].includes(userData.role)) {
       throw new functions.https.HttpsError('permission-denied', 'Only national executives can schedule national meetings');
     }
 
-    if (type === 'regional' && !userData.roles?.includes('regional_secretary') && !userData.roles?.includes('national_executive')) {
-      throw new functions.https.HttpsError('permission-denied', 'Only regional secretaries can schedule regional meetings');
+    if (type === 'regional' &&
+        !['regional_executive', 'national_executive', 'super_admin'].includes(userData.role)) {
+      throw new functions.https.HttpsError('permission-denied', 'Only regional executives can schedule regional meetings');
     }
 
     const { title, description, scheduledTime, duration, region, visibility } = data;
@@ -3139,7 +3182,7 @@ exports.scheduleMeeting = functions.https.onCall(async (data, context) => {
     if (type === 'national') {
       // Notify all national executives
       const executivesSnapshot = await db.collection('users')
-        .where('roles', 'array-contains', 'national_executive')
+        .where('role', 'in', ['national_executive', 'super_admin'])
         .get();
       
       const batch = db.batch();
@@ -3175,7 +3218,7 @@ exports.scheduleMeeting = functions.https.onCall(async (data, context) => {
     } else if (type === 'general') {
       // Notify all members
       const allMembersSnapshot = await db.collection('users')
-        .where('membershipStatus', '==', 'active')
+        .where('status', '==', 'active')
         .get();
       
       const batch = db.batch();
@@ -3225,6 +3268,7 @@ exports.scheduleMeeting = functions.https.onCall(async (data, context) => {
  */
 exports.sendMeetingReminders = functions.scheduler.onSchedule('every 1 minutes', async (context) => {
   try {
+    const db = admin.firestore();
     const now = new Date();
     const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60000);
     const sixteenMinutesFromNow = new Date(now.getTime() + 16 * 60000);
@@ -3252,7 +3296,7 @@ exports.sendMeetingReminders = functions.scheduler.onSchedule('every 1 minutes',
       
       if (meeting.type === 'national') {
         attendeesSnapshot = await db.collection('users')
-          .where('roles', 'array-contains', 'national_executive')
+          .where('role', 'in', ['national_executive', 'super_admin'])
           .get();
       } else if (meeting.type === 'regional') {
         attendeesSnapshot = await db.collection('users')
@@ -3260,7 +3304,7 @@ exports.sendMeetingReminders = functions.scheduler.onSchedule('every 1 minutes',
           .get();
       } else {
         attendeesSnapshot = await db.collection('users')
-          .where('membershipStatus', '==', 'active')
+          .where('status', '==', 'active')
           .get();
       }
 

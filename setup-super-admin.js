@@ -15,7 +15,7 @@ try {
   serviceAccount = require('./functions/serviceAccountKey.json');
 } catch (e) {
   try {
-    serviceAccount = require('./firebase-reset/serviceAccountKey.json.json');
+    serviceAccount = require('./firebase-reset/serviceAccountKey.json');
   } catch (e2) {
     console.error('\n❌ ERROR: Service account key not found!');
     console.log('\nPlease download your service account key from:');

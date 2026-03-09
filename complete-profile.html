@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Profile | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, var(--color-primary-95) 0%, var(--color-secondary-95) 100%);
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+    }
+
+    .completion-container {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .completion-card {
+      background: white;
+      border-radius: var(--radius-xl);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+      padding: var(--space-6);
+    }
+
+    .completion-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+    }
+
+    .completion-note {
+      background: var(--color-primary-95);
+      border-left: 4px solid var(--color-primary);
+      border-radius: var(--radius-md);
+      padding: 0.85rem;
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+    }
+
+    @media (max-width: 768px) {
+      .completion-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="completion-container">
+    <div class="completion-card">
+      <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <h1 style="margin: 0; font-size: var(--text-3xl); font-family: var(--font-display);">Complete Your Leader Profile</h1>
+          <p style="margin: 0.35rem 0 0; color: var(--text-secondary);">This is required before continuing to your dashboard.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" type="button" onclick="signOut()">Sign Out</button>
+      </div>
+
+      <div class="completion-note">
+        Your account has been marked as a leader account. Please complete the required details to activate dashboard access.
+      </div>
+
+      <form id="completeProfileForm">
+        <div class="completion-grid">
+          <div class="form-group">
+            <label class="form-label required" for="cp-fullName">Full Name</label>
+            <input id="cp-fullName" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="cp-phone">Phone</label>
+            <input id="cp-phone" class="form-input" required placeholder="+233 24 123 4567">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="cp-region">Region</label>
+            <select id="cp-region" class="form-input" required>
+              <option value="">Select region</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="cp-gender">Gender</label>
+            <select id="cp-gender" class="form-input" required>
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="cp-dob">Date of Birth</label>
+            <input id="cp-dob" type="date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cp-maritalStatus">Marital Status</label>
+            <select id="cp-maritalStatus" class="form-input">
+              <option value="">Select status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Widowed">Widowed</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label class="form-label required" for="cp-address">Address</label>
+            <textarea id="cp-address" class="form-input" rows="3" required placeholder="Residential address"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="cp-nextKinName">Next of Kin Name</label>
+            <input id="cp-nextKinName" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label required" for="cp-nextKinContact">Next of Kin Contact</label>
+            <input id="cp-nextKinContact" class="form-input" required placeholder="+233 24 123 4567">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" id="cp-employed">
+              <span>I am currently employed</span>
+            </label>
+          </div>
+          <div class="form-group" id="cp-workplaceWrap" style="display: none;">
+            <label class="form-label" for="cp-workplace">Current Workplace</label>
+            <input id="cp-workplace" class="form-input" placeholder="Hospital, Pharmacy, Institution">
+          </div>
+        </div>
+
+        <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+          <button class="btn btn-primary" type="submit">Save And Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/ui.js"></script>
+  <script>
+    const ghanaRegions = [
+      'Nationwide',
+      'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Northern',
+      'Upper East', 'Upper West', 'Volta', 'Western', 'Western North',
+      'Bono', 'Bono East', 'Ahafo', 'Savannah', 'North East', 'Oti'
+    ];
+
+    let currentAuthUser = null;
+    let currentProfile = null;
+
+    function signOut() {
+      const auth = window.FirebaseModule.auth();
+      if (!auth) return;
+      auth.signOut().finally(() => {
+        window.location.href = '/membership.html';
+      });
+    }
+
+    function getDashboardForRole(role) {
+      const normalized = String(role || '').toLowerCase();
+      if (normalized === 'super_admin' || normalized === 'national_executive') {
+        return '/national/dashboard.html';
+      }
+      if (normalized === 'regional_executive') {
+        return '/region-dashboard/index.html';
+      }
+      return '/member-dashboard.html';
+    }
+
+    function normalizeDateInput(dateValue) {
+      if (!dateValue) return '';
+      if (typeof dateValue.toDate === 'function') {
+        return dateValue.toDate().toISOString().split('T')[0];
+      }
+      const parsed = new Date(dateValue);
+      if (Number.isNaN(parsed.getTime())) return '';
+      return parsed.toISOString().split('T')[0];
+    }
+
+    function normalizeRegionValue(regionValue) {
+      const region = String(regionValue || '').trim();
+      if (!region) return '';
+      return region;
+    }
+
+    function loadRegionOptions(selectedRegion) {
+      const select = document.getElementById('cp-region');
+      if (!select) return;
+
+      const regionSet = new Set(ghanaRegions);
+      if (selectedRegion) {
+        regionSet.add(selectedRegion);
+      }
+
+      const regions = Array.from(regionSet).sort((a, b) => a.localeCompare(b));
+      select.innerHTML = `<option value="">Select region</option>${regions.map((region) => `<option value="${region}">${region}</option>`).join('')}`;
+
+      if (selectedRegion) {
+        select.value = selectedRegion;
+      }
+    }
+
+    function syncWorkplaceVisibility() {
+      const employed = document.getElementById('cp-employed')?.checked === true;
+      const workplaceWrap = document.getElementById('cp-workplaceWrap');
+      if (!workplaceWrap) return;
+      workplaceWrap.style.display = employed ? '' : 'none';
+      if (!employed) {
+        const workplaceInput = document.getElementById('cp-workplace');
+        if (workplaceInput) workplaceInput.value = '';
+      }
+    }
+
+    async function loadCurrentProfile(uid) {
+      const db = window.FirebaseModule.db();
+      if (!db) {
+        UIModule.showAlert('Database not initialized. Please refresh.', 'error');
+        return;
+      }
+
+      const userDoc = await db.collection('users').doc(uid).get();
+      if (!userDoc.exists) {
+        UIModule.showAlert('User profile not found. Please contact support.', 'error');
+        signOut();
+        return;
+      }
+
+      currentProfile = userDoc.data() || {};
+
+      if (currentProfile.mustResetPassword === true) {
+        window.location.href = '/change-password.html';
+        return;
+      }
+
+      if (currentProfile.mustCompleteProfile !== true) {
+        window.location.href = getDashboardForRole(currentProfile.role);
+        return;
+      }
+
+      const profileRegion = normalizeRegionValue(
+        currentProfile.leadershipRegion || currentProfile.region || ''
+      );
+
+      loadRegionOptions(profileRegion);
+
+      document.getElementById('cp-fullName').value = currentProfile.fullName || '';
+      document.getElementById('cp-phone').value = currentProfile.phone || '';
+      document.getElementById('cp-gender').value = currentProfile.gender || '';
+      document.getElementById('cp-dob').value = normalizeDateInput(currentProfile.dateOfBirth);
+      document.getElementById('cp-maritalStatus').value = currentProfile.maritalStatus || '';
+      document.getElementById('cp-address').value = currentProfile.address || '';
+      document.getElementById('cp-nextKinName').value = currentProfile.nextOfKin?.name || '';
+      document.getElementById('cp-nextKinContact').value = currentProfile.nextOfKin?.contact || '';
+
+      const employmentStatus = String(currentProfile.employmentStatus || '').toLowerCase();
+      const employed = employmentStatus === 'employed';
+      document.getElementById('cp-employed').checked = employed;
+      document.getElementById('cp-workplace').value = employed ? (currentProfile.currentWorkplace || '') : '';
+      syncWorkplaceVisibility();
+
+      if (profileRegion) {
+        document.getElementById('cp-region').value = profileRegion;
+      }
+
+      const role = String(currentProfile.role || '').toLowerCase();
+      if (role === 'regional_executive' && profileRegion) {
+        const regionSelect = document.getElementById('cp-region');
+        regionSelect.disabled = true;
+      }
+    }
+
+    async function updateRegionalExecutiveRecord(updates) {
+      const role = String(currentProfile?.role || '').toLowerCase();
+      const leadershipId = String(currentProfile?.leadershipId || '').trim();
+      const region = updates.region;
+
+      if (role !== 'regional_executive' || !leadershipId || !region) {
+        return;
+      }
+
+      const db = window.FirebaseModule.db();
+      const regionExecRef = db
+        .collection('regions')
+        .doc(region)
+        .collection('executives')
+        .doc(leadershipId);
+
+      await regionExecRef.set({
+        name: updates.fullName,
+        email: currentAuthUser.email,
+        phone: updates.phone,
+        region,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+
+    document.getElementById('cp-employed').addEventListener('change', syncWorkplaceVisibility);
+
+    document.getElementById('completeProfileForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!currentAuthUser || !currentProfile) {
+        UIModule.showAlert('Session expired. Please log in again.', 'error');
+        signOut();
+        return;
+      }
+
+      const fullName = document.getElementById('cp-fullName').value.trim();
+      const phone = document.getElementById('cp-phone').value.trim();
+      const region = document.getElementById('cp-region').value.trim();
+      const gender = document.getElementById('cp-gender').value;
+      const dateOfBirth = document.getElementById('cp-dob').value;
+      const maritalStatus = document.getElementById('cp-maritalStatus').value;
+      const address = document.getElementById('cp-address').value.trim();
+      const nextOfKinName = document.getElementById('cp-nextKinName').value.trim();
+      const nextOfKinContact = document.getElementById('cp-nextKinContact').value.trim();
+      const employed = document.getElementById('cp-employed').checked;
+      const workplace = document.getElementById('cp-workplace').value.trim();
+
+      const nameParts = fullName.split(' ').filter(Boolean);
+      if (nameParts.length < 2) {
+        UIModule.showAlert('Please enter your full name.', 'error');
+        return;
+      }
+
+      const phoneRegex = /^\+233\s?\d{2}\s?\d{3}\s?\d{4}$/;
+      if (!phoneRegex.test(phone)) {
+        UIModule.showAlert('Use Ghana phone format: +233 24 123 4567', 'error');
+        return;
+      }
+
+      if (!phoneRegex.test(nextOfKinContact)) {
+        UIModule.showAlert('Use valid Next of Kin contact format: +233 24 123 4567', 'error');
+        return;
+      }
+
+      if (!region) {
+        UIModule.showAlert('Please select your region.', 'error');
+        return;
+      }
+
+      if (employed && !workplace) {
+        UIModule.showAlert('Please provide your current workplace or uncheck employment.', 'error');
+        return;
+      }
+
+      try {
+        UIModule.showLoader('Saving profile...');
+        const db = window.FirebaseModule.db();
+        const updates = {
+          fullName,
+          phone,
+          region,
+          gender,
+          dateOfBirth,
+          maritalStatus,
+          address,
+          employmentStatus: employed ? 'Employed' : 'Not Employed',
+          currentWorkplace: employed ? workplace : 'N/A',
+          nextOfKin: {
+            name: nextOfKinName,
+            contact: nextOfKinContact
+          },
+          mustCompleteProfile: false,
+          profileCompletionStatus: 'completed',
+          profileCompletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await db.collection('users').doc(currentAuthUser.uid).set(updates, { merge: true });
+
+        try {
+          await db.collection('members').doc(currentAuthUser.uid).set({
+            fullName,
+            phone,
+            region,
+            address,
+            employmentStatus: employed ? 'Employed' : 'Not Employed',
+            currentWorkplace: employed ? workplace : 'N/A',
+            nextOfKin: {
+              name: nextOfKinName,
+              contact: nextOfKinContact
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        } catch (syncError) {
+          console.warn('Members profile sync skipped:', syncError);
+        }
+
+        try {
+          await updateRegionalExecutiveRecord(updates);
+        } catch (execSyncError) {
+          console.warn('Regional executive sync skipped:', execSyncError);
+        }
+
+        UIModule.hideLoader();
+        UIModule.showAlert('Profile completed successfully. Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = getDashboardForRole(currentProfile.role);
+        }, 900);
+      } catch (error) {
+        UIModule.hideLoader();
+        console.error('Profile completion error:', error);
+        UIModule.showAlert('Failed to save profile: ' + (error.message || 'Unknown error'), 'error');
+      }
+    });
+
+    setTimeout(() => {
+      const auth = window.FirebaseModule.auth();
+      if (!auth) {
+        UIModule.showAlert('Authentication is not initialized. Refresh and try again.', 'error');
+        return;
+      }
+
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          window.location.href = '/membership.html';
+          return;
+        }
+
+        currentAuthUser = user;
+        try {
+          await loadCurrentProfile(user.uid);
+        } catch (error) {
+          console.error('Failed to load leader profile completion state:', error);
+          UIModule.showAlert('Unable to load profile data. Please refresh.', 'error');
+        }
+      });
+    }, 350);
+  </script>
+</body>
+</html>
