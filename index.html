@@ -10,7 +10,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link rel="stylesheet" href="/css/animations.css">
   <link rel="stylesheet" href="/css/dark-mode.css">
   
@@ -68,6 +68,27 @@
       height: 100%;
       overflow: hidden;
     }
+
+    .hero-image-overlay {
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(135deg, rgba(2, 27, 121, 0.86), rgba(5, 117, 230, 0.62)), url('/images/WhatsApp Image 2026-03-04 at 1.34.32 PM.jpeg');
+      background-size: cover;
+      background-position: center;
+      opacity: 1;
+      transform: scale(1.04);
+      animation: heroImageMotion 22s ease-in-out infinite alternate;
+      will-change: transform, background-position;
+    }
+
+    .hero-background::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 35%, rgba(255,255,255,0.13), transparent 34%),
+                  linear-gradient(180deg, rgba(0,0,0,0.10), rgba(0,0,0,0.34));
+      pointer-events: none;
+    }
     
     .hero-circles {
       position: absolute;
@@ -110,6 +131,81 @@
       0%, 100% { transform: translate(0, 0) rotate(0deg); }
       33% { transform: translate(30px, -30px) rotate(120deg); }
       66% { transform: translate(-20px, 20px) rotate(240deg); }
+    }
+
+    @keyframes heroImageMotion {
+      0% {
+        transform: scale(1.04) translate3d(0, 0, 0);
+        background-position: center center;
+      }
+      100% {
+        transform: scale(1.1) translate3d(-1.25%, -1%, 0);
+        background-position: 52% 45%;
+      }
+    }
+
+    .hero-badge-motion {
+      animation: heroRiseIn 0.65s ease-out both;
+    }
+
+    .hero-title-motion {
+      animation: heroRiseIn 0.75s ease-out 0.1s both;
+    }
+
+    .hero-copy-motion {
+      animation: heroRiseIn 0.75s ease-out 0.2s both;
+    }
+
+    .hero-actions-motion {
+      animation: heroRiseIn 0.75s ease-out 0.3s both;
+    }
+
+    .hero-trust-motion {
+      animation: heroFadeIn 0.8s ease-out 0.5s both;
+    }
+
+    @keyframes heroRiseIn {
+      from {
+        opacity: 0;
+        transform: translateY(28px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes heroFadeIn {
+      from { opacity: 0; }
+      to { opacity: 0.9; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-image-overlay,
+      .hero-circle,
+      .hero-badge-motion,
+      .hero-title-motion,
+      .hero-copy-motion,
+      .hero-actions-motion,
+      .hero-trust-motion {
+        animation: none !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .modern-hero {
+        min-height: 86vh;
+        padding-top: 4rem;
+      }
+
+      .hero-image-overlay {
+        background-position: center top;
+        transform: scale(1.02);
+      }
+
+      .hero-circle {
+        opacity: 0.55;
+      }
     }
     
     /* Stat Counter Animation */
@@ -339,7 +435,7 @@
         <span style="font-weight: 700;">AMCAG</span>
       </a>
       
-      <button class="navbar-toggle" aria-label="Toggle navigation">
+      <button class="navbar-toggle" aria-label="Toggle navigation" onclick="return window.AMCAGToggleNavbar ? window.AMCAGToggleNavbar(this,event) : (function(btn,e){if(e){e.preventDefault();e.stopPropagation();}var nav=btn.closest('.navbar');var menu=nav&&nav.querySelector('.navbar-menu');if(!menu)return false;var open=!menu.classList.contains('active');menu.classList.toggle('active',open);btn.classList.toggle('active',open);btn.setAttribute('aria-expanded',String(open));if(nav)nav.classList.toggle('menu-open',open);document.body.classList.toggle('navbar-menu-open',open);document.body.style.overflow=open?'hidden':'';return false;})(this,event)">
         <span></span>
         <span></span>
         <span></span>
@@ -357,7 +453,7 @@
         <li><button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
           <span class="theme-icon">🌙</span>
         </button></li>
-        <li><a href="/membership.html" class="navbar-cta btn-modern" style="position: relative;">Member Portal</a></li>
+        <li><a id="nav-portal-link" href="/membership.html" class="navbar-cta btn-modern" style="position: relative;">Member Portal</a></li>
       </ul>
     </div>
   </nav>
@@ -366,6 +462,7 @@
   <!-- ===== MODERN HERO START ===== -->
   <section class="modern-hero">
     <div class="hero-background">
+      <div class="hero-image-overlay" aria-hidden="true"></div>
       <div class="hero-circles">
         <div class="hero-circle hero-circle-1"></div>
         <div class="hero-circle hero-circle-2"></div>
@@ -377,7 +474,7 @@
       <div style="max-width: 1000px; margin: 0 auto; text-align: center; padding: 4rem 0;">
         
         <!-- Trust Badge -->
-        <div class="reveal" style="display: inline-block; padding: 0.75rem 1.5rem; background: rgba(255,255,255,0.15); border-radius: 50px; margin-bottom: 2rem; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2);">
+        <div class="reveal hero-badge-motion" style="display: inline-block; padding: 0.75rem 1.5rem; background: rgba(255,255,255,0.15); border-radius: 50px; margin-bottom: 2rem; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2);">
           <span style="color: white; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 0.5rem;">
             <span>🇬🇭</span>
             <span>Ghana's Premier Healthcare Association</span>
@@ -386,19 +483,19 @@
         </div>
         
         <!-- Main Headline -->
-        <h1 class="reveal reveal-delay-1" style="font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 900; margin-bottom: 1.5rem; line-height: 1.1; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.3); letter-spacing: -0.02em;">
+        <h1 class="reveal reveal-delay-1 hero-title-motion" style="font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 900; margin-bottom: 1.5rem; line-height: 1.1; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.3); letter-spacing: -0.02em;">
           Empowering Healthcare
           <br>
           <span style="background: linear-gradient(90deg, #FFD700, #FFA500); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Excellence</span> Nationwide
         </h1>
         
         <!-- Subheadline -->
-        <p class="reveal reveal-delay-2" style="font-size: clamp(1.125rem, 2.5vw, 1.5rem); margin-bottom: 3rem; color: rgba(255,255,255,0.95); max-width: 750px; margin-left: auto; margin-right: auto; line-height: 1.7; font-weight: 400;">
+        <p class="reveal reveal-delay-2 hero-copy-motion" style="font-size: clamp(1.125rem, 2.5vw, 1.5rem); margin-bottom: 3rem; color: rgba(255,255,255,0.95); max-width: 750px; margin-left: auto; margin-right: auto; line-height: 1.7; font-weight: 400;">
           Join 15,000+ medicine counter assistants advancing pharmaceutical care standards across Ghana through professional development, advocacy, and community impact.
         </p>
         
         <!-- CTA Buttons -->
-        <div class="reveal reveal-delay-3" style="display: flex; gap: 1.25rem; justify-content: center; flex-wrap: wrap; margin-bottom: 4rem;">
+        <div class="reveal reveal-delay-3 hero-actions-motion" style="display: flex; gap: 1.25rem; justify-content: center; flex-wrap: wrap; margin-bottom: 4rem;">
           <a href="/membership.html" class="btn btn-modern btn-lg btn-glow" style="background: white; color: #0575E6; padding: 1.25rem 3rem; font-weight: 700; border-radius: 50px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; font-size: 1.125rem; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
             <span>✨</span>
             <span>Become a Member</span>
@@ -411,7 +508,7 @@
         </div>
         
         <!-- Trust Indicators -->
-        <div class="reveal reveal-delay-4" style="display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap; color: white; opacity: 0.9;">
+        <div class="reveal reveal-delay-4 hero-trust-motion" style="display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap; color: white; opacity: 0.9;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span style="font-size: 1.5rem;">✓</span>
             <span style="font-weight: 600;">15,000+ Active Members</span>
@@ -436,6 +533,47 @@
     </svg>
   </div>
   <!-- ===== MODERN HERO END ===== -->
+
+  <!-- ===== FEATURED AGM START ===== -->
+  <section class="agm-feature-section" id="upcoming-agm">
+    <div class="container">
+      <div class="agm-feature-card">
+        <div class="agm-feature-main">
+          <span class="agm-event-badge">Upcoming Event</span>
+          <p class="section-tag" style="margin-top: var(--space-3);">Upcoming National Event</p>
+          <h2 class="agm-feature-title">AMCAG Annual General Meeting 2026</h2>
+          <p class="agm-feature-copy">
+            Strengthening Professional Excellence Nationwide through sustainable growth, improved welfare, and stronger representation for MCAs.
+          </p>
+          <div class="agm-meta-grid">
+            <div class="agm-meta-item">
+              <span class="agm-meta-label">Date</span>
+              <span class="agm-meta-value">10th - 11th July, 2026</span>
+            </div>
+            <div class="agm-meta-item">
+              <span class="agm-meta-label">Time</span>
+              <span class="agm-meta-value">9:00 AM daily</span>
+            </div>
+            <div class="agm-meta-item">
+              <span class="agm-meta-label">Venue</span>
+              <span class="agm-meta-value">PCG Ascension Presbyterian Church Hall, Koforidua</span>
+            </div>
+          </div>
+          <div class="agm-feature-actions">
+            <a href="/events.html#featured-agm" class="btn btn-outline">View Details</a>
+            <a href="/member-dashboard/agm-registration.html" class="btn btn-primary">Register / RSVP</a>
+          </div>
+        </div>
+        <div class="agm-feature-side">
+          <span style="font-size: var(--text-sm); opacity: 0.9;">Registration</span>
+          <strong style="font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1;">GHS 200.00</strong>
+          <span>Hubtel shortcode: *713*4380#</span>
+          <span>Members are encouraged to register early for planning and confirmations.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ===== FEATURED AGM END ===== -->
 
   <!-- ===== ANIMATED STATISTICS START ===== -->
   <section class="section" style="background: white; padding: 5rem 0;">
@@ -652,10 +790,39 @@
   </section>
   <!-- ===== LATEST NEWS END ===== -->
 
+  <!-- ===== HOMEPAGE GALLERY START ===== -->
+  <section class="section" style="background: #f8f9fa; padding: 5rem 0;">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">Gallery</span>
+        <h2 class="section-title">AMCAG Moments</h2>
+        <p class="section-description">
+          A glimpse of our members, programs, and national professional community
+        </p>
+      </div>
+
+      <div class="grid grid-4" style="gap: 1.25rem; margin-top: 3rem;">
+        <a href="/gallery.html" class="content-card reveal reveal-delay-1" style="display: block; overflow: hidden;">
+          <img src="/images/WhatsApp Image 2026-03-04 at 1.34.53 PM.jpeg" alt="AMCAG gallery photo" class="content-card-image" loading="lazy">
+        </a>
+        <a href="/gallery.html" class="content-card reveal reveal-delay-2" style="display: block; overflow: hidden;">
+          <img src="/images/WhatsApp Image 2026-03-04 at 1.34.54 PM.jpeg" alt="AMCAG members at an event" class="content-card-image" loading="lazy">
+        </a>
+        <a href="/gallery.html" class="content-card reveal reveal-delay-3" style="display: block; overflow: hidden;">
+          <img src="/images/WhatsApp Image 2026-03-04 at 1.34.56 PM.jpeg" alt="AMCAG professional gathering" class="content-card-image" loading="lazy">
+        </a>
+        <a href="/gallery.html" class="content-card reveal reveal-delay-4" style="display: block; overflow: hidden;">
+          <img src="/images/WhatsApp Image 2026-03-04 at 1.34.58 PM.jpeg" alt="AMCAG event photo" class="content-card-image" loading="lazy">
+        </a>
+      </div>
+    </div>
+  </section>
+  <!-- ===== HOMEPAGE GALLERY END ===== -->
+
   <!-- Wave Separator -->
   <div class="wave-separator" style="transform: rotate(180deg);">
     <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-      <path d="M0,0 C150,100 350,0 600,50 C850,100 1050,0 1200,50 L1200,120 L0,120 Z" fill="white"></path>
+      <path d="M0,0 C150,100 350,0 600,50 C850,100 1050,0 1200,50 L1200,120 L0,120 Z" fill="#f8f9fa"></path>
     </svg>
   </div>
 
@@ -860,17 +1027,43 @@
       
       <div style="padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; opacity: 0.7;">
         <p>&copy; 2026 Association of Medicine Counter Assistants of Ghana (AMCAG). All rights reserved.</p>
+        <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p>
       </div>
     </div>
   </footer>
   <!-- ===== FOOTER END ===== -->
 
+  <div class="agm-modal" id="agmAnnouncementModal" aria-hidden="true">
+    <div class="agm-modal-card" role="dialog" aria-modal="true" aria-labelledby="agmModalTitle">
+      <button class="agm-modal-close" type="button" onclick="closeAgmModal()" aria-label="Close AGM announcement">&times;</button>
+      <span class="agm-event-badge">Upcoming Event</span>
+      <h2 id="agmModalTitle" class="agm-feature-title" style="font-size: clamp(2rem, 6vw, 3rem);">AMCAG Annual General Meeting 2026</h2>
+      <p class="agm-feature-copy">
+        Registration is open for the upcoming national AGM in Koforidua. Join members nationwide for governance updates, welfare discussions, and professional growth.
+      </p>
+      <div class="agm-meta-grid" style="grid-template-columns: 1fr;">
+        <div class="agm-meta-item">
+          <span class="agm-meta-label">Date, time and venue</span>
+          <span class="agm-meta-value">10th - 11th July, 2026 at 9:00 AM, PCG Ascension Presbyterian Church Hall, Koforidua</span>
+        </div>
+      </div>
+      <div class="agm-modal-actions">
+        <a href="/events.html#featured-agm" class="btn btn-outline">View AGM Details</a>
+        <a href="/member-dashboard/agm-registration.html" class="btn btn-primary">Register / RSVP</a>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   
   <!-- App Modules -->
   <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260601-navfix1"></script>
+  <script src="/js/router.js?v=20260601-navfix1"></script>
+  <script src="/js/ui.js?v=20260601-navfix1"></script>
   
   <!-- Modern Homepage Scripts -->
   <script>
@@ -956,6 +1149,68 @@
     }, 5000);
     
     // ===== LOAD NEWS FROM FIRESTORE =====
+    function getAgmNewsArticle() {
+      return {
+        id: 'agm-2026-news',
+        title: 'AGM 2026 Registration Now Open',
+        category: 'AGM 2026',
+        excerpt: 'AMCAG members can now register for the 2026 Annual General Meeting scheduled for July 10-11, 2026.',
+        image: '/images/WhatsApp Image 2026-03-04 at 1.34.32 PM.jpeg',
+        createdAt: new Date('2026-05-30T09:00:00'),
+        link: '/member-dashboard/agm-registration.html'
+      };
+    }
+
+    function formatNewsDate(createdAt) {
+      const date = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
+      if (Number.isNaN(date.getTime())) return 'Recent';
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function renderNewsCards(articles) {
+      return articles.map((article, index) => {
+        const delay = index + 1;
+        const link = article.link || '/news.html';
+        const title = article.title || 'AMCAG Update';
+        const excerpt = article.excerpt || (article.content ? article.content.substring(0, 120) + '...' : '');
+
+        return `
+          <div class="content-card reveal reveal-delay-${delay}">
+            <img src="${article.image || '/images/news-placeholder.jpg'}" alt="${title}" class="content-card-image">
+            <div class="content-card-body">
+              <span class="content-card-category" style="background: rgba(5, 117, 230, 0.1); color: #0575E6;">
+                ${article.category || 'News'}
+              </span>
+              <h3 class="content-card-title">${title}</h3>
+              <p class="content-card-excerpt">${excerpt}</p>
+              <div class="content-card-footer">
+                <span>${formatNewsDate(article.createdAt)}</span>
+                <a href="${link}" style="color: #0575E6; text-decoration: none; font-weight: 600;">Read More</a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function closeAgmModal() {
+      const modal = document.getElementById('agmAnnouncementModal');
+      if (!modal) return;
+      modal.classList.remove('is-visible');
+      modal.setAttribute('aria-hidden', 'true');
+      sessionStorage.setItem('amcagAgmAnnouncementClosed', 'true');
+    }
+
+    function showAgmModalOnce() {
+      if (sessionStorage.getItem('amcagAgmAnnouncementClosed') === 'true') return;
+      const modal = document.getElementById('agmAnnouncementModal');
+      if (!modal) return;
+      window.setTimeout(() => {
+        modal.classList.add('is-visible');
+        modal.setAttribute('aria-hidden', 'false');
+      }, 800);
+    }
+
     async function loadLatestNews() {
       const newsContainer = document.getElementById('newsContainer');
       
@@ -979,7 +1234,8 @@
           .get();
         
         if (newsSnapshot.empty) {
-          newsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">No news articles available at the moment.</p>';
+          newsContainer.innerHTML = renderNewsCards([getAgmNewsArticle()]);
+          revealOnScroll();
           return;
         }
         
@@ -987,21 +1243,24 @@
         const publishedNews = newsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter(article => article.published === true)
+          .filter(article => article.id !== 'agm-2026-news' && !String(article.title || '').toLowerCase().includes('agm 2026'))
           .sort((a, b) => {
             const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
             const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
             return dateB - dateA;
           })
-          .slice(0, 3);
+          .slice(0, 2);
         
         if (publishedNews.length === 0) {
-          newsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">No news articles available at the moment.</p>';
+          newsContainer.innerHTML = renderNewsCards([getAgmNewsArticle()]);
+          revealOnScroll();
           return;
         }
         
-        newsContainer.innerHTML = publishedNews.map((article, index) => {
-          const date = article.createdAt ? new Date(article.createdAt.toDate()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent';
+        newsContainer.innerHTML = [getAgmNewsArticle(), ...publishedNews].slice(0, 3).map((article, index) => {
+          const date = formatNewsDate(article.createdAt);
           const delay = index + 1;
+          const link = article.link || '/news.html';
           
           return `
             <div class="content-card reveal reveal-delay-${delay}">
@@ -1024,10 +1283,58 @@
         revealOnScroll();
       } catch (error) {
         console.error('Error loading news:', error);
-        newsContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">Unable to load news. Please check your connection.</p>`;
+        newsContainer.innerHTML = renderNewsCards([getAgmNewsArticle()]);
+        revealOnScroll();
       }
     }
     
+    function getCurrentAgmEvent() {
+      return {
+        id: 'agm-2026',
+        title: 'AMCAG AGM 2026',
+        type: 'Current Event',
+        description: 'Empowering MCAs for Sustainable Growth and Improved Welfare - The Role of AMCAG',
+        date: new Date('2026-07-10T09:00:00'),
+        image: '/images/WhatsApp Image 2026-03-04 at 1.34.32 PM.jpeg',
+        registrationUrl: '/member-dashboard/agm-registration.html'
+      };
+    }
+
+    function renderHomeEventCards(events) {
+      const currentAgmId = getCurrentAgmEvent().id;
+      const normalizedEvents = [
+        getCurrentAgmEvent(),
+        ...events.filter((event) => event.id !== currentAgmId && event.eventId !== currentAgmId)
+      ].slice(0, 2);
+
+      return normalizedEvents.map((event, index) => {
+        const eventDateValue = event.date || event.eventDate || event.startsAt;
+        const eventDate = eventDateValue?.toDate ? eventDateValue.toDate() : new Date(eventDateValue);
+        const formattedDate = Number.isNaN(eventDate.getTime())
+          ? '10th - 11th July, 2026'
+          : eventDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const delay = index + 1;
+        const link = event.registrationUrl || '/events.html';
+
+        return `
+          <div class="content-card reveal reveal-delay-${delay}">
+            <img src="${event.image || event.imageUrl || '/images/logo.jpg'}" alt="${event.title}" class="content-card-image">
+            <div class="content-card-body">
+              <span class="content-card-category" style="background: rgba(102, 126, 234, 0.1); color: #667eea;">
+                ${event.type || event.eventType || 'Event'}
+              </span>
+              <h3 class="content-card-title">${event.title}</h3>
+              <p class="content-card-excerpt">${event.description || ''}</p>
+              <div class="content-card-footer">
+                <span>Jul 10-11, 2026</span>
+                <a href="${link}" style="color: #667eea; text-decoration: none; font-weight: 600;">${event.id === 'agm-2026' ? 'Register' : 'Learn More'}</a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     // ===== LOAD EVENTS FROM FIRESTORE =====
     async function loadUpcomingEvents() {
       const eventsContainer = document.getElementById('eventsContainer');
@@ -1037,6 +1344,8 @@
         console.error('Events container not found');
         return;
       }
+
+      eventsContainer.innerHTML = renderHomeEventCards([]);
       
       try {
         // Check if Firebase is available
@@ -1053,7 +1362,7 @@
           .get();
         
         if (eventsSnapshot.empty) {
-          eventsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">No upcoming events scheduled at the moment.</p>';
+          eventsContainer.innerHTML = renderHomeEventCards([]);
           return;
         }
         
@@ -1061,22 +1370,29 @@
         const upcomingEvents = eventsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter(event => {
-            if (!event.date) return false;
-            const eventDate = event.date.toDate ? event.date.toDate() : new Date(event.date);
+            const eventDateValue = event.date || event.eventDate || event.startsAt;
+            if (!eventDateValue) return false;
+            const eventDate = eventDateValue.toDate ? eventDateValue.toDate() : new Date(eventDateValue);
             return eventDate >= now;
           })
           .sort((a, b) => {
-            const dateA = a.date.toDate ? a.date.toDate() : new Date(a.date);
-            const dateB = b.date.toDate ? b.date.toDate() : new Date(b.date);
+            const dateAValue = a.date || a.eventDate || a.startsAt;
+            const dateBValue = b.date || b.eventDate || b.startsAt;
+            const dateA = dateAValue.toDate ? dateAValue.toDate() : new Date(dateAValue);
+            const dateB = dateBValue.toDate ? dateBValue.toDate() : new Date(dateBValue);
             return dateA - dateB;
           })
           .slice(0, 2);
         
         if (upcomingEvents.length === 0) {
-          eventsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">No upcoming events scheduled at the moment.</p>';
+          eventsContainer.innerHTML = renderHomeEventCards([]);
           return;
         }
         
+        eventsContainer.innerHTML = renderHomeEventCards(upcomingEvents);
+        revealOnScroll();
+        return;
+
         eventsContainer.innerHTML = upcomingEvents.map((event, index) => {
           const eventDate = event.date.toDate ? event.date.toDate() : new Date(event.date);
           const formattedDate = eventDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -1103,28 +1419,26 @@
         revealOnScroll();
       } catch (error) {
         console.error('Error loading events:', error);
-        eventsContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--color-neutral-50); padding: 3rem;">Unable to load events. Please check your connection.</p>`;
+        eventsContainer.innerHTML = renderHomeEventCards([]);
       }
     }
     
-    // ===== MOBILE MENU TOGGLE =====
+    // ===== MOBILE MENU CLOSE FALLBACK =====
     document.addEventListener('DOMContentLoaded', () => {
       const navbarToggle = document.querySelector('.navbar-toggle');
       const navbarMenu = document.querySelector('.navbar-menu');
       
       if (navbarToggle && navbarMenu) {
-        navbarToggle.addEventListener('click', () => {
-          navbarMenu.classList.toggle('active');
-          navbarToggle.classList.toggle('active');
-        });
-        
         document.addEventListener('click', (e) => {
           if (!e.target.closest('.navbar-container')) {
             navbarMenu.classList.remove('active');
             navbarToggle.classList.remove('active');
+            navbarToggle.setAttribute('aria-expanded', 'false');
           }
         });
       }
+
+      showAgmModalOnce();
       
       // Load dynamic content after Firebase is initialized
       const waitForFirebase = setInterval(() => {
@@ -1167,6 +1481,6 @@
   </script>
 
   <!-- Mobile Menu Handler -->
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

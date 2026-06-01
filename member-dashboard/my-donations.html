@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Donations | AMCAG Member Portal</title>
   <link rel="stylesheet" href="/css/material-you.css">
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
 </head>
 <body class="dashboard-layout">
   <nav class="navbar">
@@ -102,9 +102,8 @@
         <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
           <select id="statusFilter" class="form-input" style="width: auto;">
             <option value="">All Status</option>
-            <option value="pledged">Pledged</option>
-            <option value="received">Received</option>
-            <option value="allocated">Allocated</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
             <option value="distributed">Distributed</option>
           </select>
           <select id="typeFilter" class="form-input" style="width: auto;">
@@ -157,7 +156,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/suspension-check.js"></script>
 
@@ -178,20 +177,73 @@
       AuthModule.signOut();
     }
 
+    function toDateValue(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function getDonationDate(donation) {
+      return toDateValue(donation.donatedAt) ||
+        toDateValue(donation.createdAt) ||
+        toDateValue(donation.updatedAt) ||
+        null;
+    }
+
+    function isCountedContribution(donation) {
+      return ['confirmed', 'distributed', 'received'].includes(donation.status);
+    }
+
+    function getDonationId(donation) {
+      return donation.donationId || donation.id;
+    }
+
+    function getCampaignName(donation) {
+      return donation.campaignName || donation.campaignTitle || 'General Fund';
+    }
+
+    function getStatusColor(status) {
+      return {
+        pending: 'warning',
+        pledged: 'warning',
+        confirmed: 'success',
+        received: 'success',
+        allocated: 'info',
+        distributed: 'primary'
+      }[status] || 'secondary';
+    }
+
     async function loadDonations() {
       try {
         UIModule.showLoader('Loading donations...');
         
         const db = firebase.firestore();
-        const snapshot = await db.collection('donations')
-          .where('donorUid', '==', currentUser.uid)
-          .orderBy('donatedAt', 'desc')
+        const primarySnapshot = await db.collection('donations')
+          .where('donorId', '==', currentUser.uid)
           .get();
 
-        allDonations = snapshot.docs.map(doc => ({
+        let legacySnapshot = { docs: [] };
+        try {
+          legacySnapshot = await db.collection('donations')
+            .where('donorUid', '==', currentUser.uid)
+            .get();
+        } catch (legacyError) {
+          console.warn('Legacy donorUid donation query failed:', legacyError);
+        }
+
+        const donationDocs = new Map();
+        primarySnapshot.docs.forEach(doc => donationDocs.set(doc.id, doc));
+        legacySnapshot.docs.forEach(doc => donationDocs.set(doc.id, doc));
+
+        allDonations = Array.from(donationDocs.values()).map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })).sort((a, b) => {
+          const ad = getDonationDate(a)?.getTime() || 0;
+          const bd = getDonationDate(b)?.getTime() || 0;
+          return bd - ad;
+        });
 
         filteredDonations = [...allDonations];
         
@@ -209,12 +261,13 @@
 
     function updateStatistics() {
       const totalMonetary = allDonations
-        .filter(d => d.type === 'monetary' && d.status === 'received')
+        .filter(d => d.type === 'monetary' && isCountedContribution(d))
         .reduce((sum, d) => sum + (d.amount || 0), 0);
 
       const currentYearDonations = allDonations.filter(d => {
-        const year = new Date(d.donatedAt.toDate()).getFullYear();
-        return year === new Date().getFullYear() && d.status === 'received';
+        const donatedAt = getDonationDate(d);
+        const year = donatedAt ? donatedAt.getFullYear() : 0;
+        return year === new Date().getFullYear() && isCountedContribution(d);
       }).reduce((sum, d) => sum + (d.type === 'monetary' ? (d.amount || 0) : 0), 0);
 
       document.getElementById('totalContributed').textContent = `GHS ${totalMonetary.toLocaleString()}`;
@@ -224,7 +277,7 @@
 
     function updateDonorTier() {
       const totalMonetary = allDonations
-        .filter(d => d.type === 'monetary' && d.status === 'received')
+        .filter(d => d.type === 'monetary' && isCountedContribution(d))
         .reduce((sum, d) => sum + (d.amount || 0), 0);
 
       let currentTier = 'bronze';
@@ -276,28 +329,23 @@
       }
 
       container.innerHTML = filteredDonations.map(donation => {
-        const date = new Date(donation.donatedAt.toDate()).toLocaleDateString();
-        const statusColor = {
-          pledged: 'warning',
-          received: 'success',
-          allocated: 'info',
-          distributed: 'primary'
-        }[donation.status] || 'secondary';
+        const date = (getDonationDate(donation) || new Date()).toLocaleDateString();
+        const statusColor = getStatusColor(donation.status);
 
         return `
-          <div class="card mb-3" style="cursor: pointer;" onclick='viewDonationDetails(${JSON.stringify(donation).replace(/'/g, "\\'")}'>
+          <div class="card mb-3" style="cursor: pointer;" data-donation-id="${donation.id}">
             <div style="display: flex; justify-content: space-between; align-items: start;">
               <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
                   <span style="font-size: 1.5rem;">${donation.type === 'monetary' ? '💰' : '📦'}</span>
                   <div>
-                    <h4 style="margin: 0;">${donation.type === 'monetary' ? `GHS ${donation.amount.toLocaleString()}` : `${donation.items.length} items`}</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">${donation.donationId}</p>
+                    <h4 style="margin: 0;">${donation.type === 'monetary' ? `GHS ${(donation.amount || 0).toLocaleString()}` : `${(donation.items || []).length} items`}</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">${getDonationId(donation)}</p>
                   </div>
                 </div>
                 
                 <div style="margin-top: 1rem;">
-                  ${donation.campaign ? `<div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">📋 ${donation.campaignTitle || 'Campaign'}</div>` : ''}
+                  ${donation.campaignId || donation.campaign ? `<div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">📋 ${getCampaignName(donation)}</div>` : ''}
                   ${donation.purpose ? `<div style="font-size: 0.875rem; color: var(--text-secondary);">💬 ${donation.purpose}</div>` : ''}
                 </div>
               </div>
@@ -318,7 +366,7 @@
               <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
                 <div style="font-weight: 600; margin-bottom: 0.5rem;">Items:</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                  ${donation.items.map(item => `
+                  ${(donation.items || []).map(item => `
                     <span class="badge badge-info">${item.quantity} ${item.unit} ${item.name}</span>
                   `).join('')}
                 </div>
@@ -327,12 +375,19 @@
           </div>
         `;
       }).join('');
+
+      container.querySelectorAll('[data-donation-id]').forEach((card) => {
+        card.addEventListener('click', () => {
+          const donation = filteredDonations.find(item => item.id === card.dataset.donationId);
+          if (donation) viewDonationDetails(donation);
+        });
+      });
     }
 
     window.viewDonationDetails = (donation) => {
-      document.getElementById('donationId').textContent = donation.donationId;
+      document.getElementById('donationId').textContent = getDonationId(donation);
       
-      const date = new Date(donation.donatedAt.toDate()).toLocaleDateString();
+      const date = (getDonationDate(donation) || new Date()).toLocaleDateString();
       
       let detailsHTML = `
         <div style="display: grid; gap: 1.5rem;">
@@ -344,7 +399,7 @@
           ${donation.type === 'monetary' ? `
             <div>
               <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Amount</label>
-              <div style="font-size: 1.5rem; color: var(--color-primary);">GHS ${donation.amount.toLocaleString()}</div>
+              <div style="font-size: 1.5rem; color: var(--color-primary);">GHS ${(donation.amount || 0).toLocaleString()}</div>
             </div>
 
             <div>
@@ -355,14 +410,14 @@
             <div>
               <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Items Donated</label>
               <ul style="margin: 0.5rem 0 0 1.5rem;">
-                ${donation.items.map(item => `<li>${item.quantity} ${item.unit} of ${item.name}</li>`).join('')}
+                ${(donation.items || []).map(item => `<li>${item.quantity} ${item.unit} of ${item.name}</li>`).join('')}
               </ul>
             </div>
           `}
 
           <div>
             <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Status</label>
-            <span class="badge badge-${{'pledged':'warning','received':'success','allocated':'info','distributed':'primary'}[donation.status]}">${donation.status}</span>
+            <span class="badge badge-${getStatusColor(donation.status)}">${donation.status}</span>
           </div>
 
           <div>
@@ -370,10 +425,10 @@
             <div>${date}</div>
           </div>
 
-          ${donation.campaign ? `
+          ${donation.campaignId || donation.campaign ? `
             <div>
               <label style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Campaign</label>
-              <div>${donation.campaignTitle || 'Campaign'}</div>
+              <div>${getCampaignName(donation)}</div>
             </div>
           ` : ''}
 
@@ -390,7 +445,7 @@
               <div style="display: grid; gap: 0.5rem;">
                 <div><strong>Location:</strong> ${donation.distribution.location}</div>
                 <div><strong>Beneficiaries:</strong> ${donation.distribution.beneficiaries} people</div>
-                <div><strong>Date:</strong> ${new Date(donation.distribution.distributedAt.toDate()).toLocaleDateString()}</div>
+                <div><strong>Date:</strong> ${(toDateValue(donation.distribution.distributedAt) || new Date()).toLocaleDateString()}</div>
                 <div><strong>Distributed by:</strong> ${donation.distribution.distributedByName}</div>
                 ${donation.distribution.notes ? `<div><strong>Notes:</strong> ${donation.distribution.notes}</div>` : ''}
               </div>
@@ -418,7 +473,8 @@
         
         let matchesYear = true;
         if (yearFilter) {
-          const donationYear = new Date(donation.donatedAt.toDate()).getFullYear();
+          const donatedAt = getDonationDate(donation);
+          const donationYear = donatedAt ? donatedAt.getFullYear() : 0;
           matchesYear = donationYear === parseInt(yearFilter);
         }
 
@@ -432,12 +488,12 @@
       const csv = [
         ['Date', 'Donation ID', 'Type', 'Amount/Items', 'Status', 'Campaign', 'Purpose'].join(','),
         ...filteredDonations.map(d => [
-          new Date(d.donatedAt.toDate()).toLocaleDateString(),
-          d.donationId,
+          (getDonationDate(d) || new Date()).toLocaleDateString(),
+          getDonationId(d),
           d.type,
-          d.type === 'monetary' ? `GHS ${d.amount}` : `${d.items.length} items`,
+          d.type === 'monetary' ? `GHS ${d.amount || 0}` : `${(d.items || []).length} items`,
           d.status,
-          d.campaignTitle || 'General Fund',
+          getCampaignName(d),
           `"${(d.purpose || '').replace(/"/g, '""')}"`
         ].join(','))
       ].join('\n');
@@ -465,6 +521,6 @@
       loadDonations();
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
 </body>
 </html>

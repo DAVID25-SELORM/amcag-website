@@ -549,41 +549,89 @@ exports.resetDailyCounters = onSchedule(
 // ===============================================
 
 // ===== GENERATE MEMBERSHIP ID =====
-function getMembershipSequenceFromId(memberId, expectedYear) {
-  const match = String(memberId || '').match(/^AMCAG-(\d{4})-(\d{3,6})$/i);
+const REGION_CODE_MAP = {
+  'greater accra': 'GA',
+  ashanti: 'AR',
+  central: 'CR',
+  eastern: 'ER',
+  northern: 'NR',
+  'upper east': 'UER',
+  'upper west': 'UWR',
+  volta: 'VR',
+  western: 'WR',
+  'western north': 'WNR',
+  bono: 'BR',
+  'bono east': 'BER',
+  ahafo: 'AHR',
+  savannah: 'SR',
+  'north east': 'NER',
+  oti: 'OR'
+};
+
+function getRegionCode(region) {
+  const normalized = String(region || '').trim().toLowerCase();
+  if (REGION_CODE_MAP[normalized]) return REGION_CODE_MAP[normalized];
+
+  const generated = normalized
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .replace(/[^a-z]/g, '')
+    .toUpperCase();
+
+  return generated || 'GEN';
+}
+
+function toDateSafe(value) {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') return value.toDate();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getRegistrationYear(member) {
+  const registrationDate = toDateSafe(member?.registrationDate) || toDateSafe(member?.createdAt);
+  return registrationDate ? registrationDate.getFullYear() : new Date().getFullYear();
+}
+
+function getMembershipSequenceFromId(memberId, expectedRegionCode, expectedYear) {
+  const match = String(memberId || '').match(/^AMCAG-([A-Z]{2,4})-(\d{4})-(\d{3,6})$/i);
   if (!match) return 0;
 
-  const idYear = parseInt(match[1], 10);
-  const seq = parseInt(match[2], 10);
+  const idRegionCode = String(match[1] || '').toUpperCase();
+  const idYear = parseInt(match[2], 10);
+  const seq = parseInt(match[3], 10);
   if (!Number.isFinite(idYear) || !Number.isFinite(seq)) return 0;
+  if (idRegionCode !== expectedRegionCode) return 0;
   if (idYear !== expectedYear) return 0;
   return seq > 0 ? seq : 0;
 }
 
-async function generateMembershipId(db) {
-  const currentYear = new Date().getFullYear();
-  const counterRef = db.collection('system_counters').doc('membership_id');
-  const memberIdPrefix = `AMCAG-${currentYear}-`;
+async function generateMembershipId(db, member = {}) {
+  const regionCode = getRegionCode(member.region);
+  const registrationYear = getRegistrationYear(member);
+  const counterRef = db.collection('system_counters').doc(`membership_id_${regionCode}_${registrationYear}`);
+  const memberIdPrefix = `AMCAG-${regionCode}-${registrationYear}-`;
   
   try {
+    // Query must happen outside the transaction \u2014 Firestore transactions only support document reads.
+    const latestMemberForYear = await db.collection('users')
+      .where('memberId', '>=', memberIdPrefix)
+      .where('memberId', '<=', `${memberIdPrefix}\uf8ff`)
+      .orderBy('memberId', 'desc')
+      .limit(1)
+      .get();
+
     const result = await db.runTransaction(async (transaction) => {
-      const [counterDoc, latestMemberForYear] = await Promise.all([
-        transaction.get(counterRef),
-        transaction.get(
-          db.collection('users')
-            .where('memberId', '>=', memberIdPrefix)
-            .where('memberId', '<=', `${memberIdPrefix}\uf8ff`)
-            .orderBy('memberId', 'desc')
-            .limit(1)
-        )
-      ]);
-      
+      const counterDoc = await transaction.get(counterRef);
+
       let counterNumber = 0;
       let existingNumber = 0;
-      
+
       if (counterDoc.exists) {
         const data = counterDoc.data();
-        if (data.year === currentYear) {
+        if (data.year === registrationYear && data.regionCode === regionCode) {
           const parsedCounter = parseInt(data.lastNumber || 0, 10);
           if (Number.isFinite(parsedCounter) && parsedCounter > 0) {
             counterNumber = parsedCounter;
@@ -593,7 +641,7 @@ async function generateMembershipId(db) {
 
       if (!latestMemberForYear.empty) {
         const latestMemberData = latestMemberForYear.docs[0].data() || {};
-        existingNumber = getMembershipSequenceFromId(latestMemberData.memberId, currentYear);
+        existingNumber = getMembershipSequenceFromId(latestMemberData.memberId, regionCode, registrationYear);
       }
 
       // Keep sequence strictly increasing even if counter was reset/deleted.
@@ -602,12 +650,13 @@ async function generateMembershipId(db) {
       // Update counter
       transaction.set(counterRef, {
         lastNumber: nextNumber,
-        year: currentYear,
+        regionCode: regionCode,
+        year: registrationYear,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
       
-      // Generate ID in format: AMCAG-2026-0001
-      const memberId = `AMCAG-${currentYear}-${String(nextNumber).padStart(4, '0')}`;
+      // Generate ID in format: AMCAG-GA-2026-0001
+      const memberId = `${memberIdPrefix}${String(nextNumber).padStart(4, '0')}`;
       
       return memberId;
     });
@@ -619,15 +668,8 @@ async function generateMembershipId(db) {
   }
 }
 
-// ===== APPROVE MEMBER =====
-exports.approveMember = functions.https.onCall(async (data, context) => {
-  // Authentication check
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
-
+async function approveMemberForUid(data, approverUid) {
   const { memberUid, notes } = data; // Removed memberId from required params
-  const approverUid = context.auth.uid;
 
   if (!memberUid) {
     throw new functions.https.HttpsError('invalid-argument', 'Member UID is required');
@@ -651,6 +693,9 @@ exports.approveMember = functions.https.onCall(async (data, context) => {
     }
 
     const member = memberDoc.data();
+    const approverRegion = approver.region || approver.regionId;
+    const memberRegion = member.region || member.regionName || member.assignedRegion || member.regionId;
+    const sameRegion = String(approverRegion || '').trim().toLowerCase() === String(memberRegion || '').trim().toLowerCase();
 
     // Check permissions
     const canApprove = 
@@ -658,7 +703,7 @@ exports.approveMember = functions.https.onCall(async (data, context) => {
       approver.role === 'national_executive' ||
       (approver.role === 'regional_executive' && 
        approver.canApproveMembership === true && 
-       approver.region === member.region);
+       sameRegion);
 
     if (!canApprove) {
       throw new functions.https.HttpsError('permission-denied', 'Not authorized to approve members');
@@ -666,7 +711,7 @@ exports.approveMember = functions.https.onCall(async (data, context) => {
 
     // If regional approval, check if region has permission
     if (approver.role === 'regional_executive') {
-      const regionDoc = await db.collection('regions').doc(member.region).get();
+      const regionDoc = await db.collection('regions').doc(memberRegion).get();
       if (!regionDoc.exists || regionDoc.data().canApproveMembersLocally !== true) {
         throw new functions.https.HttpsError('permission-denied', 'Region does not have local approval permission');
       }
@@ -678,7 +723,7 @@ exports.approveMember = functions.https.onCall(async (data, context) => {
     }
 
     // ===== AUTO-GENERATE MEMBERSHIP ID =====
-    const memberId = await generateMembershipId(db);
+    const memberId = await generateMembershipId(db, { ...member, region: memberRegion });
     console.log(`✅ Generated membership ID: ${memberId} for ${member.fullName}`);
 
     const now = admin.firestore.FieldValue.serverTimestamp();
@@ -695,8 +740,11 @@ exports.approveMember = functions.https.onCall(async (data, context) => {
       updatedAt: now
     });
 
-    // Update members collection
-    await db.collection('members').doc(memberUid).update({
+    // Keep the member mirror present even when older registrations only exist in users.
+    await db.collection('members').doc(memberUid).set({
+      ...member,
+      uid: memberUid,
+      region: memberRegion || null,
       status: 'active',
       memberId: memberId,
       joiningDate: now,
@@ -705,7 +753,7 @@ exports.approveMember = functions.https.onCall(async (data, context) => {
       approvedByName: approver.fullName || approver.email,
       approvedAt: now,
       updatedAt: now
-    });
+    }, { merge: true });
 
     // Create audit log
     await db.collection('audit_logs').add({
@@ -717,7 +765,7 @@ exports.approveMember = functions.https.onCall(async (data, context) => {
       targetUserName: member.fullName,
       details: {
         memberId: memberId,
-        region: member.region,
+        region: memberRegion,
         notes: notes || '',
         approvalType: approver.role === 'regional_executive' ? 'regional' : 'national'
       },
@@ -744,17 +792,20 @@ exports.approveMember = functions.https.onCall(async (data, context) => {
     console.error('Error approving member:', error);
     throw new functions.https.HttpsError('internal', error.message);
   }
-});
+}
 
-// ===== REJECT MEMBER =====
-exports.rejectMember = functions.https.onCall(async (data, context) => {
+// ===== APPROVE MEMBER =====
+exports.approveMember = functions.https.onCall(async (data, context) => {
   // Authentication check
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
+  return approveMemberForUid(data, context.auth.uid);
+});
+
+async function rejectMemberForUid(data, approverUid) {
   const { memberUid, reason } = data;
-  const approverUid = context.auth.uid;
 
   if (!memberUid || !reason) {
     throw new functions.https.HttpsError('invalid-argument', 'Member UID and rejection reason are required');
@@ -778,6 +829,9 @@ exports.rejectMember = functions.https.onCall(async (data, context) => {
     }
 
     const member = memberDoc.data();
+    const approverRegion = approver.region || approver.regionId;
+    const memberRegion = member.region || member.regionName || member.assignedRegion || member.regionId;
+    const sameRegion = String(approverRegion || '').trim().toLowerCase() === String(memberRegion || '').trim().toLowerCase();
 
     // Check permissions (same as approve)
     const canReject = 
@@ -785,7 +839,7 @@ exports.rejectMember = functions.https.onCall(async (data, context) => {
       approver.role === 'national_executive' ||
       (approver.role === 'regional_executive' && 
        approver.canApproveMembership === true && 
-       approver.region === member.region);
+       sameRegion);
 
     if (!canReject) {
       throw new functions.https.HttpsError('permission-denied', 'Not authorized to reject members');
@@ -803,8 +857,11 @@ exports.rejectMember = functions.https.onCall(async (data, context) => {
       updatedAt: now
     });
 
-    // Update members collection
-    await db.collection('members').doc(memberUid).update({
+    // Keep the member mirror present even when older registrations only exist in users.
+    await db.collection('members').doc(memberUid).set({
+      ...member,
+      uid: memberUid,
+      region: memberRegion || null,
       status: 'rejected',
       approvalStatus: 'rejected',
       rejectedBy: approverUid,
@@ -812,7 +869,7 @@ exports.rejectMember = functions.https.onCall(async (data, context) => {
       rejectedAt: now,
       rejectionReason: reason,
       updatedAt: now
-    });
+    }, { merge: true });
 
     // Create audit log
     await db.collection('audit_logs').add({
@@ -824,7 +881,7 @@ exports.rejectMember = functions.https.onCall(async (data, context) => {
       targetUserName: member.fullName,
       details: {
         reason: reason,
-        region: member.region,
+        region: memberRegion,
         rejectionType: approver.role === 'regional_executive' ? 'regional' : 'national'
       },
       timestamp: now
@@ -848,6 +905,91 @@ exports.rejectMember = functions.https.onCall(async (data, context) => {
   } catch (error) {
     console.error('Error rejecting member:', error);
     throw new functions.https.HttpsError('internal', error.message);
+  }
+}
+
+// ===== REJECT MEMBER =====
+exports.rejectMember = functions.https.onCall(async (data, context) => {
+  // Authentication check
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  return rejectMemberForUid(data, context.auth.uid);
+});
+
+function setCorsHeaders(res) {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+}
+
+async function getUidFromBearerToken(req) {
+  const authHeader = req.get('Authorization') || '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const decodedToken = await admin.auth().verifyIdToken(match[1]);
+  return decodedToken.uid;
+}
+
+function sendHttpsError(res, error) {
+  const statusByCode = {
+    unauthenticated: 401,
+    'permission-denied': 403,
+    'not-found': 404,
+    'invalid-argument': 400,
+    'failed-precondition': 412,
+    internal: 500
+  };
+  const status = statusByCode[error.code] || 500;
+  res.status(status).json({
+    error: {
+      status: error.code || 'internal',
+      message: error.message || 'Approval service failed'
+    }
+  });
+}
+
+exports.approveMemberHttp = functions.https.onRequest(async (req, res) => {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: { status: 'method-not-allowed', message: 'POST required' } });
+    return;
+  }
+
+  try {
+    const approverUid = await getUidFromBearerToken(req);
+    const result = await approveMemberForUid(req.body?.data || req.body || {}, approverUid);
+    res.status(200).json({ result });
+  } catch (error) {
+    sendHttpsError(res, error);
+  }
+});
+
+exports.rejectMemberHttp = functions.https.onRequest(async (req, res) => {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return;
+  }
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: { status: 'method-not-allowed', message: 'POST required' } });
+    return;
+  }
+
+  try {
+    const approverUid = await getUidFromBearerToken(req);
+    const result = await rejectMemberForUid(req.body?.data || req.body || {}, approverUid);
+    res.status(200).json({ result });
+  } catch (error) {
+    sendHttpsError(res, error);
   }
 });
 
@@ -963,6 +1105,7 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
+    const monthKey = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
 
     // Verify Paystack payment if applicable
     let paystackVerification = null;
@@ -1033,6 +1176,10 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
     for (const monthData of months) {
       const { month, year } = monthData;
 
+      if (!Number.isInteger(month) || !Number.isInteger(year) || month < 1 || month > 12) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid dues month selected');
+      }
+
       // Cannot pay future months
       if (year > currentYear || (year === currentYear && month > currentMonth)) {
         throw new functions.https.HttpsError('invalid-argument', 
@@ -1069,7 +1216,7 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
     const paidMonths = new Set();
     allPaymentsSnapshot.docs.forEach(doc => {
       const payment = doc.data();
-      paidMonths.add(`${payment.year}-${payment.month}`);
+      paidMonths.add(monthKey(payment.year, payment.month));
     });
 
     // Find first unpaid month
@@ -1079,7 +1226,7 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
     while (checkDate <= currentDate) {
       const checkMonth = checkDate.getMonth() + 1;
       const checkYear = checkDate.getFullYear();
-      const key = `${checkYear}-${checkMonth}`;
+      const key = monthKey(checkYear, checkMonth);
 
       if (!paidMonths.has(key)) {
         firstUnpaid = { month: checkMonth, year: checkYear };
@@ -1211,7 +1358,7 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
       // Generate membership ID if member doesn't have one
       let memberId = member.memberId;
       if (!memberId) {
-        memberId = await generateMembershipId(db);
+        memberId = await generateMembershipId(db, member);
         console.log(`✅ Generated membership ID: ${memberId} for ${member.fullName} (payment activation)`);
       }
       
@@ -1400,7 +1547,10 @@ exports.approveManualPayment = functions.https.onCall(async (data, context) => {
           // Generate membership ID if member doesn't have one
           let memberId = memberData.memberId;
           if (!memberId) {
-            memberId = await generateMembershipId(db);
+            memberId = await generateMembershipId(db, {
+              ...memberData,
+              region: memberData.region || payment.region || null
+            });
             console.log(`✅ Generated membership ID: ${memberId} for member ${payment.uid} (manual approval)`);
           }
           
@@ -2702,6 +2852,7 @@ exports.submitDonation = functions.https.onCall(async (data, context) => {
     // Create donation document
     const donationData = {
       donorId: context.auth.uid,
+      donorUid: context.auth.uid,
       donorName: userData.fullName || userData.email,
       donorEmail: userData.email,
       donorRegion: userData.region || 'unknown',
@@ -2709,6 +2860,7 @@ exports.submitDonation = functions.https.onCall(async (data, context) => {
       status: 'pending',
       visibility: visibility || 'public',
       purpose: purpose || '',
+      donatedAt: timestamp,
       createdAt: timestamp,
       _createdAt: now,
       updatedAt: timestamp
@@ -2730,12 +2882,16 @@ exports.submitDonation = functions.https.onCall(async (data, context) => {
 
     if (campaignId && campaignData) {
       donationData.campaignId = campaignId;
+      donationData.campaign = campaignId;
       donationData.campaignName = campaignData.name;
+      donationData.campaignTitle = campaignData.title || campaignData.name || '';
       donationData.campaignType = campaignData.type;
     }
 
     // Save donation
-    const donationRef = await db.collection('donations').add(donationData);
+    const donationRef = db.collection('donations').doc();
+    donationData.donationId = donationRef.id;
+    await donationRef.set(donationData);
 
     // Update campaign progress if applicable
     if (campaignId && type === 'monetary') {
@@ -3031,6 +3187,129 @@ exports.recordDonationDistribution = functions.https.onCall(async (data, context
   }
 });
 
+// ===== SYNC ROLE CUSTOM CLAIMS =====
+// Sets auth.token.executive_role = true for executives so RTDB rules can gate
+// announcements and national chat without needing a Firestore read.
+const EXECUTIVE_ROLES = new Set(['super_admin', 'national_executive', 'regional_executive']);
+
+async function syncRoleCustomClaim(uid, role) {
+  const isExecutive = EXECUTIVE_ROLES.has(role);
+  await admin.auth().setCustomUserClaims(uid, { executive_role: isExecutive });
+}
+
+async function rebuildRegionCounts(db) {
+  const [usersSnap, membersSnap] = await Promise.all([
+    db.collection('users').get(),
+    db.collection('members').get().catch(() => ({ forEach: () => {} }))
+  ]);
+  const merged = new Map();
+  const counts = {};
+
+  function recordUid(doc, data) {
+    return data.uid || data.memberUid || doc.id;
+  }
+
+  function recordRegion(data) {
+    return String(data.region ||
+      data.regionName ||
+      data.regionId ||
+      data.assignedRegion ||
+      data.chapter ||
+      data.regionalChapter ||
+      '').trim();
+  }
+
+  membersSnap.forEach((doc) => {
+    const d = doc.data() || {};
+    const uid = recordUid(doc, d);
+    if (uid) merged.set(uid, d);
+  });
+
+  usersSnap.forEach((doc) => {
+    const d = doc.data() || {};
+    if (String(d.role || 'member').toLowerCase() !== 'member') return;
+    const uid = recordUid(doc, d);
+    if (!uid) return;
+    merged.set(uid, {
+      ...(merged.get(uid) || {}),
+      ...d
+    });
+  });
+
+  merged.forEach((record) => {
+    const region = recordRegion(record);
+    if (!region) return;
+    counts[region] = (counts[region] || 0) + 1;
+  });
+
+  await db.collection('publicStats').doc('regionCounts').set({
+    counts,
+    memberOnly: true,
+    source: 'usersMembersMerged',
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+exports.onUserCreated = onDocumentCreated('users/{uid}', async (event) => {
+  const uid = event.params.uid;
+  const data = event.data?.data() || {};
+  const db = admin.firestore();
+  if (data.role) {
+    try { await syncRoleCustomClaim(uid, data.role); } catch (err) {
+      console.error(`onUserCreated: failed to set custom claim for ${uid}:`, err);
+    }
+  }
+  try { await rebuildRegionCounts(db); } catch (err) {
+    console.error('onUserCreated: failed to rebuild region counts:', err);
+  }
+});
+
+const { onDocumentUpdated } = require('firebase-functions/v2/firestore');
+exports.onUserRoleChanged = onDocumentUpdated('users/{uid}', async (event) => {
+  const uid = event.params.uid;
+  const before = event.data.before.data() || {};
+  const after = event.data.after.data() || {};
+  const db = admin.firestore();
+  if (before.role !== after.role && after.role) {
+    try { await syncRoleCustomClaim(uid, after.role); } catch (err) {
+      console.error(`onUserRoleChanged: failed to set custom claim for ${uid}:`, err);
+    }
+  }
+  if (before.region !== after.region || before.status !== after.status) {
+    try { await rebuildRegionCounts(db); } catch (err) {
+      console.error('onUserRoleChanged: failed to rebuild region counts:', err);
+    }
+  }
+});
+
+// Callable: one-time seed / admin refresh of publicStats/regionCounts
+exports.rebuildRegionStats = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
+  const db = admin.firestore();
+  const callerDoc = await db.collection('users').doc(context.auth.uid).get();
+  if (!['super_admin', 'national_executive'].includes(callerDoc.data()?.role)) {
+    throw new functions.https.HttpsError('permission-denied', 'Admins only');
+  }
+  await rebuildRegionCounts(db);
+  return { success: true };
+});
+
+// Callable: lets admins force-sync custom claims for an existing user
+exports.syncUserClaims = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
+  const db = admin.firestore();
+  const callerDoc = await db.collection('users').doc(context.auth.uid).get();
+  if (!['super_admin', 'national_executive'].includes(callerDoc.data()?.role)) {
+    throw new functions.https.HttpsError('permission-denied', 'Admins only');
+  }
+  const targetUid = data.uid;
+  if (!targetUid) throw new functions.https.HttpsError('invalid-argument', 'uid required');
+  const targetDoc = await db.collection('users').doc(targetUid).get();
+  if (!targetDoc.exists) throw new functions.https.HttpsError('not-found', 'User not found');
+  await syncRoleCustomClaim(targetUid, targetDoc.data().role);
+  return { success: true };
+});
+
 // Trigger: Send notification when donation created
 exports.onDonationCreated = onDocumentCreated('donations/{donationId}', async (event) => {
   try {
@@ -3138,7 +3417,7 @@ exports.scheduleMeeting = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('permission-denied', 'Only regional executives can schedule regional meetings');
     }
 
-    const { title, description, scheduledTime, duration, region, visibility } = data;
+    const { title, description, scheduledTime, duration, region, visibility, meetingFormat } = data;
 
     if (!title || !scheduledTime) {
       throw new functions.https.HttpsError('invalid-argument', 'Title and scheduled time required');
@@ -3157,6 +3436,7 @@ exports.scheduleMeeting = functions.https.onCall(async (data, context) => {
       type,
       region: type === 'regional' ? region : null,
       visibility: visibility || 'members',
+      meetingFormat: meetingFormat === 'audio' ? 'audio' : 'video',
       hostUid: uid,
       hostName: userData.fullName,
       hostEmail: userData.email,

@@ -7,18 +7,31 @@
   
   <!-- CSS -->
   <link rel="stylesheet" href="/css/material-you.css">
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
+    :root {
+      --primary: var(--color-primary-50);
+      --primary-dark: var(--color-primary-40);
+      --primary-container: var(--color-primary-95);
+      --on-primary-container: var(--color-primary-20);
+      --surface: var(--surface-card);
+      --surface-variant: var(--color-neutral-98);
+      --border-color: var(--color-neutral-90);
+    }
+
     .chat-container {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
       gap: var(--space-4);
-      height: calc(100vh - 200px);
+      min-height: 680px;
+      height: calc(100vh - 190px);
+      max-height: 860px;
+      min-width: 0;
     }
     
     .chat-sidebar {
@@ -63,6 +76,16 @@
       flex-direction: column;
       overflow: hidden;
       border: 1px solid var(--border-color);
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .chat-view {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
     }
     
     .chat-header {
@@ -91,12 +114,34 @@
       flex-direction: column;
       gap: var(--space-3);
       background: var(--surface-variant);
+      min-height: 0;
     }
     
     .message {
       display: flex;
       gap: var(--space-3);
       animation: messageSlideIn 0.3s ease;
+      max-width: 82%;
+      min-width: 0;
+    }
+
+    .message.own-message {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message.own-message .message-header {
+      justify-content: flex-end;
+    }
+
+    .message.own-message .message-text {
+      background: var(--primary);
+      color: white;
+    }
+
+    .message.own-message .message-attachment {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
     }
     
     @keyframes messageSlideIn {
@@ -132,6 +177,7 @@
     
     .message-content {
       flex: 1;
+      min-width: 0;
     }
     
     .message-header {
@@ -139,6 +185,7 @@
       align-items: center;
       gap: var(--space-2);
       margin-bottom: var(--space-1);
+      flex-wrap: wrap;
     }
     
     .message-sender {
@@ -165,6 +212,9 @@
       border-radius: var(--radius-md);
       color: var(--text-primary);
       word-wrap: break-word;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      line-height: 1.5;
     }
     
     .message-attachment {
@@ -205,6 +255,7 @@
       display: flex;
       gap: var(--space-2);
       align-items: flex-end;
+      min-width: 0;
     }
     
     .chat-input {
@@ -217,6 +268,7 @@
       resize: vertical;
       font-family: inherit;
       font-size: var(--text-base);
+      min-width: 0;
     }
     
     .chat-input:focus {
@@ -363,21 +415,36 @@
     @media (max-width: 768px) {
       .chat-container {
         grid-template-columns: 1fr;
-        height: auto;
+        height: calc(100vh - 130px);
+        min-height: 560px;
       }
-      
+
       .chat-sidebar {
+        display: flex;
+        gap: var(--space-2);
+        overflow-x: auto;
+        padding: var(--space-2);
+      }
+
+      .chat-sidebar h3 {
         display: none;
       }
-      
-      .chat-sidebar.mobile-visible {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        z-index: 1000;
+
+      .chat-tab {
+        min-width: 180px;
+        margin-bottom: 0;
+      }
+
+      .message {
+        max-width: 94%;
+      }
+
+      .chat-input-wrapper {
+        align-items: stretch;
+      }
+
+      .chat-actions {
+        flex-direction: column;
       }
     }
   </style>
@@ -394,7 +461,7 @@
       <ul class="navbar-menu" style="margin-left: auto;">
         <li><a href="/member-dashboard.html" class="navbar-link">Dashboard</a></li>
         <li><a href="/profile.html" class="navbar-link">Profile</a></li>
-        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+        <li><a href="/membership.html" onclick="signOut(); return false;" class="navbar-link" data-nav-logout="true">Logout</a></li>
       </ul>
     </div>
   </nav>
@@ -600,13 +667,15 @@
   
   <!-- App Scripts -->
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
   <script src="/js/ui.js"></script>
   
   <script>
     // ===== GLOBAL STATE =====
     let currentUser = null;
     let currentRegion = '';
+    let currentRegionLabel = '';
+    let regionChannelPaths = [];
     let currentRole = '';
     let activeTab = 'group-chat';
     let groupChatListener = null;
@@ -628,12 +697,14 @@
         currentUser = user;
         
         if (user.profile) {
-          currentRegion = user.profile.region || '';
+          currentRegion = getRegionChannelId(user.profile);
+          currentRegionLabel = getRegionDisplayName(user.profile);
+          regionChannelPaths = getRegionChannelPaths(user.profile);
           currentRole = user.profile.role || 'member';
           
           // Update region name in UI
-          document.getElementById('region-name').textContent = currentRegion;
-          document.getElementById('region-name-announcements').textContent = currentRegion;
+          document.getElementById('region-name').textContent = isNationalScopeRole(currentRole) ? 'All Regions' : currentRegionLabel;
+          document.getElementById('region-name-announcements').textContent = currentRegionLabel;
           
           // Show national chat tab for executives
           if (currentRole === 'super_admin' || currentRole === 'national_executive' || currentRole === 'regional_executive') {
@@ -706,56 +777,193 @@
       });
       document.getElementById(`${tabName}-view`).style.display = 'flex';
     }
+
+    function normalizeRegionKey(region) {
+      return String(region || '')
+        .trim()
+        .toLowerCase()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    function sanitizeDatabaseKey(value) {
+      return String(value || '')
+        .trim()
+        .replace(/[.#$\[\]/]/g, '-')
+        .replace(/\s+/g, ' ');
+    }
+
+    function titleCaseRegion(region) {
+      return String(region || '')
+        .replace(/[-_]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+
+    function getRegionChannelId(profile = {}) {
+      return normalizeRegionKey(profile.regionId || profile.region || profile.regionName || profile.assignedRegion);
+    }
+
+    function getRegionDisplayName(profile = {}) {
+      return titleCaseRegion(profile.regionName || profile.region || profile.regionId || currentRegion || 'Regional');
+    }
+
+    function getRegionChannelPaths(profile = {}) {
+      const candidates = [
+        profile.regionId,
+        profile.region,
+        profile.regionName,
+        profile.assignedRegion,
+        getRegionChannelId(profile)
+      ].filter(Boolean);
+      const keys = [];
+      candidates.forEach((candidate) => {
+        const rawKey = sanitizeDatabaseKey(candidate);
+        const normalizedKey = normalizeRegionKey(candidate);
+        if (rawKey) keys.push(rawKey);
+        if (normalizedKey) keys.push(normalizedKey);
+      });
+      return Array.from(new Set(keys));
+    }
+
+    function getUserPhoto(profile = {}) {
+      return profile.profilePictureUrl || profile.photoURL || profile.photoUrl || '';
+    }
+
+    function getUserName(profile = {}) {
+      return profile.fullName || profile.name || currentUser?.displayName || currentUser?.email || 'AMCAG Member';
+    }
+
+    function getMessageKey(message = {}) {
+      return message.id || `${message.senderId || message.authorId || ''}:${message.timestamp || ''}:${getMessageText(message)}`;
+    }
+
+    function getMessageText(message = {}) {
+      return String(message.text || message.message || message.body || message.content || '').trim();
+    }
+
+    function getReadCount(message = {}) {
+      const readers = Object.keys(message.readBy || {});
+      return readers.filter(uid => uid !== message.senderId && uid !== message.authorId).length;
+    }
+
+    function renderReadReceipt(message = {}) {
+      const readCount = getReadCount(message);
+      if (message.senderId !== currentUser.uid && message.authorId !== currentUser.uid) return '';
+      return readCount > 0
+        ? `<div class="message-read-receipt">Seen by ${readCount} ${readCount === 1 ? 'person' : 'people'}</div>`
+        : '<div class="message-read-receipt">Delivered</div>';
+    }
+
+    function isNationalScopeRole(role) {
+      return role === 'super_admin' || role === 'national_executive';
+    }
+
+    function renderEmptyState(containerId, icon, title, description) {
+      const container = document.getElementById(containerId);
+      if (!container || container.children.length) return;
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">${icon}</div>
+          <h3>${title}</h3>
+          <p>${description}</p>
+        </div>
+      `;
+    }
+
+    function clearMessages(containerId) {
+      const container = document.getElementById(containerId);
+      if (container) container.innerHTML = '';
+    }
+
+    function removeEmptyState(container) {
+      const emptyState = container?.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+    }
+
+    function appendSortedMessage(containerId, message, renderer) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const key = getMessageKey(message);
+      const escapedKey = window.CSS && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
+      if (container.querySelector(`[data-message-key="${escapedKey}"]`)) return;
+      removeEmptyState(container);
+      renderer(message, key);
+    }
+
+    async function getVisibleRegionPaths(database) {
+      if (!isNationalScopeRole(currentRole)) {
+        return regionChannelPaths;
+      }
+
+      const existingChannels = new Set(regionChannelPaths);
+      try {
+        const snapshot = await database.ref('regional-chats').once('value');
+        snapshot.forEach((child) => {
+          if (child.key) existingChannels.add(child.key);
+        });
+      } catch (error) {
+        console.warn('[Regional Chat] Unable to load regional channel list:', error);
+      }
+
+      return Array.from(existingChannels).filter(Boolean);
+    }
     
     // ===== LOAD GROUP CHAT =====
-    function loadGroupChat() {
+    async function loadGroupChat() {
       const database = firebase.database();
-      const chatRef = database.ref(`regional-chats/${currentRegion}/messages`);
-      
-      // Remove previous listener
+      clearMessages('group-chat-messages');
+
       if (groupChatListener) {
-        chatRef.off('child_added', groupChatListener);
+        groupChatListener.forEach(({ ref, callback }) => ref.off('child_added', callback));
       }
-      
-      // Listen for new messages
-      groupChatListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
-        const message = snapshot.val();
-        renderGroupMessage(message);
-        
-        // Mark as read
-        markMessageAsRead(snapshot.key, currentRegion, 'group');
+
+      const visibleRegionPaths = await getVisibleRegionPaths(database);
+      groupChatListener = visibleRegionPaths.map((regionPath) => {
+        const ref = database.ref(`regional-chats/${regionPath}/messages`);
+        const callback = (snapshot) => {
+          const message = { id: snapshot.key, channelRegion: regionPath, ...snapshot.val() };
+          appendSortedMessage('group-chat-messages', message, renderGroupMessage);
+          if (message.senderId !== currentUser.uid) {
+            markMessageAsRead(snapshot.key, regionPath, 'group');
+          }
+        };
+        ref.limitToLast(50).on('child_added', callback, (error) => {
+          console.error('Regional chat listener error:', error);
+          UIModule.showAlert('Unable to load regional chat. Please refresh.', 'error');
+        });
+        return { ref, callback };
       });
-      
-      // Clear empty state
-      const messagesContainer = document.getElementById('group-chat-messages');
-      const emptyState = messagesContainer.querySelector('.empty-state');
-      if (emptyState) {
-        emptyState.remove();
-      }
+
+      setTimeout(() => renderEmptyState('group-chat-messages', '💬', 'No messages yet', 'Start the conversation by sending a message below'), 700);
     }
     
     // ===== RENDER GROUP MESSAGE =====
-    function renderGroupMessage(message) {
+    function renderGroupMessage(message, messageKey = getMessageKey(message)) {
       const messagesContainer = document.getElementById('group-chat-messages');
       
       const messageEl = document.createElement('div');
-      messageEl.className = 'message';
+      messageEl.className = `message${message.senderId === currentUser.uid ? ' own-message' : ''}`;
+      messageEl.dataset.messageKey = messageKey;
       
       const initials = message.senderName ? message.senderName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+      const messageText = getMessageText(message);
       
       messageEl.innerHTML = `
-        <div class="message-avatar">
-          ${message.senderPhoto ? `<img src="${message.senderPhoto}" alt="${message.senderName}">` : initials}
+        <div class="message-avatar" title="${escapeHtml(message.senderName || 'Unknown')}">
+          ${message.senderPhoto ? `<img src="${escapeHtml(message.senderPhoto)}" alt="${escapeHtml(message.senderName || 'Member')}">` : escapeHtml(initials)}
         </div>
         <div class="message-content">
           <div class="message-header">
-            <span class="message-sender">${message.senderName || 'Unknown'}</span>
+            <span class="message-sender">${escapeHtml(message.senderName || 'Unknown')}</span>
             ${message.senderRole !== 'member' ? `<span class="message-role">${formatRole(message.senderRole)}</span>` : ''}
             <span class="message-time">${formatTimestamp(message.timestamp)}</span>
           </div>
-          <div class="message-text">${escapeHtml(message.text)}</div>
+          ${messageText ? `<div class="message-text">${escapeHtml(messageText)}</div>` : ''}
           ${message.fileUrl ? renderAttachment(message) : ''}
-          ${message.readBy ? `<div class="message-read-receipt">✓✓ Read by ${Object.keys(message.readBy).length} ${Object.keys(message.readBy).length === 1 ? 'person' : 'people'}</div>` : ''}
+          ${renderReadReceipt(message)}
         </div>
       `;
       
@@ -782,7 +990,7 @@
         
         // Upload file if selected
         if (selectedGroupFile) {
-          const uploadResult = await uploadChatFile(selectedGroupFile, currentRegion, 'group');
+        const uploadResult = await uploadChatFile(selectedGroupFile, currentRegion, 'group');
           fileUrl = uploadResult.url;
           fileName = uploadResult.name;
           fileType = uploadResult.type;
@@ -792,19 +1000,20 @@
         const database = firebase.database();
         const chatRef = database.ref(`regional-chats/${currentRegion}/messages`);
         
-        await chatRef.push({
+        const groupMsg = {
           senderId: currentUser.uid,
-          senderName: currentUser.profile.fullName,
-          senderPhoto: currentUser.profile.profilePictureUrl || '',
+          senderName: getUserName(currentUser.profile),
+          senderPhoto: getUserPhoto(currentUser.profile),
           senderRole: currentRole,
-          text: text,
-          fileUrl: fileUrl,
-          fileName: fileName,
-          fileType: fileType,
+          region: currentRegion,
+          regionName: currentRegionLabel,
           timestamp: firebase.database.ServerValue.TIMESTAMP,
           readBy: {}
-        });
-        
+        };
+        if (text) groupMsg.text = text;
+        if (fileUrl) { groupMsg.fileUrl = fileUrl; groupMsg.fileName = fileName; groupMsg.fileType = fileType; }
+        await chatRef.push(groupMsg);
+
         // Clear input
         input.value = '';
         clearGroupFileAttachment();
@@ -820,46 +1029,46 @@
     // ===== LOAD ANNOUNCEMENTS =====
     function loadAnnouncements() {
       const database = firebase.database();
-      const announcementsRef = database.ref(`regional-announcements/${currentRegion}/posts`);
-      
-      // Remove previous listener
+      clearMessages('announcements-messages');
+
       if (announcementsListener) {
-        announcementsRef.off('child_added', announcementsListener);
+        announcementsListener.forEach(({ ref, callback }) => ref.off('child_added', callback));
       }
-      
-      // Listen for new announcements
-      announcementsListener = announcementsRef.limitToLast(20).on('child_added', (snapshot) => {
-        const announcement = snapshot.val();
-        renderAnnouncement(announcement);
-        
-        // Mark as read
-        markAnnouncementAsRead(snapshot.key, currentRegion);
+
+      announcementsListener = regionChannelPaths.map((regionPath) => {
+        const ref = database.ref(`regional-announcements/${regionPath}/posts`);
+        const callback = (snapshot) => {
+          const announcement = { id: snapshot.key, channelRegion: regionPath, ...snapshot.val() };
+          appendSortedMessage('announcements-messages', announcement, renderAnnouncement);
+          markAnnouncementAsRead(snapshot.key, regionPath);
+        };
+        ref.limitToLast(20).on('child_added', callback, (error) => {
+          console.error('Announcements listener error:', error);
+          UIModule.showAlert('Unable to load announcements. Please refresh.', 'error');
+        });
+        return { ref, callback };
       });
-      
-      // Clear empty state
-      const messagesContainer = document.getElementById('announcements-messages');
-      const emptyState = messagesContainer.querySelector('.empty-state');
-      if (emptyState) {
-        emptyState.remove();
-      }
+
+      setTimeout(() => renderEmptyState('announcements-messages', '📢', 'No announcements yet', 'Executives will post official updates here'), 700);
     }
     
     // ===== RENDER ANNOUNCEMENT =====
-    function renderAnnouncement(announcement) {
+    function renderAnnouncement(announcement, messageKey = getMessageKey(announcement)) {
       const messagesContainer = document.getElementById('announcements-messages');
       
       const announcementEl = document.createElement('div');
       announcementEl.className = 'announcement';
+      announcementEl.dataset.messageKey = messageKey;
       
       const initials = announcement.authorName ? announcement.authorName.split(' ').map(n => n[0]).join('').toUpperCase() : 'A';
       
       announcementEl.innerHTML = `
         <div class="announcement-header">
           <div class="announcement-avatar">
-            ${announcement.authorPhoto ? `<img src="${announcement.authorPhoto}" alt="${announcement.authorName}">` : initials}
+            ${announcement.authorPhoto ? `<img src="${escapeHtml(announcement.authorPhoto)}" alt="${escapeHtml(announcement.authorName || 'Executive')}">` : escapeHtml(initials)}
           </div>
           <div class="announcement-meta">
-            <div class="announcement-author">${announcement.authorName || 'Unknown'}</div>
+            <div class="announcement-author">${escapeHtml(announcement.authorName || 'Unknown')}</div>
             <div class="announcement-date">${formatTimestamp(announcement.timestamp)}</div>
           </div>
           <span class="announcement-badge">ANNOUNCEMENT</span>
@@ -899,18 +1108,19 @@
         const database = firebase.database();
         const announcementsRef = database.ref(`regional-announcements/${currentRegion}/posts`);
         
-        await announcementsRef.push({
+        const announcementMsg = {
           authorId: currentUser.uid,
-          authorName: currentUser.profile.fullName,
-          authorPhoto: currentUser.profile.profilePictureUrl || '',
+          authorName: getUserName(currentUser.profile),
+          authorPhoto: getUserPhoto(currentUser.profile),
           authorRole: currentRole,
-          text: text,
-          fileUrl: fileUrl,
-          fileName: fileName,
-          fileType: fileType,
+          region: currentRegion,
+          regionName: currentRegionLabel,
           timestamp: firebase.database.ServerValue.TIMESTAMP,
           readBy: {}
-        });
+        };
+        if (text) announcementMsg.text = text;
+        if (fileUrl) { announcementMsg.fileUrl = fileUrl; announcementMsg.fileName = fileName; announcementMsg.fileType = fileType; }
+        await announcementsRef.push(announcementMsg);
         
         // Clear input
         input.value = '';
@@ -933,46 +1143,48 @@
       if (nationalChatListener) {
         chatRef.off('child_added', nationalChatListener);
       }
+
+      clearMessages('national-chat-messages');
       
       // Listen for new messages
       nationalChatListener = chatRef.limitToLast(50).on('child_added', (snapshot) => {
-        const message = snapshot.val();
-        renderNationalMessage(message);
+        const message = { id: snapshot.key, ...snapshot.val() };
+        appendSortedMessage('national-chat-messages', message, renderNationalMessage);
         
         // Mark as read
         markMessageAsRead(snapshot.key, 'national', 'national');
+      }, (error) => {
+        console.error('National chat listener error:', error);
+        UIModule.showAlert('Unable to load national chat. Please refresh.', 'error');
       });
-      
-      // Clear empty state
-      const messagesContainer = document.getElementById('national-chat-messages');
-      const emptyState = messagesContainer.querySelector('.empty-state');
-      if (emptyState) {
-        emptyState.remove();
-      }
+
+      setTimeout(() => renderEmptyState('national-chat-messages', '🏛️', 'No messages yet', 'Start the executive conversation below'), 700);
     }
     
     // ===== RENDER NATIONAL MESSAGE =====
-    function renderNationalMessage(message) {
+    function renderNationalMessage(message, messageKey = getMessageKey(message)) {
       const messagesContainer = document.getElementById('national-chat-messages');
       
       const messageEl = document.createElement('div');
-      messageEl.className = 'message';
+      messageEl.className = `message${message.senderId === currentUser.uid ? ' own-message' : ''}`;
+      messageEl.dataset.messageKey = messageKey;
       
       const initials = message.senderName ? message.senderName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+      const messageText = getMessageText(message);
       
       messageEl.innerHTML = `
         <div class="message-avatar">
-          ${message.senderPhoto ? `<img src="${message.senderPhoto}" alt="${message.senderName}">` : initials}
+          ${message.senderPhoto ? `<img src="${escapeHtml(message.senderPhoto)}" alt="${escapeHtml(message.senderName || 'Executive')}">` : escapeHtml(initials)}
         </div>
         <div class="message-content">
           <div class="message-header">
-            <span class="message-sender">${message.senderName || 'Unknown'}</span>
+            <span class="message-sender">${escapeHtml(message.senderName || 'Unknown')}</span>
             <span class="message-role">${formatRole(message.senderRole)}</span>
             <span class="message-time">${formatTimestamp(message.timestamp)}</span>
           </div>
-          <div class="message-text">${escapeHtml(message.text)}</div>
+          ${messageText ? `<div class="message-text">${escapeHtml(messageText)}</div>` : ''}
           ${message.fileUrl ? renderAttachment(message) : ''}
-          ${message.readBy ? `<div class="message-read-receipt">✓✓ Read by ${Object.keys(message.readBy).length} ${Object.keys(message.readBy).length === 1 ? 'person' : 'people'}</div>` : ''}
+          ${renderReadReceipt(message)}
         </div>
       `;
       
@@ -1006,19 +1218,20 @@
         const database = firebase.database();
         const chatRef = database.ref('national-chat/messages');
         
-        await chatRef.push({
+        const nationalMsg = {
           senderId: currentUser.uid,
-          senderName: currentUser.profile.fullName,
-          senderPhoto: currentUser.profile.profilePictureUrl || '',
+          senderName: getUserName(currentUser.profile),
+          senderPhoto: getUserPhoto(currentUser.profile),
           senderRole: currentRole,
-          text: text,
-          fileUrl: fileUrl,
-          fileName: fileName,
-          fileType: fileType,
+          region: currentRegion,
+          regionName: currentRegionLabel,
           timestamp: firebase.database.ServerValue.TIMESTAMP,
           readBy: {}
-        });
-        
+        };
+        if (text) nationalMsg.text = text;
+        if (fileUrl) { nationalMsg.fileUrl = fileUrl; nationalMsg.fileName = fileName; nationalMsg.fileType = fileType; }
+        await chatRef.push(nationalMsg);
+
         // Clear input
         input.value = '';
         clearNationalFileAttachment();
@@ -1193,6 +1406,6 @@
       AuthModule.signOut();
     }
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
 </body>
 </html>

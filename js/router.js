@@ -5,6 +5,16 @@
 
 const RouterModule = (function() {
   'use strict';
+
+  // ✅ NAVIGATION PATCH START
+  const ROUTES = window.AMCAG_ROUTES || {
+    PUBLIC_HOME: '/index.html',
+    LOGIN: '/membership.html',
+    ADMIN_DASHBOARD: '/national/dashboard.html',
+    REGIONAL_DASHBOARD: '/region-dashboard/index.html',
+    MEMBER_DASHBOARD: '/member-dashboard.html'
+  };
+  // ✅ NAVIGATION PATCH END
   
   // ===== ROUTE DEFINITIONS =====
   const routes = {
@@ -12,6 +22,7 @@ const RouterModule = (function() {
     public: [
       '/',
       '/index.html',
+      '/index-modern.html',
       '/about.html',
       '/leadership.html',
       '/events.html',
@@ -20,7 +31,10 @@ const RouterModule = (function() {
       '/videos.html',
       '/regions.html',
       '/region.html',
+      '/donate.html',
+      '/donor-recognition.html',
       '/certificate-verify.html',
+      '/certificate-view.html',
       '/contact.html',
       '/membership.html'
     ],
@@ -39,6 +53,7 @@ const RouterModule = (function() {
       '/member-dashboard/my-donations.html',
       '/member-dashboard/meetings.html',
       '/member-dashboard/regional-chat.html',
+      '/member-dashboard/agm-registration.html',
       '/member-dashboard/waiver-request.html'
     ],
     
@@ -51,6 +66,7 @@ const RouterModule = (function() {
       '/region-dashboard/waiver-management.html',
       '/region-dashboard/donations.html',
       '/region-dashboard/media-upload.html',
+      '/region-dashboard/agm-registrations.html',
       '/region-dashboard/meetings.html'
     ],
     
@@ -72,6 +88,7 @@ const RouterModule = (function() {
       '/national/leadership.html',
       '/national/news-management.html',
       '/national/media-upload.html',
+      '/national/agm-registrations.html',
       '/national/security-command-center.html',
       '/national/suspension-management.html',
       '/national/meetings.html',
@@ -87,18 +104,75 @@ const RouterModule = (function() {
     member: ['public', 'member'],
     public: ['public']
   };
+
+  const routePermissions = {
+    '/national/security-command-center.html': 'canManageSystemSettings',
+    '/national/suspension-management.html': 'canSuspendMembers',
+    '/national/regional-permissions.html': 'canManageExecutives',
+    '/national/regions.html': 'canCreateRegions',
+    '/national/payments.html': 'canViewNationalPayments',
+    '/national/dues-management.html': 'canManagePayments',
+    '/national/donations-overview.html': 'canViewFinancialReports',
+    '/national/analytics.html': 'canViewFullAnalytics',
+    '/national/leadership.html': 'canManageExecutives',
+    '/national/members.html': 'canManageMembers',
+    '/national/member-approval.html': 'canApproveMembers',
+    '/national/events.html': 'canCreateEvents',
+    '/region-dashboard/payment-approvals.html': 'canManagePayments',
+    '/region-dashboard/dues-overview.html': 'canViewRegionalPayments',
+    '/region-dashboard/member-approval.html': 'canApproveMembers',
+    '/region-dashboard/meetings.html': 'canCreateEvents'
+  };
+
+  function getRouteCandidates(path) {
+    const cleanPath = String(path || '/').split('?')[0].split('#')[0] || '/';
+    const normalizedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    const trimmedPath = normalizedPath !== '/' && normalizedPath.endsWith('/')
+      ? normalizedPath.slice(0, -1)
+      : normalizedPath;
+    const htmlPath = trimmedPath.endsWith('.html') ? trimmedPath : `${trimmedPath}.html`;
+    return Array.from(new Set([trimmedPath, htmlPath]));
+  }
+
+  // ✅ NAVIGATION PATCH START
+  function isPreviewMode(url = window.location.href) {
+    try {
+      return new URL(url, window.location.origin).searchParams.has('preview');
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function redirectTo(path) {
+    const target = new URL(path, window.location.origin);
+    const current = new URL(window.location.href);
+    if (current.pathname === target.pathname && current.search === target.search && current.hash === target.hash) {
+      return false;
+    }
+    window.location.href = `${target.pathname}${target.search}${target.hash}`;
+    return true;
+  }
+  // ✅ NAVIGATION PATCH END
   
   // ===== CHECK ROUTE ACCESS =====
   function canAccessRoute(path, userRole = 'public') {
-    // Normalize path
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    if (isPreviewMode(path)) {
+      return true;
+    }
+
+    const pathCandidates = getRouteCandidates(path);
     
     // Get allowed route types for this role
     const allowedTypes = roleHierarchy[userRole] || ['public'];
     
+    const requiredPermission = pathCandidates.map(candidate => routePermissions[candidate]).find(Boolean);
+    if (requiredPermission && window.AuthModule && !window.AuthModule.hasPermission(requiredPermission)) {
+      return false;
+    }
+
     // Check if route is in any allowed type
     for (const type of allowedTypes) {
-      if (routes[type] && routes[type].includes(normalizedPath)) {
+      if (routes[type] && pathCandidates.some(candidate => routes[type].includes(candidate))) {
         return true;
       }
     }
@@ -108,10 +182,10 @@ const RouterModule = (function() {
   
   // ===== GET ROUTE TYPE =====
   function getRouteType(path) {
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const pathCandidates = getRouteCandidates(path);
     
     for (const [type, paths] of Object.entries(routes)) {
-      if (paths.includes(normalizedPath)) {
+      if (pathCandidates.some(candidate => paths.includes(candidate))) {
         return type;
       }
     }
@@ -122,19 +196,26 @@ const RouterModule = (function() {
   // ===== GET DEFAULT DASHBOARD FOR ROLE =====
   function getDashboardForRole(role) {
     const dashboards = {
-      super_admin: '/national/dashboard.html',
-      national_executive: '/national/dashboard.html',
-      regional_executive: '/region-dashboard/index.html',
-      member: '/member-dashboard.html',
-      public: '/index.html'
+      super_admin: ROUTES.ADMIN_DASHBOARD,
+      national_executive: ROUTES.ADMIN_DASHBOARD,
+      regional_executive: ROUTES.REGIONAL_DASHBOARD,
+      member: ROUTES.MEMBER_DASHBOARD,
+      public: ROUTES.PUBLIC_HOME
     };
     
-    return dashboards[role] || '/index.html';
+    return dashboards[role] || ROUTES.PUBLIC_HOME;
   }
   
   // ===== PROTECT ROUTE =====
   function protectRoute() {
     const currentPath = window.location.pathname;
+
+    // ✅ NAVIGATION PATCH START
+    if (window.SKIP_ROUTER || isPreviewMode()) {
+      console.log('[RouterModule] Preview/SKIP mode active, route protection skipped.');
+      return true;
+    }
+    // ✅ NAVIGATION PATCH END
     
     // Skip protection on login page (it handles its own logic)
     if (currentPath === '/membership.html') {
@@ -167,11 +248,11 @@ const RouterModule = (function() {
       if (!user) {
         // Redirect to login
         console.log('[RouterModule] No user, redirecting to login');
-        window.location.href = '/membership.html?redirect=' + encodeURIComponent(currentPath);
+        redirectTo(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(currentPath)}`);
       } else {
         // Redirect to appropriate dashboard
         console.log('[RouterModule] Wrong role, redirecting to dashboard');
-        window.location.href = getDashboardForRole(userRole);
+        redirectTo(getDashboardForRole(userRole));
       }
       
       return false;
@@ -182,16 +263,21 @@ const RouterModule = (function() {
   
   // ===== NAVIGATE =====
   function navigate(path) {
+    if (isPreviewMode(path)) {
+      redirectTo(path);
+      return;
+    }
+
     const user = window.AuthModule.getCurrentUser();
     const userRole = user && user.profile ? user.profile.role : 'public';
     
     if (canAccessRoute(path, userRole)) {
-      window.location.href = path;
+      redirectTo(path);
     } else {
       console.warn(`Access denied to ${path} for role ${userRole}`);
       
       if (!user) {
-        window.location.href = '/membership.html?redirect=' + encodeURIComponent(path);
+        redirectTo(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(path)}`);
       } else {
         alert('You do not have permission to access this page.');
       }
@@ -206,26 +292,30 @@ const RouterModule = (function() {
   
   // ===== HANDLE POST-LOGIN REDIRECT =====
   function handlePostLoginRedirect(user) {
+    if (isPreviewMode()) {
+      return;
+    }
+
     const redirectUrl = getRedirectUrl();
     
     if (redirectUrl) {
       const userRole = user.profile ? user.profile.role : 'member';
       
       if (canAccessRoute(redirectUrl, userRole)) {
-        window.location.href = redirectUrl;
+        redirectTo(redirectUrl);
         return;
       }
     }
     
     // Redirect to default dashboard
     const dashboard = getDashboardForRole(user.profile.role);
-    window.location.href = dashboard;
+    redirectTo(dashboard);
   }
   
   // ===== GET BREADCRUMBS =====
   function getBreadcrumbs(path = window.location.pathname) {
     const pathParts = path.split('/').filter(part => part && part !== 'index.html');
-    const breadcrumbs = [{ label: 'Home', path: '/' }];
+    const breadcrumbs = [{ label: 'Home', path: ROUTES.PUBLIC_HOME }];
     
     let currentPath = '';
     
@@ -287,6 +377,15 @@ const RouterModule = (function() {
   // ===== INIT ROUTER =====
   function init() {
     const currentPath = window.location.pathname;
+
+    // ✅ NAVIGATION PATCH START
+    if (window.SKIP_ROUTER || isPreviewMode()) {
+      console.log('Router: Skipping protection in preview/SKIP mode');
+      renderBreadcrumbs();
+      highlightActiveNav();
+      return;
+    }
+    // ✅ NAVIGATION PATCH END
     
     // Skip router initialization on login page
     if (currentPath === '/membership.html') {

@@ -15,6 +15,26 @@ const AuthModule = (function() {
   let authReady = false; // 🔥 NEW: Indicates auth is fully initialized with profile loaded
   
   // ===== AUTH STATE LISTENER =====
+  // ✅ NAVIGATION PATCH START
+  function isPreviewMode() {
+    try {
+      return new URL(window.location.href).searchParams.has('preview');
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function redirectTo(path) {
+    const target = new URL(path, window.location.origin);
+    const current = new URL(window.location.href);
+    if (current.pathname === target.pathname && current.search === target.search && current.hash === target.hash) {
+      return false;
+    }
+    window.location.href = `${target.pathname}${target.search}${target.hash}`;
+    return true;
+  }
+  // ✅ NAVIGATION PATCH END
+
   function initAuthListener() {
     // Check if FirebaseModule is available
     if (!window.FirebaseModule || typeof window.FirebaseModule.auth !== 'function') {
@@ -42,6 +62,7 @@ const AuthModule = (function() {
       // CRITICAL: Don't block on membership/login pages as this prevents redirect flow
       const currentPath = window.location.pathname;
       const isLoginPage = currentPath.includes('membership') || currentPath.includes('index.html') || currentPath === '/';
+      const previewMode = isPreviewMode();
 
       if (authBooted && !isLoginPage) {
         console.log('[AuthModule] ⚠️ Auth already processed, skipping duplicate execution');
@@ -77,7 +98,7 @@ const AuthModule = (function() {
         // Sign out and redirect to login
         setTimeout(() => {
           window.FirebaseModule.auth().signOut();
-          window.location.href = '/membership.html?verified=false';
+          redirectTo('/membership.html?verified=false');
         }, 3000);
         return; // Stop execution
       }
@@ -109,7 +130,7 @@ const AuthModule = (function() {
             // Don't redirect if already on change password page
             if (!currentPath.includes('change-password')) {
               console.log('[AuthModule] ⚠️ User must reset password - redirecting...');
-              window.location.href = '/change-password.html';
+              redirectTo('/change-password.html');
               return; // Stop execution here
             }
           }
@@ -118,7 +139,7 @@ const AuthModule = (function() {
           if (currentUser.profile.mustCompleteProfile === true) {
             if (!currentPath.includes('complete-profile')) {
               console.log('[AuthModule] ⚠️ User must complete profile - redirecting...');
-              window.location.href = '/complete-profile.html';
+              redirectTo('/complete-profile.html');
               return; // Stop execution here
             }
           }
@@ -145,8 +166,12 @@ const AuthModule = (function() {
         console.log('[AuthModule] 🟢 Auth fully ready - profile loaded');
 
         // Handle role-based routing (only if user doesn't need to reset password)
-        console.log('[AuthModule] Calling handleRoleBasedRedirect (currently disabled)');
-        handleRoleBasedRedirect(currentUser.profile);
+        if (previewMode) {
+          console.log('[AuthModule] Preview mode active, role-based redirect skipped');
+        } else {
+          console.log('[AuthModule] Calling handleRoleBasedRedirect');
+          handleRoleBasedRedirect(currentUser.profile);
+        }
       } catch (error) {
         // 🛡️ ELITE AUTH GUARD - No auto-logout on Firestore errors
         console.error('[AuthModule] ❌ ERROR fetching user profile:', error);
@@ -181,78 +206,211 @@ const AuthModule = (function() {
       callback(currentUser);
     }
   }
+
+  function normalizeEmail(email) {
+    return String(email || '').trim().toLowerCase();
+  }
+
+  function validateRealEmailAddress(email) {
+    const normalized = normalizeEmail(email);
+    const blockedDomains = new Set([
+      '10minutemail.com',
+      'guerrillamail.com',
+      'mailinator.com',
+      'tempmail.com',
+      'temp-mail.org',
+      'yopmail.com'
+    ]);
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalized)) {
+      return 'Please enter a valid email address.';
+    }
+
+    const domain = normalized.split('@')[1] || '';
+    if (blockedDomains.has(domain)) {
+      return 'Please use a permanent personal or work email address, not a temporary email service.';
+    }
+
+    return '';
+  }
+
+  const GOVERNANCE_PERMISSION_PRESETS = {
+    super_admin: {
+      canCreateRegions: true,
+      canManageNationalExecutives: true,
+      canResetPasswords: true,
+      canManageSystemSettings: true,
+      canViewAuditLogs: true,
+      canViewFullAnalytics: true,
+      canApproveRoleChanges: true,
+      canExportReports: true,
+      canAccessAllModules: true,
+      canManageMembers: true,
+      canApproveMembers: true,
+      canManagePayments: true,
+      canViewFinancialReports: true,
+      canViewNationalPayments: true,
+      canViewRegionalPayments: true,
+      canExportFinancialReports: true,
+      canCreateEvents: true,
+      canApproveEvents: true,
+      canManageExecutives: true,
+      canSuspendMembers: true,
+      canBroadcastMessages: true,
+      canViewSensitiveContactDetails: true
+    },
+    national_president: {
+      canManageMembers: true,
+      canApproveMembers: true,
+      canManagePayments: true,
+      canViewFinancialReports: true,
+      canViewNationalPayments: true,
+      canViewRegionalPayments: true,
+      canExportFinancialReports: true,
+      canCreateEvents: true,
+      canApproveEvents: true,
+      canManageExecutives: true,
+      canSuspendMembers: true,
+      canExportReports: true,
+      canBroadcastMessages: true,
+      canViewAuditLogs: true,
+      canViewFullAnalytics: true,
+      canViewSensitiveContactDetails: true
+    },
+    national_secretary: {
+      canManageMembers: true,
+      canApproveMembers: true,
+      canManagePayments: false,
+      canViewFinancialReports: false,
+      canViewNationalPayments: false,
+      canViewRegionalPayments: false,
+      canExportFinancialReports: false,
+      canCreateEvents: true,
+      canApproveEvents: true,
+      canManageExecutives: false,
+      canSuspendMembers: false,
+      canExportReports: true,
+      canBroadcastMessages: true,
+      canViewSensitiveContactDetails: true
+    },
+    national_treasurer: {
+      canManageMembers: false,
+      canApproveMembers: false,
+      canManagePayments: true,
+      canViewFinancialReports: true,
+      canViewNationalPayments: true,
+      canViewRegionalPayments: true,
+      canExportFinancialReports: true,
+      canCreateEvents: false,
+      canApproveEvents: false,
+      canManageExecutives: false,
+      canSuspendMembers: false,
+      canExportReports: true,
+      canBroadcastMessages: false,
+      canViewSensitiveContactDetails: false
+    },
+    regional_president: {
+      canManageMembers: true,
+      canApproveMembers: true,
+      canManagePayments: false,
+      canViewFinancialReports: true,
+      canViewNationalPayments: false,
+      canViewRegionalPayments: true,
+      canExportFinancialReports: true,
+      canCreateEvents: true,
+      canManageExecutives: true,
+      canSuspendMembers: false,
+      canExportReports: true,
+      canBroadcastMessages: true,
+      canViewSensitiveContactDetails: true
+    },
+    regional_secretary: {
+      canManageMembers: true,
+      canApproveMembers: true,
+      canManagePayments: false,
+      canViewFinancialReports: false,
+      canViewNationalPayments: false,
+      canViewRegionalPayments: false,
+      canExportFinancialReports: false,
+      canCreateEvents: true,
+      canManageExecutives: false,
+      canSuspendMembers: false,
+      canExportReports: true,
+      canBroadcastMessages: true,
+      canViewSensitiveContactDetails: true
+    },
+    regional_treasurer: {
+      canManageMembers: false,
+      canApproveMembers: false,
+      canManagePayments: true,
+      canViewFinancialReports: true,
+      canViewNationalPayments: false,
+      canViewRegionalPayments: true,
+      canExportFinancialReports: true,
+      canCreateEvents: false,
+      canManageExecutives: false,
+      canSuspendMembers: false,
+      canExportReports: true,
+      canBroadcastMessages: false,
+      canViewSensitiveContactDetails: false
+    },
+    member: {}
+  };
+
+  function normalizeExecutiveTitle(profile = {}) {
+    return String(profile.executiveTitle || profile.title || profile.position || '')
+      .trim()
+      .toLowerCase()
+      .replace(/^national\s+/, '')
+      .replace(/^regional\s+/, '')
+      .replace(/\s+/g, '_');
+  }
+
+  function getGovernanceKey(profile = {}) {
+    const role = String(profile.role || 'member').toLowerCase();
+    const level = String(profile.executiveLevel || '').toLowerCase();
+    const title = normalizeExecutiveTitle(profile);
+
+    if (role === 'super_admin') return 'super_admin';
+    if (role === 'national_executive') return `national_${title || level || 'secretary'}`;
+    if (role === 'regional_executive') return `regional_${title || level || 'secretary'}`;
+    return role;
+  }
+
+  function getEffectivePermissions(profile = {}) {
+    const preset = GOVERNANCE_PERMISSION_PRESETS[getGovernanceKey(profile)] || GOVERNANCE_PERMISSION_PRESETS[profile.role] || {};
+    return {
+      ...preset,
+      ...(profile.permissions || {})
+    };
+  }
   
   // ===== SIGN UP WITH EMAIL/PASSWORD =====
   async function signUp(email, password, profileData, profilePictureFile = null) {
     try {
+      const emailError = validateRealEmailAddress(email);
+      if (emailError) {
+        throw new Error(emailError);
+      }
+
       const auth = window.FirebaseModule.auth();
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const normalizedEmail = normalizeEmail(email);
+      const userCredential = await auth.createUserWithEmailAndPassword(normalizedEmail, password);
       const user = userCredential.user;
-      
-      // Upload profile picture if provided
-      let profilePictureUrl = '';
-      if (profilePictureFile) {
-        try {
-          const storage = window.FirebaseModule.storage();
-          const timestamp = Date.now();
-          const fileName = `${user.uid}_${timestamp}.${profilePictureFile.name.split('.').pop()}`;
-          const storageRef = storage.ref(`profile-pictures/${fileName}`);
-          
-          // Upload file
-          await storageRef.put(profilePictureFile);
-          
-          // Get download URL
-          profilePictureUrl = await storageRef.getDownloadURL();
-        } catch (uploadError) {
-          console.error('Profile picture upload error:', uploadError);
-          // Continue registration even if picture upload fails
-        }
+
+      try {
+        localStorage.setItem(`amcagPendingRegistration:${normalizedEmail}`, JSON.stringify({
+          ...profileData,
+          email: normalizedEmail,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (storageError) {
+        console.warn('Unable to save pending registration locally:', storageError);
       }
-      
-      // Create user profile in Firestore
-      const userProfile = {
-        uid: user.uid,
-        email: email,
-        role: profileData.role || 'member',
-        fullName: profileData.fullName,
-        phone: profileData.phone || '',
-        region: profileData.region || '',
-        // New required fields
-        gender: profileData.gender || '',
-        dateOfBirth: profileData.dateOfBirth || '',
-        maritalStatus: profileData.maritalStatus || '',
-        address: profileData.address || '',
-        employmentStatus: profileData.employmentStatus || 'Not Employed',
-        currentWorkplace: profileData.currentWorkplace || 'N/A',
-        nextOfKin: profileData.nextOfKin || { name: '', contact: '' },
-        // System fields
-        registrationDate: window.FirebaseModule.timestamp.now(),
-        status: 'pending',
-        createdAt: window.FirebaseModule.timestamp.now(),
-        updatedAt: window.FirebaseModule.timestamp.now()
-      };
-      
-      // Add profile picture URL if uploaded
-      if (profilePictureUrl) {
-        userProfile.profilePictureUrl = profilePictureUrl;
-      }
-      
-      // Add optional pharmacy council PIN if provided
-      if (profileData.pharmacyCouncilPin) {
-        userProfile.pharmacyCouncilPin = profileData.pharmacyCouncilPin;
-      }
-      
-      // Add MCA school if provided
-      if (profileData.mcaSchool) {
-        userProfile.mcaSchool = profileData.mcaSchool;
-      }
-      
-      await window.FirebaseModule.collections.users()
-        .doc(user.uid)
-        .set(userProfile);
-      
+
       // Send email verification
       await user.sendEmailVerification();
+      await auth.signOut();
       
       return { success: true, user };
     } catch (error) {
@@ -300,9 +458,11 @@ const AuthModule = (function() {
       const auth = window.FirebaseModule.auth();
       await auth.signOut();
       
-      console.log('[AuthModule] Sign out successful, redirecting to home...');
-      // Redirect to home page
-      window.location.href = '/index.html';
+      // ✅ NAVIGATION PATCH START
+      const routes = window.AMCAG_ROUTES || {};
+      console.log('[AuthModule] Sign out successful, redirecting to login...');
+      window.location.href = routes.LOGOUT_REDIRECT || routes.LOGIN || '/membership.html';
+      // ✅ NAVIGATION PATCH END
       
       return { success: true };
     } catch (error) {
@@ -336,13 +496,40 @@ const AuthModule = (function() {
       if (!currentUser) {
         throw new Error('No user is signed in');
       }
-      
+
+      const payload = {
+        ...updates,
+        updatedAt: window.FirebaseModule.timestamp.now()
+      };
+
       await window.FirebaseModule.collections.users()
         .doc(currentUser.uid)
-        .update({
-          ...updates,
-          updatedAt: window.FirebaseModule.timestamp.now()
-        });
+        .update(payload);
+
+      try {
+        const memberRef = window.FirebaseModule.collections.members().doc(currentUser.uid);
+        const memberDoc = await memberRef.get();
+        if (memberDoc.exists) {
+          await memberRef.update(payload);
+        }
+      } catch (memberUpdateError) {
+        console.warn('Member mirror profile update skipped:', memberUpdateError);
+      }
+
+      try {
+        if ((updates.fullName || updates.photoURL || updates.profilePictureUrl) && typeof currentUser.updateProfile === 'function') {
+          const authProfileUpdates = {};
+          if (updates.fullName) {
+            authProfileUpdates.displayName = updates.fullName;
+          }
+          if (updates.photoURL || updates.profilePictureUrl) {
+            authProfileUpdates.photoURL = updates.photoURL || updates.profilePictureUrl;
+          }
+          await currentUser.updateProfile(authProfileUpdates);
+        }
+      } catch (authProfileError) {
+        console.warn('Firebase Auth profile sync skipped:', authProfileError);
+      }
       
       // Update local profile
       currentUser.profile = {
@@ -415,24 +602,76 @@ const AuthModule = (function() {
     if (!currentUser || !currentUser.profile) {
       return false;
     }
-    
-    const role = currentUser.profile.role;
-    
-    // Define role hierarchy
-    const rolePermissions = {
-      super_admin: ['all'],
-      national_executive: ['national', 'regional', 'member', 'public'],
-      regional_executive: ['regional', 'member', 'public'],
-      member: ['member', 'public'],
-      public: ['public']
-    };
-    
-    const userPermissions = rolePermissions[role] || [];
-    return userPermissions.includes(permission) || userPermissions.includes('all');
+
+    if (currentUser.profile.role === 'super_admin') {
+      return true;
+    }
+
+    const effectivePermissions = getEffectivePermissions(currentUser.profile);
+    return effectivePermissions[permission] === true;
+  }
+
+  function getExecutiveLevel() {
+    return currentUser?.profile?.executiveLevel || '';
+  }
+
+  function getExecutiveTitle() {
+    return currentUser?.profile?.executiveTitle || currentUser?.profile?.title || currentUser?.profile?.position || '';
+  }
+
+  function getUserRegion() {
+    return currentUser?.profile?.region || currentUser?.profile?.regionId || '';
+  }
+
+  function isNationalExecutive() {
+    return hasAnyRole(['super_admin', 'national_executive']);
+  }
+
+  function isRegionalExecutive() {
+    return hasRole('regional_executive');
+  }
+
+  function canAccessRegion(region) {
+    if (!currentUser || !currentUser.profile) {
+      return false;
+    }
+
+    if (isNationalExecutive()) {
+      return true;
+    }
+
+    return isRegionalExecutive() &&
+      String(getUserRegion()).toLowerCase() === String(region || '').toLowerCase();
+  }
+
+  function canViewPayment(payment = {}) {
+    if (!currentUser || !currentUser.profile) {
+      return false;
+    }
+
+    if (payment.uid === currentUser.uid || payment.memberUid === currentUser.uid) {
+      return true;
+    }
+
+    if (hasPermission('canViewNationalPayments')) {
+      return true;
+    }
+
+    if (hasPermission('canViewRegionalPayments')) {
+      return canAccessRegion(payment.regionId || payment.region);
+    }
+
+    return false;
   }
   
   // ===== REQUIRE AUTHENTICATION =====
-  function requireAuth(redirectUrl = '/index.html') {
+  // ✅ NAVIGATION PATCH START
+  function getLoginRoute() {
+    const routes = window.AMCAG_ROUTES || {};
+    return routes.LOGIN || '/membership.html';
+  }
+
+  function requireAuth(redirectUrl = getLoginRoute()) {
     if (!currentUser) {
       window.location.href = redirectUrl;
       return false;
@@ -441,7 +680,7 @@ const AuthModule = (function() {
   }
   
   // ===== REQUIRE ROLE =====
-  function requireRole(requiredRole, redirectUrl = '/index.html') {
+  function requireRole(requiredRole, redirectUrl = getLoginRoute()) {
     if (!requireAuth(redirectUrl)) {
       return false;
     }
@@ -455,7 +694,7 @@ const AuthModule = (function() {
   }
   
   // ===== REQUIRE ANY ROLE (Multiple Roles) =====
-  function requireAnyRole(allowedRoles, redirectUrl = '/index.html') {
+  function requireAnyRole(allowedRoles, redirectUrl = getLoginRoute()) {
     if (!requireAuth(redirectUrl)) {
       return false;
     }
@@ -467,10 +706,50 @@ const AuthModule = (function() {
     
     return true;
   }
+  // ✅ NAVIGATION PATCH END
   
   // ===== ROLE-BASED REDIRECT =====
+  function normalizeRoutePath(path) {
+    const cleanPath = String(path || '/').split('?')[0].split('#')[0] || '/';
+    if (cleanPath === '/') return '/';
+    return cleanPath.endsWith('/') ? cleanPath.slice(0, -1) : cleanPath;
+  }
+
+  function isMemberPortalPath(path) {
+    const currentPath = normalizeRoutePath(path);
+    const currentPathHtml = currentPath.endsWith('.html') ? currentPath : `${currentPath}.html`;
+    const memberPortalPages = new Set([
+      '/member-dashboard.html',
+      '/profile.html',
+      '/certificates.html',
+      '/dues.html',
+      '/payments.html',
+      '/payment-receipt.html',
+      '/change-password.html',
+      '/complete-profile.html',
+      '/member-dashboard/agm-registration.html',
+      '/member-dashboard/donate.html',
+      '/member-dashboard/dues-payment.html',
+      '/member-dashboard/meetings.html',
+      '/member-dashboard/my-donations.html',
+      '/member-dashboard/regional-chat.html',
+      '/member-dashboard/waiver-request.html'
+    ]);
+
+    return currentPath.startsWith('/member-dashboard/') ||
+      memberPortalPages.has(currentPath) ||
+      memberPortalPages.has(currentPathHtml);
+  }
+
   function handleRoleBasedRedirect(profile) {
-    const currentPath = window.location.pathname;
+    const currentPath = normalizeRoutePath(window.location.pathname);
+
+    // ✅ NAVIGATION PATCH START
+    if (isPreviewMode()) {
+      console.log('[AuthModule] Preview mode active, dashboard redirect skipped');
+      return;
+    }
+    // ✅ NAVIGATION PATCH END
 
     // Keep users on completion page until profile is completed
     if (currentPath.includes('complete-profile')) {
@@ -479,17 +758,39 @@ const AuthModule = (function() {
 
     // Enforce profile completion gate before dashboard routing
     if (profile && profile.mustCompleteProfile === true) {
-      window.location.href = '/complete-profile.html';
+      redirectTo('/complete-profile.html');
       return;
     }
     
-    // Don't redirect if already on a dashboard page
-    if (currentPath.includes('dashboard') || currentPath.includes('national/') || currentPath.includes('region-dashboard/')) {
+    // Don't redirect if already on an app page the signed-in user explicitly opened
+    if (
+      currentPath.includes('dashboard') ||
+      currentPath.includes('national/') ||
+      currentPath.includes('region-dashboard/') ||
+      isMemberPortalPath(currentPath)
+    ) {
       return;
     }
     
     // Don't redirect if on public pages
-    const publicPages = ['/index.html', '/about.html', '/contact.html', '/events.html', '/news.html', '/'];
+    const publicPages = [
+      '/',
+      '/index.html',
+      '/index-modern.html',
+      '/about.html',
+      '/contact.html',
+      '/events.html',
+      '/news.html',
+      '/leadership.html',
+      '/regions.html',
+      '/region.html',
+      '/gallery.html',
+      '/videos.html',
+      '/donate.html',
+      '/donor-recognition.html',
+      '/certificate-verify.html',
+      '/certificate-view.html'
+    ];
     if (publicPages.includes(currentPath)) {
       return;
     }
@@ -507,18 +808,18 @@ const AuthModule = (function() {
       case 'super_admin':
       case 'national_executive':
         if (!currentPath.includes('/national/')) {
-          window.location.href = '/national/dashboard.html';
+          redirectTo('/national/dashboard.html');
         }
         break;
       case 'regional_executive':
         if (!currentPath.includes('/region-dashboard/')) {
-          window.location.href = '/region-dashboard/index.html';
+          redirectTo('/region-dashboard/index.html');
         }
         break;
       case 'member':
       default:
-        if (!currentPath.includes('/member-dashboard')) {
-          window.location.href = '/member-dashboard.html';
+        if (!isMemberPortalPath(currentPath)) {
+          redirectTo('/member-dashboard.html');
         }
         break;
     }
@@ -575,6 +876,14 @@ const AuthModule = (function() {
     hasRole,
     hasAnyRole,
     hasPermission,
+    getEffectivePermissions: () => currentUser?.profile ? getEffectivePermissions(currentUser.profile) : {},
+    getExecutiveLevel,
+    getExecutiveTitle,
+    getUserRegion,
+    isNationalExecutive,
+    isRegionalExecutive,
+    canAccessRegion,
+    canViewPayment,
     requireAuth,
     requireRole,
     requireAnyRole,

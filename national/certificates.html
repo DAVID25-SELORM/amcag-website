@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -67,19 +67,19 @@
 
       <div class="grid grid-4 gap-4 mb-6">
         <div class="stat-card">
-          <div class="stat-value">8,456</div>
+          <div class="stat-value" id="cert-total-issued">0</div>
           <div class="stat-label">Total Issued</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">234</div>
+          <div class="stat-value" id="cert-pending">0</div>
           <div class="stat-label">Pending Issuance</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">1,234</div>
+          <div class="stat-value" id="cert-verified-month">0</div>
           <div class="stat-label">Verified This Month</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">45</div>
+          <div class="stat-value" id="cert-revoked">0</div>
           <div class="stat-label">Revoked</div>
         </div>
       </div>
@@ -91,24 +91,24 @@
             <h3 class="card-title">Membership Certificates</h3>
             <span style="font-size: var(--text-2xl);">🎓</span>
           </div>
-          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">6,789</div>
-          <div style="font-size: var(--text-sm); color: var(--text-secondary);">80% of all certificates</div>
+          <div id="cert-membership-count" style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">0</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">Live certificate count</div>
         </div>
         <div class="card">
           <div class="flex-between mb-2">
             <h3 class="card-title">Training Certificates</h3>
             <span style="font-size: var(--text-2xl);">📚</span>
           </div>
-          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">1,234</div>
-          <div style="font-size: var(--text-sm); color: var(--text-secondary);">15% of all certificates</div>
+          <div id="cert-training-count" style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">0</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">Live certificate count</div>
         </div>
         <div class="card">
           <div class="flex-between mb-2">
             <h3 class="card-title">Achievement Awards</h3>
             <span style="font-size: var(--text-2xl);">🏆</span>
           </div>
-          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">433</div>
-          <div style="font-size: var(--text-sm); color: var(--text-secondary);">5% of all certificates</div>
+          <div id="cert-achievement-count" style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">0</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);">Live certificate count</div>
         </div>
       </div>
 
@@ -145,90 +145,8 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2026-00123</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Kwame Mensah</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-001</div>
-                </td>
-                <td>Membership</td>
-                <td>Jan 15, 2026</td>
-                <td>Dec 31, 2026</td>
-                <td><span class="badge badge-success">Issued</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewCertificate('CERT-2026-00123')">View</button>
-                  <button class="btn btn-sm btn-outline" onclick="downloadCertificate('CERT-2026-00123')">Download</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2026-00122</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Akosua Boateng</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-002</div>
-                </td>
-                <td>Training</td>
-                <td>Feb 10, 2026</td>
-                <td>-</td>
-                <td><span class="badge badge-success">Issued</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewCertificate('CERT-2026-00122')">View</button>
-                  <button class="btn btn-sm btn-outline" onclick="downloadCertificate('CERT-2026-00122')">Download</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2026-00121</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Kofi Asante</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-003</div>
-                </td>
-                <td>Membership</td>
-                <td>-</td>
-                <td>-</td>
-                <td><span class="badge badge-warning">Pending</span></td>
-                <td>
-                  <button class="btn btn-sm btn-primary" onclick="issueCertificate('CERT-2026-00121')">Issue Now</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2026-00120</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Ama Owusu</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-004</div>
-                </td>
-                <td>Achievement</td>
-                <td>Feb 01, 2026</td>
-                <td>-</td>
-                <td><span class="badge badge-success">Issued</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewCertificate('CERT-2026-00120')">View</button>
-                  <button class="btn btn-sm btn-outline" onclick="downloadCertificate('CERT-2026-00120')">Download</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">CERT-2025-01234</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Yaw Mohammed</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2024-234</div>
-                </td>
-                <td>Membership</td>
-                <td>Jun 20, 2025</td>
-                <td>Dec 31, 2025</td>
-                <td><span class="badge badge-error">Revoked</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="viewCertificateHistory('CERT-2025-01234')">View History</button>
-                </td>
-              </tr>
+            <tbody id="certificates-table-body">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No certificate records found.</td></tr>
             </tbody>
           </table>
         </div>
@@ -261,7 +179,9 @@
 
         <div class="card">
           <h3 class="card-title mb-4">Recent Issuances</h3>
-          <div class="space-y-3">
+          <div class="space-y-3" id="recent-certificates-list">
+            <div class="text-secondary">Loading recent issuances...</div>
+            <template id="old-certificate-issuance-demo">
             <div class="flex-between p-3" style="background: var(--color-success-95); border-radius: var(--radius-md);">
               <div>
                 <div style="font-weight: 600;">Today</div>
@@ -283,6 +203,7 @@
               </div>
               <div style="font-size: var(--text-2xl);">📈</div>
             </div>
+            </template>
           </div>
         </div>
       </div>
@@ -352,9 +273,10 @@
   <!-- App Modules -->
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     function showUserAlert(message, type = 'info') {
@@ -553,11 +475,13 @@
         const certificateData = {
           certificateId: certId,
           memberId: memberDoc.id,
+          memberUid: memberDoc.id,
           memberName: memberData.fullName || memberData.displayName || 'Unknown',
           memberEmail: memberEmail,
           type: certificateType,
           title: certificateTitle,
           issuedAt: issuedDate,
+          issueDate: issuedDate,
           issuedBy: firebase.auth().currentUser?.email || 'system',
           expiryDate: expiryDate || null,
           notes: notes || '',
@@ -589,15 +513,101 @@
       try {
         // Load certificates data from Firestore
         const db = firebase.firestore();
-        const certificatesRef = db.collection('certificates').orderBy('issuedAt', 'desc').limit(50);
-        const snapshot = await certificatesRef.get();
+        let snapshot;
+        try {
+          snapshot = await db.collection('certificates').orderBy('issuedAt', 'desc').limit(50).get();
+        } catch (queryError) {
+          console.warn('Certificate issuedAt order unavailable; loading without order.', queryError);
+          snapshot = await db.collection('certificates').limit(50).get();
+        }
+        const certificates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Process and render certificates data
-        console.log('Certificates loaded:', snapshot.size);
+        renderCertificateStats(certificates);
+        renderCertificatesTable(certificates);
+        renderRecentCertificates(certificates);
       } catch (error) {
         console.error('Error loading certificates:', error);
         showUserAlert('Error loading certificates data', 'error');
       }
+    }
+
+    function renderCertificateStats(certificates) {
+      const issued = certificates.filter(cert => ['issued', 'active', 'valid'].includes(String(cert.status || '').toLowerCase())).length;
+      const pending = certificates.filter(cert => String(cert.status || '').toLowerCase() === 'pending').length;
+      const revoked = certificates.filter(cert => String(cert.status || '').toLowerCase() === 'revoked').length;
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const verifiedMonth = certificates.filter(cert => getDateMs(cert.verifiedAt || cert.issueDate || cert.issuedAt) >= monthStart.getTime()).length;
+
+      document.getElementById('cert-total-issued').textContent = issued;
+      document.getElementById('cert-pending').textContent = pending;
+      document.getElementById('cert-verified-month').textContent = verifiedMonth;
+      document.getElementById('cert-revoked').textContent = revoked;
+      document.getElementById('cert-membership-count').textContent = certificates.filter(cert => String(cert.type || '').toLowerCase().includes('member')).length;
+      document.getElementById('cert-training-count').textContent = certificates.filter(cert => String(cert.type || '').toLowerCase().includes('training')).length;
+      document.getElementById('cert-achievement-count').textContent = certificates.filter(cert => String(cert.type || '').toLowerCase().includes('achievement') || String(cert.type || '').toLowerCase().includes('award')).length;
+    }
+
+    function renderCertificatesTable(certificates) {
+      const tbody = document.getElementById('certificates-table-body');
+      if (!certificates.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No certificate records found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = certificates.map(cert => `
+        <tr>
+          <td>${cert.certificateId || cert.id}</td>
+          <td>${cert.memberName || cert.fullName || cert.memberEmail || 'N/A'}</td>
+          <td>${cert.type || cert.certificateType || 'N/A'}</td>
+          <td>${formatDate(cert.issueDate || cert.issuedAt)}</td>
+          <td>${formatDate(cert.expiryDate)}</td>
+          <td><span class="badge ${String(cert.status || '').toLowerCase() === 'revoked' ? 'badge-error' : 'badge-success'}">${cert.status || 'issued'}</span></td>
+          <td><button class="btn btn-sm btn-outline" onclick="viewCertificate('${cert.id}')">View</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRecentCertificates(certificates) {
+      const container = document.getElementById('recent-certificates-list');
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const weekStart = todayStart - (6 * 24 * 60 * 60 * 1000);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const today = certificates.filter(cert => getDateMs(cert.issueDate || cert.issuedAt) >= todayStart).length;
+      const week = certificates.filter(cert => getDateMs(cert.issueDate || cert.issuedAt) >= weekStart).length;
+      const month = certificates.filter(cert => getDateMs(cert.issueDate || cert.issuedAt) >= monthStart).length;
+      container.innerHTML = [
+        ['Today', today],
+        ['This Week', week],
+        ['This Month', month]
+      ].map(([label, count]) => `
+        <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+          <div>
+            <div style="font-weight: 600;">${label}</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">${count} certificates issued</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function normalizeDate(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function getDateMs(value) {
+      const date = normalizeDate(value);
+      return date ? date.getTime() : 0;
+    }
+
+    function formatDate(value) {
+      const date = normalizeDate(value);
+      return date ? date.toLocaleDateString() : 'N/A';
     }
 
     async function verifyCertificate() {
@@ -681,6 +691,6 @@
       console.warn('AuthModule unavailable; showing local certificate actions only.');
     }
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

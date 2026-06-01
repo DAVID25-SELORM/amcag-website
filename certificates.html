@@ -6,7 +6,7 @@
   <title>My Certificates | AMCAG Member Portal</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -50,48 +50,8 @@
       </div>
 
       <div class="grid grid-2 gap-4" id="certificates-list">
-        <div class="card">
-          <div class="flex-between mb-3">
-            <h3 class="card-title">Professional Membership Certificate</h3>
-            <span class="badge badge-success">Active</span>
-          </div>
-          <div class="mb-3">
-            <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">
-              <strong>Certificate ID:</strong> AMCAG-2025-001234
-            </div>
-            <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">
-              <strong>Issue Date:</strong> January 15, 2025
-            </div>
-            <div style="color: var(--text-secondary); font-size: var(--text-sm);">
-              <strong>Valid Until:</strong> December 31, 2026
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Download PDF</button>
-            <button class="btn btn-sm btn-outline">View Online</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="flex-between mb-3">
-            <h3 class="card-title">Professional Development Certificate</h3>
-            <span class="badge badge-success">Active</span>
-          </div>
-          <div class="mb-3">
-            <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">
-              <strong>Certificate ID:</strong> AMCAG-2025-PD-0456
-            </div>
-            <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">
-              <strong>Issue Date:</strong> November 20, 2025
-            </div>
-            <div style="color: var(--text-secondary); font-size: var(--text-sm);">
-              <strong>Training:</strong> Advanced Pharmaceutical Care
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary">Download PDF</button>
-            <button class="btn btn-sm btn-outline">View Online</button>
-          </div>
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-6); color: var(--text-secondary);">
+          Loading your certificates...
         </div>
       </div>
     </main>
@@ -101,8 +61,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
 
@@ -111,12 +71,150 @@
       AuthModule.signOut();
     }
 
+    function toDateValue(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDate(value, fallback = 'N/A') {
+      const date = toDateValue(value);
+      return date ? date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : fallback;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function escapeJsString(value) {
+      return String(value || '').replace(/[\\']/g, '\\$&').replace(/\r?\n/g, ' ');
+    }
+
+    function getCertificateId(cert) {
+      return cert.certificateId || cert.id;
+    }
+
+    function getCertificateTitle(cert) {
+      return cert.title || `${cert.type || cert.certificateType || 'Professional'} Certificate`;
+    }
+
+    function getStatusBadge(status) {
+      const normalized = String(status || 'issued').toLowerCase();
+      const badge = normalized === 'revoked' ? 'error' : (normalized === 'pending' ? 'warning' : 'success');
+      return `<span class="badge badge-${badge}">${escapeHtml(normalized.charAt(0).toUpperCase() + normalized.slice(1))}</span>`;
+    }
+
+    function certificateUrl(cert, print = false) {
+      const id = encodeURIComponent(getCertificateId(cert));
+      return `/certificate-view.html?id=${id}&from=member${print ? '&print=1' : ''}`;
+    }
+
+    function viewCertificate(certId) {
+      window.open(`/certificate-view.html?id=${encodeURIComponent(certId)}&from=member`, '_blank', 'noopener');
+    }
+
+    function downloadCertificate(certId) {
+      window.open(`/certificate-view.html?id=${encodeURIComponent(certId)}&from=member&print=1`, '_blank', 'noopener');
+    }
+
+    function renderEmptyState() {
+      document.getElementById('certificates-list').innerHTML = `
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-6);">
+          <h3 style="margin-bottom: var(--space-2);">No certificates issued yet</h3>
+          <p style="color: var(--text-secondary); margin-bottom: var(--space-4);">
+            Certificates issued by AMCAG national administrators will appear here when assigned to your account.
+          </p>
+          <a href="/member-dashboard.html" class="btn btn-outline">Back to Dashboard</a>
+        </div>
+      `;
+    }
+
+    function renderCertificates(certificates) {
+      if (!certificates.length) {
+        renderEmptyState();
+        return;
+      }
+
+      document.getElementById('certificates-list').innerHTML = certificates.map((cert) => {
+        const certId = getCertificateId(cert);
+        const issueDate = cert.issuedAt || cert.issueDate || cert.createdAt;
+        const expiryDate = cert.expiryDate || cert.validUntil || cert.expiresAt;
+        const typeLabel = cert.type || cert.certificateType || 'Certificate';
+
+        return `
+          <div class="card">
+            <div class="flex-between mb-3" style="gap: var(--space-2); align-items: flex-start;">
+              <h3 class="card-title">${escapeHtml(getCertificateTitle(cert))}</h3>
+              ${getStatusBadge(cert.status)}
+            </div>
+            <div class="mb-3">
+              <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">
+                <strong>Certificate ID:</strong> ${escapeHtml(certId)}
+              </div>
+              <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">
+                <strong>Issue Date:</strong> ${escapeHtml(formatDate(issueDate))}
+              </div>
+              <div style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-1);">
+                <strong>Type:</strong> ${escapeHtml(typeLabel)}
+              </div>
+              <div style="color: var(--text-secondary); font-size: var(--text-sm);">
+                <strong>Valid Until:</strong> ${escapeHtml(formatDate(expiryDate, 'No Expiry'))}
+              </div>
+            </div>
+            <div class="flex gap-2" style="flex-wrap: wrap;">
+              <button type="button" class="btn btn-sm btn-primary" onclick="downloadCertificate('${escapeJsString(certId)}')">Download PDF</button>
+              <button type="button" class="btn btn-sm btn-outline" onclick="viewCertificate('${escapeJsString(certId)}')">View Online</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function queryCertificatesByField(db, field, value) {
+      if (!value) return [];
+      try {
+        const snapshot = await db.collection('certificates').where(field, '==', value).get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (error) {
+        console.warn(`Certificate query failed for ${field}:`, error);
+        return [];
+      }
+    }
+
     async function loadCertificates(user) {
       try {
-        const certificates = await APIModule.Certificates.getByMember(user.uid);
-        // Render certificates dynamically here
+        const db = firebase.firestore();
+        const profile = user.profile || {};
+        const queries = await Promise.all([
+          queryCertificatesByField(db, 'memberUid', user.uid),
+          queryCertificatesByField(db, 'memberId', user.uid),
+          queryCertificatesByField(db, 'memberId', profile.memberId),
+          queryCertificatesByField(db, 'memberEmail', user.email || profile.email)
+        ]);
+
+        const byId = new Map();
+        queries.flat().forEach((cert) => {
+          byId.set(getCertificateId(cert), cert);
+        });
+
+        const certificates = Array.from(byId.values()).sort((a, b) => {
+          const aTime = (toDateValue(a.issuedAt || a.issueDate || a.createdAt)?.getTime()) || 0;
+          const bTime = (toDateValue(b.issuedAt || b.issueDate || b.createdAt)?.getTime()) || 0;
+          return bTime - aTime;
+        });
+
+        renderCertificates(certificates);
       } catch (error) {
-        UIModule.showAlert('Error loading certificates', 'error');
+        console.error('Error loading certificates:', error);
+        UIModule.showAlert('Error loading certificates: ' + error.message, 'error');
+        renderEmptyState();
       }
     }
 
@@ -128,6 +226,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

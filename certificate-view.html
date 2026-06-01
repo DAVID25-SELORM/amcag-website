@@ -6,7 +6,7 @@
   <title>Certificate Viewer | AMCAG</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <style>
     body {
       background: #f5f5f5;
@@ -228,7 +228,7 @@
 </head>
 <body>
   <div class="back-link">
-    <a href="/national/certificates.html" style="color: var(--color-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+    <a id="backLink" href="/national/certificates.html" style="color: var(--color-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
       ← Back to Certificates
     </a>
   </div>
@@ -302,14 +302,14 @@
           <div class="certificate-footer">
             <div class="signature-block">
               <div class="signature-line">
-                <div class="signature-name">Kwame Mensah</div>
-                <div class="signature-title">National President</div>
+                <div class="signature-name">Authorized Signatory</div>
+                <div class="signature-title">President</div>
               </div>
             </div>
             <div class="signature-block">
               <div class="signature-line">
-                <div class="signature-name">Kofi Asante</div>
-                <div class="signature-title">General Secretary</div>
+                <div class="signature-name">Authorized Signatory</div>
+                <div class="signature-title">Secretary</div>
               </div>
             </div>
           </div>
@@ -339,6 +339,24 @@
     // Get certificate ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const certId = urlParams.get('id');
+    const shouldPrint = urlParams.get('print') === '1';
+    const fromPage = urlParams.get('from');
+
+    if (fromPage === 'member') {
+      document.getElementById('backLink').href = '/certificates.html';
+    }
+
+    function toDateValue(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatCertificateDate(value, fallback = 'N/A') {
+      const date = toDateValue(value);
+      return date ? date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : fallback;
+    }
 
     async function loadCertificate() {
       if (!certId) {
@@ -367,40 +385,39 @@
 
         let cert;
         if (!certDoc.exists) {
-          // Show sample data for testing when certificate not found
-          console.log('Certificate not found in database, showing sample data');
-          cert = {
-            memberName: 'John Doe',
-            type: 'Membership',
-            memberId: 'MEM-2026-001',
-            issuedAt: new Date('2026-01-15'),
-            expiryDate: new Date('2027-01-15')
-          };
+          showError();
+          return;
         } else {
           cert = certDoc.data();
         }
         
         // Update certificate details
+        const certType = cert.type || cert.certificateType || 'Membership';
         document.getElementById('recipientName').textContent = cert.memberName || 'N/A';
-        document.getElementById('certificateType').textContent = `${cert.type || 'Membership'} Certificate`;
+        document.getElementById('certificateType').textContent = cert.title || `${certType} Certificate`;
         document.getElementById('certId').textContent = certId;
         document.getElementById('certIdFooter').textContent = certId;
         document.getElementById('memberId').textContent = cert.memberId || 'N/A';
-        document.getElementById('issueDate').textContent = cert.issuedAt ? new Date(cert.issuedAt.toDate ? cert.issuedAt.toDate() : cert.issuedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
-        document.getElementById('expiryDate').textContent = cert.expiryDate ? new Date(cert.expiryDate.toDate ? cert.expiryDate.toDate() : cert.expiryDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'No Expiry';
+        document.getElementById('issueDate').textContent = formatCertificateDate(cert.issuedAt || cert.issueDate || cert.createdAt);
+        document.getElementById('expiryDate').textContent = formatCertificateDate(cert.expiryDate || cert.validUntil || cert.expiresAt, 'No Expiry');
 
         // Update description based on type
         const descriptions = {
-          'Membership': 'has successfully completed all requirements and is hereby recognized as a member in good standing of the Association of Medicine Counter Assistants Ghana.',
-          'Training': 'has successfully completed the required training program and demonstrated proficiency in all assessed areas.',
-          'Achievement': 'is hereby recognized for outstanding contribution and exceptional service to the Association of Medicine Counter Assistants Ghana.'
+          membership: 'has successfully completed all requirements and is hereby recognized as a member in good standing of the Association of Medicine Counter Assistants Ghana.',
+          training: 'has successfully completed the required training program and demonstrated proficiency in all assessed areas.',
+          achievement: 'is hereby recognized for outstanding contribution and exceptional service to the Association of Medicine Counter Assistants Ghana.',
+          leadership: 'is hereby recognized for service and leadership within the Association of Medicine Counter Assistants Ghana.'
         };
         
-        document.getElementById('certificateDescription').textContent = descriptions[cert.type] || descriptions['Membership'];
+        document.getElementById('certificateDescription').textContent = cert.notes || descriptions[String(certType).toLowerCase()] || descriptions.membership;
 
         // Show certificate
         document.getElementById('loadingState').style.display = 'none';
         document.getElementById('certificateContainer').style.display = 'block';
+
+        if (shouldPrint) {
+          setTimeout(() => window.print(), 500);
+        }
 
       } catch (error) {
         console.error('Error loading certificate:', error);
@@ -414,7 +431,6 @@
     }
 
     function downloadPDF() {
-      alert('PDF download functionality requires server-side PDF generation. Using browser print instead.');
       window.print();
     }
 
