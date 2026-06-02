@@ -138,6 +138,24 @@ service cloud.firestore {
         hasPermission('canManageExecutives');
     }
 
+    function canManageRegionalExecutiveLink(region) {
+      return hasRole('super_admin') ||
+        isNationalPresident() ||
+        hasPermission('canManageExecutives') ||
+        (
+          isRegionalPresident() &&
+          isSameRegion(region)
+        );
+    }
+
+    function isRegionExecutiveIdsUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'name',
+        'executiveIds',
+        'updatedAt'
+      ]);
+    }
+
     function canCreateEvents() {
       return hasRole('super_admin') ||
         isNationalPresident() ||
@@ -318,9 +336,32 @@ service cloud.firestore {
       allow read: if true; // Public read
       
       // Write access for national executives (for approval permissions)
-      allow create: if hasRole('super_admin') || hasPermission('canCreateRegions');
-      allow update: if hasRole('super_admin') || isNationalPresident();
+      allow create: if hasRole('super_admin') ||
+        hasPermission('canCreateRegions') ||
+        (
+          canManageRegionalExecutiveLink(regionId) &&
+          request.resource.data.keys().hasOnly(['name', 'executiveIds', 'updatedAt'])
+        );
+      allow update: if hasRole('super_admin') ||
+        isNationalPresident() ||
+        (
+          canManageRegionalExecutiveLink(regionId) &&
+          isRegionExecutiveIdsUpdate()
+        );
       allow delete: if hasRole('super_admin');
+
+      match /executives/{executiveId} {
+        allow read: if isAuthenticated() && (
+          hasRole('super_admin') ||
+          hasAnyRole(['national_executive']) ||
+          isSameRegion(regionId) ||
+          resource.data.memberUid == request.auth.uid
+        );
+        allow create, update: if canManageRegionalExecutiveLink(regionId) &&
+          request.resource.data.region == regionId &&
+          request.resource.data.leaderId == executiveId;
+        allow delete: if hasRole('super_admin') || isNationalPresident();
+      }
     }
     
     // Events collection
