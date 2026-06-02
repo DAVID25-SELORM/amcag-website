@@ -3193,8 +3193,15 @@ exports.recordDonationDistribution = functions.https.onCall(async (data, context
 const EXECUTIVE_ROLES = new Set(['super_admin', 'national_executive', 'regional_executive']);
 
 async function syncRoleCustomClaim(uid, role) {
-  const isExecutive = EXECUTIVE_ROLES.has(role);
-  await admin.auth().setCustomUserClaims(uid, { executive_role: isExecutive });
+  const normalizedRole = String(role || 'member').toLowerCase();
+  const isExecutive = EXECUTIVE_ROLES.has(normalizedRole);
+  const userRecord = await admin.auth().getUser(uid);
+  const existingClaims = userRecord.customClaims || {};
+  await admin.auth().setCustomUserClaims(uid, {
+    ...existingClaims,
+    executive_role: isExecutive,
+    role: normalizedRole
+  });
 }
 
 async function rebuildRegionCounts(db) {
@@ -3308,6 +3315,28 @@ exports.syncUserClaims = functions.https.onCall(async (data, context) => {
   if (!targetDoc.exists) throw new functions.https.HttpsError('not-found', 'User not found');
   await syncRoleCustomClaim(targetUid, targetDoc.data().role);
   return { success: true };
+});
+
+// Callable: lets a signed-in user refresh their own RTDB role claim from Firestore.
+exports.refreshMyClaims = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
+  }
+
+  const db = admin.firestore();
+  const userDoc = await db.collection('users').doc(context.auth.uid).get();
+  if (!userDoc.exists) {
+    throw new functions.https.HttpsError('not-found', 'User profile not found');
+  }
+
+  const role = String(userDoc.data().role || 'member').toLowerCase();
+  await syncRoleCustomClaim(context.auth.uid, role);
+
+  return {
+    success: true,
+    executiveRole: EXECUTIVE_ROLES.has(role),
+    role
+  };
 });
 
 // Trigger: Send notification when donation created

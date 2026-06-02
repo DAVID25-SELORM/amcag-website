@@ -1,12 +1,17 @@
 {
   "rules": {
+    "user-roles": {
+      ".read": false,
+      ".write": false
+    },
     "regional-chats": {
+      ".read": "auth != null",
       "$region": {
-        ".read": "auth != null && (root.child('users').child(auth.uid).child('region').val() === $region || root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive')",
-        ".write": "auth != null && (root.child('users').child(auth.uid).child('region').val() === $region || root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive')",
+        ".read": "auth != null",
         "messages": {
           "$messageId": {
-            ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'text', 'timestamp'])",
+            ".write": "auth != null && !data.exists() && newData.child('senderId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists())",
             "senderId": {
               ".validate": "newData.val() === auth.uid"
             },
@@ -21,11 +26,11 @@
     },
     "regional-announcements": {
       "$region": {
-        ".read": "auth != null && (root.child('users').child(auth.uid).child('region').val() === $region || root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive')",
+        ".read": "auth != null",
         "posts": {
           "$postId": {
-            ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive' || root.child('users').child(auth.uid).child('role').val() === 'regional_executive')",
-            ".validate": "newData.hasChildren(['authorId', 'authorName', 'authorRole', 'text', 'timestamp'])",
+            ".write": "auth != null && auth.token.executive_role === true && !data.exists() && newData.child('authorId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['authorId', 'authorName', 'authorRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists())",
             "authorId": {
               ".validate": "newData.val() === auth.uid"
             },
@@ -39,11 +44,11 @@
       }
     },
     "national-chat": {
-      ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive' || root.child('users').child(auth.uid).child('role').val() === 'regional_executive')",
-      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'super_admin' || root.child('users').child(auth.uid).child('role').val() === 'national_executive' || root.child('users').child(auth.uid).child('role').val() === 'regional_executive')",
+      ".read": "auth != null && auth.token.executive_role === true",
       "messages": {
         "$messageId": {
-          ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'text', 'timestamp'])",
+          ".write": "auth != null && auth.token.executive_role === true && !data.exists() && newData.child('senderId').val() === auth.uid",
+          ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists())",
           "senderId": {
             ".validate": "newData.val() === auth.uid"
           },
