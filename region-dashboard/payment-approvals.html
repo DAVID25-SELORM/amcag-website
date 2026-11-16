@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link rel="stylesheet" href="/css/animations.css">
   <link rel="stylesheet" href="/css/dark-mode.css">
   
@@ -24,11 +24,16 @@
       
       <ul class="navbar-menu" style="margin-left: auto;">
         <li><a href="/region-dashboard/index.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/region-dashboard/member-approval.html" class="navbar-link">Members</a></li>
+        <li><a href="/region-dashboard/meetings.html" class="navbar-link">Events</a></li>
+        <li><a href="/region-dashboard/agm-registrations.html" class="navbar-link">AGM</a></li>
         <li><a href="/region-dashboard/payment-approvals.html" class="navbar-link active">Payments</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
+        <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
-          <span class="theme-icon">ðŸŒ™</span>
+          <span class="theme-icon">🌙</span>
         </button></li>
-        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+        <li><a href="/membership.html" onclick="signOut(); return false;" class="navbar-link" data-nav-logout="true">Logout</a></li>
       </ul>
     </div>
   </nav>
@@ -37,7 +42,7 @@
   <section class="section-sm" style="background: var(--gradient-primary); color: white;">
     <div class="container">
       <h1 style="font-family: var(--font-display); font-size: var(--text-5xl); font-weight: var(--font-bold); margin-bottom: var(--space-2);">
-        ðŸ’³ Payment Approvals
+        💳 Payment Approvals
       </h1>
       <p style="font-size: var(--text-xl); opacity: 0.95;">
         Review and approve pending manual payments
@@ -131,6 +136,10 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     window.AuthModule.requireAnyRole(['regional_executive', 'national_executive', 'super_admin']);
@@ -401,7 +410,7 @@
         tbody.innerHTML = `
           <tr>
             <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-              âœ… No pending payments
+              ✅ No pending payments
             </td>
           </tr>
         `;
@@ -423,12 +432,12 @@
         };
         const methodLabel = methodLabelMap[normalizedMethod] || (normalizedMethod ? normalizedMethod.replace(/_/g, ' ') : 'N/A');
         const methodIcon = normalizedMethod === 'bank_transfer'
-          ? 'ðŸ¦'
+          ? '🏦'
           : (normalizedMethod === 'momo' || normalizedMethod === 'mobile_money')
-            ? 'ðŸ“±'
+            ? '📱'
             : normalizedMethod === 'paystack'
-              ? 'ðŸ’³'
-              : 'ðŸ’µ';
+              ? '💳'
+              : '💵';
         const referenceText = escapeHtml(payment.transferReference || payment.notes || '-');
 
         return `
@@ -446,10 +455,10 @@
             <td>${createdDate}</td>
             <td>
               <button data-payment-action="approve" data-payment-id="${escapeHtml(payment.id)}" class="btn btn-sm btn-primary" style="margin-right: 8px;" ${actionInProgress ? 'disabled' : ''}>
-                âœ… Approve
+                ✅ Approve
               </button>
               <button data-payment-action="reject" data-payment-id="${escapeHtml(payment.id)}" class="btn btn-sm btn-outline" style="color: var(--color-error);" ${actionInProgress ? 'disabled' : ''}>
-                âŒ Reject
+                ❌ Reject
               </button>
             </td>
           </tr>
@@ -501,7 +510,7 @@
         UIModule.showAlert('Another payment action is processing. Please wait.', 'warning');
         return;
       }
-      if (!confirm('Approve this payment?')) return;
+      if (!await AMCAGDialog.confirm('Approve this payment?')) return;
 
       try {
         actionInProgress = true;
@@ -519,7 +528,7 @@
         UIModule.hideLoader();
 
         if (result?.data?.success) {
-          UIModule.showAlert('âœ… Payment approved successfully!', 'success');
+          UIModule.showAlert('✅ Payment approved successfully!', 'success');
           loadPayments();
         } else {
           UIModule.showAlert(result?.data?.message || 'Failed to approve payment', 'error');
@@ -541,7 +550,7 @@
         UIModule.showAlert('Another payment action is processing. Please wait.', 'warning');
         return;
       }
-      if (!confirm('Reject this payment? This action cannot be undone.')) return;
+      if (!await AMCAGDialog.confirm('Reject this payment? This action cannot be undone.')) return;
 
       try {
         actionInProgress = true;
@@ -590,7 +599,7 @@
       document.body.classList.toggle('dark-mode');
       const isDark = document.body.classList.contains('dark-mode');
       localStorage.setItem('darkMode', isDark);
-      document.querySelector('.theme-icon').textContent = isDark ? 'â˜€ï¸' : 'ðŸŒ™';
+      document.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
     }
 
     // Initialize
@@ -598,7 +607,7 @@
       const darkMode = localStorage.getItem('darkMode') === 'true';
       if (darkMode) {
         document.body.classList.add('dark-mode');
-        document.querySelector('.theme-icon').textContent = 'â˜€ï¸';
+        document.querySelector('.theme-icon').textContent = '☀️';
       }
     });
 
@@ -627,7 +636,7 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>
 

@@ -6,6 +6,13 @@
 (function() {
   'use strict';
 
+  const MOBILE_BREAKPOINT = 768;
+  let lastTouchToggleAt = 0;
+
+  window.AMCAGToggleNavbar = function(toggle, event) {
+    return toggleNavbarFromEvent(toggle, event);
+  };
+
   // Initialize on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initMobileMenu);
@@ -14,11 +21,7 @@
   }
 
   function initMobileMenu() {
-    // Create mobile navigation toggle if it doesn't exist
-    createMobileToggle();
-    
-    // Handle existing navbar for mobile
-    setupNavbarMobile();
+    setupAllNavbars();
     
     // Handle dashboard sidebar for mobile
     setupDashboardSidebar();
@@ -27,72 +30,141 @@
     handleWindowResize();
   }
 
-  function createMobileToggle() {
-    const navbar = document.querySelector('.navbar');
-    if (!navbar) return;
+  function setupAllNavbars() {
+    document.querySelectorAll('.navbar').forEach(navbar => {
+      const navbarContainer = navbar.querySelector('.navbar-container') || navbar;
+      const menu = navbar.querySelector('.navbar-menu');
+      if (!menu) return;
 
-    const navbarContainer = navbar.querySelector('.navbar-container');
-    if (!navbarContainer) return;
+      let toggle = navbar.querySelector('.navbar-toggle');
+      if (!toggle) {
+        toggle = document.createElement('button');
+        toggle.className = 'navbar-toggle';
+        toggle.innerHTML = '<span></span><span></span><span></span>';
+        navbarContainer.insertBefore(toggle, menu);
+      }
 
-    // Check if toggle already exists
-    if (navbarContainer.querySelector('.navbar-toggle')) return;
+      toggle.setAttribute('type', 'button');
+      toggle.setAttribute('aria-label', 'Toggle navigation');
+      toggle.setAttribute('aria-expanded', menu.classList.contains('active') ? 'true' : 'false');
 
-    // Create toggle button
-    const toggle = document.createElement('button');
-    toggle.className = 'navbar-toggle';
-    toggle.setAttribute('aria-label', 'Toggle navigation');
-    toggle.innerHTML = `
-      <span></span>
-      <span></span>
-      <span></span>
-    `;
+      positionNavbarMenu(navbar, menu);
 
-    // Add toggle functionality
-    toggle.addEventListener('click', () => {
-      const menu = navbarContainer.querySelector('.navbar-menu');
-      if (menu) {
-        menu.classList.toggle('active');
-        toggle.classList.toggle('active');
-        document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
+      if (toggle.dataset.mobileMenuBound !== '1') {
+        toggle.dataset.mobileMenuBound = '1';
+
+        toggle.addEventListener('touchend', (event) => {
+          toggleNavbarFromEvent(toggle, event);
+        }, { passive: false });
+
+        toggle.addEventListener('click', (event) => {
+          if (event.defaultPrevented) return;
+
+          if (Date.now() - lastTouchToggleAt < 500) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+
+          toggleNavbarFromEvent(toggle, event);
+        });
       }
     });
 
-    // Insert toggle before navbar menu
-    const menu = navbarContainer.querySelector('.navbar-menu');
-    if (menu) {
-      navbarContainer.insertBefore(toggle, menu);
-    }
+    if (document.body.dataset.mobileNavbarDelegated === '1') return;
+    document.body.dataset.mobileNavbarDelegated = '1';
+
+    document.addEventListener('click', (event) => {
+      const toggle = event.target.closest('.navbar-toggle');
+      if (toggle) {
+        toggleNavbarFromEvent(toggle, event);
+        return;
+      }
+
+      if (window.innerWidth > MOBILE_BREAKPOINT) return;
+
+      const openMenu = document.querySelector('.navbar-menu.active');
+      if (!openMenu) return;
+
+      const openNavbar = openMenu.closest('.navbar');
+      if (event.target.closest('.navbar-menu a')) {
+        setNavbarState(openNavbar, openMenu, openNavbar && openNavbar.querySelector('.navbar-toggle'), false);
+        return;
+      }
+
+      if (!event.target.closest('.navbar')) {
+        setNavbarState(openNavbar, openMenu, openNavbar && openNavbar.querySelector('.navbar-toggle'), false);
+      }
+    });
   }
 
-  function setupNavbarMobile() {
-    const navbarMenu = document.querySelector('.navbar-menu');
-    if (!navbarMenu) return;
+  function toggleNavbarFromEvent(toggle, event) {
+    if (event && event.type === 'click' && Date.now() - lastTouchToggleAt < 500) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
 
-    // Close menu when clicking a link
-    const links = navbarMenu.querySelectorAll('.navbar-link');
-    links.forEach(link => {
-      link.addEventListener('click', () => {
-        if (window.innerWidth <= 768) {
-          navbarMenu.classList.remove('active');
-          const toggle = document.querySelector('.navbar-toggle');
-          if (toggle) toggle.classList.remove('active');
-          document.body.style.overflow = '';
-        }
-      });
-    });
+    if (event && event.type === 'touchend') {
+      lastTouchToggleAt = Date.now();
+    }
 
-    // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-      if (window.innerWidth <= 768) {
-        const navbar = document.querySelector('.navbar');
-        if (navbar && !navbar.contains(e.target)) {
-          navbarMenu.classList.remove('active');
-          const toggle = document.querySelector('.navbar-toggle');
-          if (toggle) toggle.classList.remove('active');
-          document.body.style.overflow = '';
-        }
-      }
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const { navbar, menu } = getNavbarParts(toggle);
+    if (!menu) return false;
+
+    const isOpen = !menu.classList.contains('active');
+    closeOtherNavbars(menu);
+    setNavbarState(navbar, menu, toggle, isOpen);
+    return false;
+  }
+
+  function getNavbarParts(toggle) {
+    const navbar = toggle ? toggle.closest('.navbar') : document.querySelector('.navbar');
+    const menu = navbar ? navbar.querySelector('.navbar-menu') : document.querySelector('.navbar-menu');
+
+    return { navbar, menu };
+  }
+
+  function closeOtherNavbars(currentMenu) {
+    document.querySelectorAll('.navbar-menu.active').forEach(menu => {
+      if (menu === currentMenu) return;
+
+      const navbar = menu.closest('.navbar');
+      const toggle = navbar && navbar.querySelector('.navbar-toggle');
+      setNavbarState(navbar, menu, toggle, false);
     });
+  }
+
+  function setNavbarState(navbar, menu, toggle, isOpen) {
+    if (isOpen) {
+      positionNavbarMenu(navbar, menu);
+    }
+
+    menu.classList.toggle('active', isOpen);
+
+    if (toggle) {
+      toggle.classList.toggle('active', isOpen);
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    if (navbar) {
+      navbar.classList.toggle('menu-open', isOpen);
+    }
+
+    document.body.classList.toggle('navbar-menu-open', isOpen);
+    document.body.style.overflow = isOpen && window.innerWidth <= MOBILE_BREAKPOINT ? 'hidden' : '';
+  }
+
+  function positionNavbarMenu(navbar, menu) {
+    if (!navbar || !menu || window.innerWidth > MOBILE_BREAKPOINT) return;
+
+    const navbarBottom = Math.max(60, Math.round(navbar.getBoundingClientRect().bottom));
+    menu.style.setProperty('--mobile-nav-top', `${navbarBottom}px`);
   }
 
   function setupDashboardSidebar() {
@@ -118,7 +190,7 @@
     if (!menuToggle && window.innerWidth <= 768) {
       menuToggle = document.createElement('button');
       menuToggle.className = 'mobile-menu-toggle';
-      menuToggle.innerHTML = '☰';
+      menuToggle.innerHTML = '&#9776;';
       menuToggle.setAttribute('aria-label', 'Toggle sidebar');
       document.body.appendChild(menuToggle);
 
@@ -150,14 +222,15 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         // Reset mobile menu on resize to desktop
-        if (window.innerWidth > 768) {
-          const navbarMenu = document.querySelector('.navbar-menu');
-          const toggle = document.querySelector('.navbar-toggle');
+        if (window.innerWidth > MOBILE_BREAKPOINT) {
           const sidebar = document.querySelector('.dashboard-sidebar');
           const overlay = document.querySelector('.sidebar-overlay');
 
-          if (navbarMenu) navbarMenu.classList.remove('active');
-          if (toggle) toggle.classList.remove('active');
+          document.querySelectorAll('.navbar-menu.active').forEach(menu => {
+            const navbar = menu.closest('.navbar');
+            setNavbarState(navbar, menu, navbar && navbar.querySelector('.navbar-toggle'), false);
+          });
+
           if (sidebar) sidebar.classList.remove('active');
           if (overlay) overlay.classList.remove('active');
           document.body.style.overflow = '';
@@ -167,6 +240,11 @@
           if (mobileToggle) mobileToggle.remove();
           if (overlay) overlay.remove();
         } else {
+          document.querySelectorAll('.navbar').forEach(navbar => {
+            const menu = navbar.querySelector('.navbar-menu');
+            if (menu) positionNavbarMenu(navbar, menu);
+          });
+
           // Recreate mobile elements if switching back to mobile
           setupDashboardSidebar();
         }
@@ -221,16 +299,15 @@
   window.AMCAG.mobileMenu = {
     openNavbar: function() {
       const menu = document.querySelector('.navbar-menu');
-      const toggle = document.querySelector('.navbar-toggle');
-      if (menu) menu.classList.add('active');
-      if (toggle) toggle.classList.add('active');
+      const navbar = menu && menu.closest('.navbar');
+      const toggle = navbar && navbar.querySelector('.navbar-toggle');
+      if (menu) setNavbarState(navbar, menu, toggle, true);
     },
     closeNavbar: function() {
       const menu = document.querySelector('.navbar-menu');
-      const toggle = document.querySelector('.navbar-toggle');
-      if (menu) menu.classList.remove('active');
-      if (toggle) toggle.classList.remove('active');
-      document.body.style.overflow = '';
+      const navbar = menu && menu.closest('.navbar');
+      const toggle = navbar && navbar.querySelector('.navbar-toggle');
+      if (menu) setNavbarState(navbar, menu, toggle, false);
     },
     toggleNavbar: function() {
       const menu = document.querySelector('.navbar-menu');

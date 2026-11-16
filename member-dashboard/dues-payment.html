@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pay Dues | AMCAG Member Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Paystack Inline JS -->
-  <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 <body class="dashboard-layout">
   <nav class="navbar">
@@ -50,7 +48,7 @@
       <div class="dashboard-header">
         <div>
           <h1 class="dashboard-title">Monthly Dues Payment</h1>
-          <p class="dashboard-subtitle">Pay your monthly membership dues - GHS 50.00 per month</p>
+          <p class="dashboard-subtitle">Pay your monthly membership dues - <span id="monthlyDuesSubtitle">GHS 10.00</span> per month</p>
         </div>
       </div>
 
@@ -80,7 +78,7 @@
           <div class="alert alert-info mb-4">
             <p style="margin-bottom: 0.5rem;"><strong>Payment Rules:</strong></p>
             <ul style="margin: 0; padding-left: 1.5rem;">
-              <li>Monthly dues: GHS 50.00</li>
+              <li>Monthly dues: <span id="monthlyDuesRule">GHS 10.00</span></li>
               <li>You can pay for current month or missed months (arrears)</li>
               <li>You cannot skip ahead - must pay all overdue months first</li>
             </ul>
@@ -89,7 +87,7 @@
           <form id="paymentForm">
             <div class="form-group">
               <label class="form-label required">Select Months to Pay</label>
-              <div id="monthsSelection" class="p-4" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); max-height: 300px; overflow-y: auto;">
+              <div id="monthsSelection" class="dues-month-list">
                 <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
                   Loading available months...
                 </div>
@@ -105,7 +103,7 @@
                 </div>
                 <div class="flex-between mb-2">
                   <span>Amount per Month:</span>
-                  <strong>GHS 50.00</strong>
+                  <strong>GHS <span id="monthlyDuesSummary">10.00</span></strong>
                 </div>
                 <hr style="margin: 1rem 0; border-color: var(--border-color);">
                 <div class="flex-between">
@@ -119,15 +117,38 @@
               <label class="form-label required">Payment Method</label>
               <select id="paymentMethod" class="form-input" required>
                 <option value="">Select payment method...</option>
-                <option value="paystack">💳 Pay Now (Card / Mobile Money / Bank)</option>
+                <option value="hubtel">Mobile Money (MTN / Telecel / AirtelTigo)</option>
                 <option value="bank_transfer">🏦 Bank Transfer (Manual Confirmation)</option>
                 <option value="cash">💵 Cash Payment (At Office)</option>
               </select>
             </div>
             
-            <div class="alert alert-info" id="paystackInfo" style="display: none;">
-              <p style="margin: 0;">💡 You'll be redirected to Paystack to complete payment securely. Supports cards, mobile money (MTN, Vodafone, AirtelTigo), and bank transfers.</p>
+            <div id="onlinePaymentInfo" style="display: none;">
+              <div class="form-group">
+                <label class="form-label required">Mobile Money Network</label>
+                <select id="momoChannel" class="form-input">
+                  <option value="">Select network...</option>
+                  <option value="mtn-gh">MTN Mobile Money</option>
+                  <option value="vodafone-gh">Telecel Cash</option>
+                  <option value="tigo-gh">AirtelTigo Money</option>
+                </select>
+              </div>
+              <div class="alert alert-info">
+                <p style="margin: 0;">A payment prompt will be sent to <strong id="momoNumber">your registered number</strong>. Approve it on that phone to complete payment.</p>
+              </div>
+              <div class="form-group" style="margin-top: 1rem;">
+                <label style="display: flex; align-items: center; gap: .5rem; cursor: pointer;">
+                  <input type="checkbox" id="useAlternateMomoNumber">
+                  Use a different mobile money number for this payment
+                </label>
+              </div>
+              <div class="form-group" id="alternateMomoNumberGroup" style="display: none;">
+                <label class="form-label" for="alternateMomoNumber">Alternate Ghana mobile number</label>
+                <input type="tel" id="alternateMomoNumber" class="form-input" inputmode="tel" autocomplete="tel" placeholder="e.g. 0241234567">
+                <small style="display: block; margin-top: .35rem; color: var(--text-secondary);">This changes only this payment and does not update your profile.</small>
+              </div>
             </div>
+            <div class="alert alert-info" id="momoStatus" style="display: none;"></div>
             
             <div class="alert alert-warning" id="manualPaymentInfo" style="display: none;">
               <p style="margin: 0; font-weight: 600;">Bank Details:</p>
@@ -186,15 +207,16 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/payment-config.js"></script>
   <script src="/js/suspension-check.js"></script>
 
   <script>
-    // Paystack Configuration
-    const PAYSTACK_PUBLIC_KEY = 'pk_test_xxxxxxxxxxxxxxxxxxxx'; // Replace with your Paystack public key
-    
-    const MONTHLY_DUES_AMOUNT = 50.00;
+    let MONTHLY_DUES_AMOUNT = 10.00;
     let currentUser = null;
     let memberData = null;
     let paymentHistory = [];
@@ -209,6 +231,13 @@
       }
     });
 
+    function ensureDuesPaymentFunction() {
+      if (!processDuesPaymentFunction) {
+        processDuesPaymentFunction = firebase.functions().httpsCallable('processDuesPayment');
+      }
+      return processDuesPaymentFunction;
+    }
+
     // Get month name
     function getMonthName(month) {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -219,6 +248,90 @@
       const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                      'July', 'August', 'September', 'October', 'November', 'December'];
       return months[month - 1];
+    }
+
+    function toDateValue(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function getBillingStartDate() {
+      const configuredMonth = String(memberData?.duesStartMonth || '');
+      if (/^\d{4}-(0[1-9]|1[0-2])$/.test(configuredMonth)) {
+        const [year, month] = configuredMonth.split('-').map(Number);
+        return new Date(year, month - 1, 1);
+      }
+      const date =
+        toDateValue(memberData?.joiningDate) ||
+        toDateValue(memberData?.approvalDate) ||
+        toDateValue(memberData?.approvedAt) ||
+        toDateValue(memberData?.registrationDate) ||
+        toDateValue(memberData?.createdAt) ||
+        new Date();
+
+      return new Date(date.getFullYear(), date.getMonth(), 1);
+    }
+
+    function isSettledPayment(payment) {
+      return ['paid', 'waived'].includes(String(payment.status || '').toLowerCase());
+    }
+
+    function monthKey(year, month) {
+      return `${year}-${String(month).padStart(2, '0')}`;
+    }
+
+    function getMonthPaymentStatus(monthIndex, year, paidMonths) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const key = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+
+      if (paidMonths.includes(key)) return 'paid';
+
+      if (year > currentYear || (year === currentYear && monthIndex > currentMonth)) {
+        return 'locked';
+      }
+
+      return 'available';
+    }
+
+    function sortPaymentsByMonthDesc(payments) {
+      return payments.sort((a, b) => {
+        const ay = Number(a.year) || 0;
+        const by = Number(b.year) || 0;
+        const am = Number(a.month) || 0;
+        const bm = Number(b.month) || 0;
+        if (ay !== by) return by - ay;
+        return bm - am;
+      });
+    }
+
+    function resolveDuesPaymentAccount() {
+      if (window.AMCAGPaymentConfig && typeof window.AMCAGPaymentConfig.resolveAccount === 'function') {
+        return window.AMCAGPaymentConfig.resolveAccount({
+          type: 'monthly_dues',
+          region: memberData?.region
+        });
+      }
+
+      return {
+        scope: String(memberData?.region || '').trim().toLowerCase() === 'greater accra' ? 'greater_accra' : 'national',
+        owner: String(memberData?.region || '').trim().toLowerCase() === 'greater accra' ? 'AMCAG Greater Accra' : 'AMCAG National'
+      };
+    }
+
+    function setMonthsError(message) {
+      const container = document.getElementById('monthsSelection');
+      container.innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: var(--color-error);">
+          <strong>Unable to load payable months</strong>
+          <p style="color: var(--text-secondary); margin-top: 0.5rem;">${message}</p>
+          <button type="button" class="btn btn-outline mt-3" onclick="loadPaymentData()">Try Again</button>
+        </div>
+      `;
+      document.getElementById('submitBtn').disabled = true;
     }
 
     // Load payment data
@@ -237,18 +350,34 @@
 
         memberData = memberDoc.data();
 
-        // Get payment history
+        const feeDoc = await db.collection('system_settings').doc('fees').get();
+        const configuredDues = Number(feeDoc.data()?.monthlyDues);
+        if (feeDoc.exists && Number.isFinite(configuredDues) && configuredDues > 0) {
+          MONTHLY_DUES_AMOUNT = Number(configuredDues.toFixed(2));
+        }
+        ['monthlyDuesSubtitle', 'monthlyDuesRule', 'monthlyDuesSummary'].forEach(id => {
+          const element = document.getElementById(id);
+          if (element) element.textContent = MONTHLY_DUES_AMOUNT.toFixed(2);
+        });
+
+        const momoNumberEl = document.getElementById('momoNumber');
+        const rawPhone = String(memberData.phone || '').replace(/\D/g, '');
+        if (momoNumberEl) {
+          momoNumberEl.textContent = rawPhone.length >= 6
+            ? `${rawPhone.slice(0, 3)}****${rawPhone.slice(-3)}`
+            : 'on your profile (please add one)';
+        }
+
+        // Get payment history. Keep the query index-safe and sort in the browser.
         const paymentsSnapshot = await db.collection('payments')
           .where('uid', '==', uid)
           .where('type', '==', 'monthly_dues')
-          .orderBy('year', 'desc')
-          .orderBy('month', 'desc')
           .get();
 
-        paymentHistory = paymentsSnapshot.docs.map(doc => ({
+        paymentHistory = sortPaymentsByMonthDesc(paymentsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })));
 
         // Calculate available months
         calculateAvailableMonths();
@@ -263,6 +392,7 @@
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error loading payment data:', error);
+        setMonthsError(error.message || 'Please check your connection and try again.');
         UIModule.showAlert('Error loading data: ' + error.message, 'error');
       }
     }
@@ -273,10 +403,8 @@
       const currentMonth = now.getMonth() + 1; // 1-12
       const currentYear = now.getFullYear();
 
-      // Get registration date
-      const regDate = memberData.registrationDate ? 
-        memberData.registrationDate.toDate() : 
-        new Date();
+      // Start from the member's first billable month.
+      const regDate = getBillingStartDate();
       
       const regMonth = regDate.getMonth() + 1;
       const regYear = regDate.getFullYear();
@@ -284,62 +412,41 @@
       // Build set of paid/waived months
       const paidMonths = new Set();
       paymentHistory.forEach(payment => {
-        if (payment.status === 'paid' || payment.status === 'waived') {
-          paidMonths.add(`${payment.year}-${payment.month}`);
+        if (isSettledPayment(payment)) {
+          paidMonths.add(monthKey(payment.year, payment.month));
         }
       });
 
-      // Find first unpaid month
-      let checkDate = new Date(regDate);
-      let firstUnpaid = null;
-
-      while (checkDate <= now) {
-        const checkMonth = checkDate.getMonth() + 1;
-        const checkYear = checkDate.getFullYear();
-        const key = `${checkYear}-${checkMonth}`;
-
-        if (!paidMonths.has(key)) {
-          firstUnpaid = { month: checkMonth, year: checkYear };
-          break;
-        }
-
-        checkDate.setMonth(checkDate.getMonth() + 1);
-      }
-
-      // Build available months list (from first unpaid to current month)
       availableMonths = [];
-      
-      if (firstUnpaid) {
-        let buildDate = new Date(firstUnpaid.year, firstUnpaid.month - 1, 1);
-        const endDate = new Date(currentYear, currentMonth - 1, 1);
 
-        while (buildDate <= endDate) {
-          const buildMonth = buildDate.getMonth() + 1;
-          const buildYear = buildDate.getFullYear();
-          const key = `${buildYear}-${buildMonth}`;
+      let buildDate = new Date(regYear, regMonth - 1, 1);
+      const endDate = new Date(currentYear, 11, 1);
 
-          if (!paidMonths.has(key)) {
-            const isOverdue = buildYear < currentYear || 
-                            (buildYear === currentYear && buildMonth < currentMonth);
-            
-            availableMonths.push({
-              month: buildMonth,
-              year: buildYear,
-              key: key,
-              isOverdue: isOverdue,
-              isCurrent: buildYear === currentYear && buildMonth === currentMonth
-            });
-          }
+      while (buildDate <= endDate) {
+        const buildMonth = buildDate.getMonth() + 1;
+        const buildYear = buildDate.getFullYear();
+        const status = getMonthPaymentStatus(buildMonth - 1, buildYear, Array.from(paidMonths));
+        const isOverdue = status === 'available' && (buildYear < currentYear ||
+                        (buildYear === currentYear && buildMonth < currentMonth));
 
-          buildDate.setMonth(buildDate.getMonth() + 1);
-        }
+        availableMonths.push({
+          month: buildMonth,
+          year: buildYear,
+          key: monthKey(buildYear, buildMonth),
+          status,
+          isOverdue,
+          isCurrent: buildYear === currentYear && buildMonth === currentMonth
+        });
+
+        buildDate.setMonth(buildDate.getMonth() + 1);
       }
     }
 
     // Update statistics
     function updateStats() {
-      const overdueCount = availableMonths.filter(m => m.isOverdue).length;
-      const totalOwed = availableMonths.length * MONTHLY_DUES_AMOUNT;
+      const payableMonths = availableMonths.filter(m => m.status === 'available');
+      const overdueCount = payableMonths.filter(m => m.isOverdue).length;
+      const totalOwed = payableMonths.length * MONTHLY_DUES_AMOUNT;
 
       document.getElementById('overdueMonths').textContent = overdueCount;
       document.getElementById('totalOwed').textContent = totalOwed.toFixed(2);
@@ -347,8 +454,10 @@
       // Last payment
       if (paymentHistory.length > 0) {
         const lastPayment = paymentHistory[0];
-        const lastDate = lastPayment.paymentDate ? 
-          new Date(lastPayment.paymentDate.toDate()).toLocaleDateString() : 
+        const lastDate = toDateValue(lastPayment.paymentDate) ?
+          toDateValue(lastPayment.paymentDate).toLocaleDateString() :
+          toDateValue(lastPayment.createdAt) ?
+          toDateValue(lastPayment.createdAt).toLocaleDateString() :
           'Unknown';
         document.getElementById('lastPayment').textContent = lastDate;
       } else {
@@ -364,7 +473,7 @@
           <p>You have <strong>${overdueCount}</strong> overdue month(s). Please pay GHS ${(overdueCount * MONTHLY_DUES_AMOUNT).toFixed(2)} to bring your account up to date.</p>
         `;
         alertDiv.style.display = 'block';
-      } else if (availableMonths.length > 0) {
+      } else if (payableMonths.length > 0) {
         alertDiv.className = 'alert alert-info mb-4';
         alertDiv.innerHTML = `
           <p>✅ Your account is up to date! Pay this month's dues to stay current.</p>
@@ -379,7 +488,7 @@
     function renderMonthsSelection() {
       const container = document.getElementById('monthsSelection');
 
-      if (availableMonths.length === 0) {
+      if (availableMonths.length === 0 || availableMonths.every(monthData => monthData.status !== 'available')) {
         container.innerHTML = `
           <div style="text-align: center; padding: 2rem; color: var(--color-success);">
             <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
@@ -391,31 +500,42 @@
         return;
       }
 
-      container.innerHTML = availableMonths.map((monthData, index) => {
-        const isFirst = index === 0;
-        const badgeClass = monthData.isOverdue ? 'badge-error' : 
-                          monthData.isCurrent ? 'badge-primary' : 'badge-secondary';
-        const badgeText = monthData.isOverdue ? 'OVERDUE' : 
-                         monthData.isCurrent ? 'CURRENT' : 'Available';
+      const firstAvailableKey = availableMonths.find(monthData => monthData.status === 'available')?.key;
+
+      container.innerHTML = availableMonths.map((monthData) => {
+        const isFirst = monthData.key === firstAvailableKey;
+        const isDisabled = monthData.status !== 'available';
+        const badgeClass = monthData.status === 'paid' ? 'badge-success' :
+                          monthData.status === 'locked' ? 'badge-secondary' :
+                          monthData.isOverdue ? 'badge-error' :
+                          monthData.isCurrent ? 'badge-primary' : 'badge-info';
+        const badgeText = monthData.status === 'paid' ? 'Paid' :
+                         monthData.status === 'locked' ? 'Locked' :
+                         monthData.isOverdue ? 'AVAILABLE' :
+                         monthData.isCurrent ? 'CURRENT' : 'AVAILABLE';
 
         return `
-          <label style="display: flex; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-color); cursor: pointer; ${monthData.isOverdue ? 'background: var(--color-error-container);' : ''}"
-                 onchange="updatePaymentSummary()">
+          <label class="dues-month-option ${monthData.isOverdue ? 'is-overdue' : ''} ${isDisabled ? 'is-disabled' : ''}">
             <input type="checkbox" 
                    class="month-checkbox" 
                    data-month="${monthData.month}" 
                    data-year="${monthData.year}"
                    data-key="${monthData.key}"
-                   style="margin-right: 1rem;"
-                   ${isFirst ? 'checked' : ''}>
-            <div style="flex: 1;">
-              <strong>${getFullMonthName(monthData.month)} ${monthData.year}</strong>
-              <div style="font-size: 0.85rem; color: var(--text-secondary);">GHS ${MONTHLY_DUES_AMOUNT.toFixed(2)}</div>
+                   data-status="${monthData.status}"
+                   ${isDisabled ? 'disabled' : ''}
+                   ${isFirst && !isDisabled ? 'checked' : ''}>
+            <div class="dues-month-copy">
+              <span class="dues-month-title">${getFullMonthName(monthData.month)} ${monthData.year}</span>
+              <span class="dues-month-amount">GHS ${MONTHLY_DUES_AMOUNT.toFixed(2)}</span>
             </div>
             <span class="badge ${badgeClass}">${badgeText}</span>
           </label>
         `;
       }).join('');
+
+      container.querySelectorAll('.month-checkbox').forEach((checkbox) => {
+        checkbox.addEventListener('change', updatePaymentSummary);
+      });
 
       // Initial summary update
       updatePaymentSummary();
@@ -425,7 +545,7 @@
     function updatePaymentSummary() {
       const checkboxes = document.querySelectorAll('.month-checkbox');
       const selectedMonths = Array.from(checkboxes)
-        .filter(cb => cb.checked)
+        .filter(cb => cb.checked && cb.dataset.status === 'available')
         .map(cb => ({
           month: parseInt(cb.dataset.month),
           year: parseInt(cb.dataset.year),
@@ -434,12 +554,12 @@
 
       // Validate sequential selection (can't skip months)
       if (selectedMonths.length > 0) {
-        const firstAvailable = availableMonths[0].key;
+        const payableMonths = availableMonths.filter(monthData => monthData.status === 'available');
         let isValid = true;
         
         // Check all selected months are sequential from first available
         for (let i = 0; i < selectedMonths.length; i++) {
-          const expectedMonth = availableMonths[i];
+          const expectedMonth = payableMonths[i];
           if (!expectedMonth || selectedMonths[i].key !== expectedMonth.key) {
             isValid = false;
             break;
@@ -449,12 +569,12 @@
         if (!isValid) {
           UIModule.showAlert('You must pay months sequentially. Cannot skip months.', 'error');
           // Uncheck invalid selections
-          checkboxes.forEach((cb, idx) => {
-            if (idx < selectedMonths.length) {
-              cb.checked = true;
-            } else {
-              cb.checked = false;
-            }
+          const selectedCount = selectedMonths.length;
+          let applied = 0;
+          checkboxes.forEach((cb) => {
+            if (cb.dataset.status !== 'available') return;
+            cb.checked = applied < selectedCount;
+            applied++;
           });
           return;
         }
@@ -467,6 +587,35 @@
       document.getElementById('totalAmount').textContent = total.toFixed(2);
 
       document.getElementById('submitBtn').disabled = count === 0;
+    }
+
+    function validateSelectedMonthsForSubmission(selectedMonths) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const payableMonths = availableMonths.filter(monthData => monthData.status === 'available');
+
+      if (selectedMonths.some(monthData => monthData.status !== 'available')) {
+        return 'Paid or locked months cannot be submitted for payment.';
+      }
+
+      if (selectedMonths.some(monthData => monthData.year > currentYear || (monthData.year === currentYear && monthData.month > currentMonth))) {
+        return 'Future months cannot be paid.';
+      }
+
+      const sortedMonths = [...selectedMonths].sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.month - b.month;
+      });
+
+      for (let i = 0; i < sortedMonths.length; i++) {
+        const expectedMonth = payableMonths[i];
+        if (!expectedMonth || sortedMonths[i].key !== expectedMonth.key) {
+          return 'You must pay previous unpaid months first. Select months in order without skipping.';
+        }
+      }
+
+      return '';
     }
 
     // Render payment history
@@ -489,18 +638,22 @@
           '<span class="badge badge-success">Paid</span>' :
           payment.status === 'waived' ?
           '<span class="badge badge-info">Waived</span>' :
+          payment.status === 'failed' ?
+          '<span class="badge badge-error">Failed</span>' :
+          payment.status === 'awaiting_payment' ?
+          '<span class="badge badge-warning">Awaiting phone approval</span>' :
           '<span class="badge badge-warning">Pending</span>';
 
-        const dateText = payment.paymentDate ? 
-          new Date(payment.paymentDate.toDate()).toLocaleDateString() : 
-          payment.createdAt ?
-          new Date(payment.createdAt.toDate()).toLocaleDateString() :
+        const paymentDate = toDateValue(payment.paymentDate) || toDateValue(payment.createdAt);
+        const amount = Number(payment.amount) || MONTHLY_DUES_AMOUNT;
+        const dateText = paymentDate ?
+          paymentDate.toLocaleDateString() :
           'N/A';
 
         return `
           <tr>
             <td>${getMonthName(payment.month)} ${payment.year}</td>
-            <td style="font-weight: 600;">GHS ${payment.amount.toFixed(2)}</td>
+            <td style="font-weight: 600;">GHS ${amount.toFixed(2)}</td>
             <td>${statusBadge}</td>
             <td>${dateText}</td>
           </tr>
@@ -513,14 +666,14 @@
       const method = e.target.value;
       
       // Hide all conditional elements
-      document.getElementById('paystackInfo').style.display = 'none';
+      document.getElementById('onlinePaymentInfo').style.display = 'none';
       document.getElementById('manualPaymentInfo').style.display = 'none';
       document.getElementById('manualPaymentFields').style.display = 'none';
       
       // Show relevant info based on method
-      if (method === 'paystack') {
-        document.getElementById('paystackInfo').style.display = 'block';
-        document.getElementById('submitBtn').innerHTML = '💳 Pay with Paystack';
+      if (method === 'hubtel') {
+        document.getElementById('onlinePaymentInfo').style.display = 'block';
+        document.getElementById('submitBtn').innerHTML = '📱 Pay with Mobile Money';
       } else if (method === 'bank_transfer' || method === 'cash') {
         document.getElementById('manualPaymentInfo').style.display = 'block';
         if (method === 'bank_transfer') {
@@ -532,79 +685,47 @@
       }
     });
 
-    // Paystack Payment Handler
-    function initiatePaystackPayment(selectedMonths, totalAmount, notes) {
-      const handler = PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email: currentUser.email,
-        amount: totalAmount * 100, // Paystack amount is in kobo/pesewas (GHS * 100)
-        currency: 'GHS',
-        ref: 'AMCAG-DUES-' + Math.floor((Math.random() * 1000000000) + 1),
-        metadata: {
-          custom_fields: [
-            {
-              display_name: "Member Name",
-              variable_name: "member_name",
-              value: memberData.fullName || currentUser.email
-            },
-            {
-              display_name: "Member ID",
-              variable_name: "member_id",
-              value: memberData.memberId || 'N/A'
-            },
-            {
-              display_name: "Months Count",
-              variable_name: "months_count",
-              value: selectedMonths.length.toString()
-            },
-            {
-              display_name: "Months",
-              variable_name: "months",
-              value: selectedMonths.map(m => `${m.month}/${m.year}`).join(', ')
-            }
-          ]
-        },
-        onClose: function() {
-          UIModule.showAlert('Payment cancelled', 'warning');
-        },
-        callback: async function(response) {
-          try {
-            UIModule.showLoader('Verifying payment...');
-            
-            // Call Cloud Function to verify and record payment
-            const result = await processDuesPaymentFunction({
-              months: selectedMonths,
-              paymentMethod: 'paystack',
-              amount: totalAmount,
-              notes: notes,
-              paystackReference: response.reference
-            });
+    document.getElementById('useAlternateMomoNumber')?.addEventListener('change', (e) => {
+      const group = document.getElementById('alternateMomoNumberGroup');
+      const input = document.getElementById('alternateMomoNumber');
+      const enabled = Boolean(e.target.checked);
+      group.style.display = enabled ? 'block' : 'none';
+      input.required = enabled;
+      if (!enabled) input.value = '';
+    });
 
-            UIModule.hideLoader();
-
-            if (result.data.success) {
-              UIModule.showAlert(`✅ Payment successful!\n${selectedMonths.length} month(s) paid.\nTotal: GHS ${totalAmount.toFixed(2)}`, 'success');
-              
-              // Reset form
-              document.getElementById('paymentForm').reset();
-              
-              // Reload data
-              setTimeout(() => {
-                loadPaymentData();
-              }, 1000);
-            } else {
-              UIModule.showAlert('Payment verification failed: ' + (result.data.error || 'Unknown error'), 'error');
-            }
-
-          } catch (error) {
-            UIModule.hideLoader();
-            console.error('Payment verification error:', error);
-            UIModule.showAlert('Error verifying payment: ' + error.message, 'error');
-          }
+    // Wait for the Hubtel callback to flip the payment to paid (poll Firestore), then fall back to a status check
+    async function waitForMomoResult(paymentIds, clientReference) {
+      const box = document.getElementById('momoStatus');
+      box.style.display = 'block';
+      box.textContent = 'Waiting for you to approve the prompt on your phone...';
+      const db = firebase.firestore();
+      const startedAt = Date.now();
+      const deadline = startedAt + 5 * 60 * 1000; // Hubtel: check status after 5 minutes without a callback
+      while (Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 4000));
+        const docs = await Promise.all(paymentIds.map(id => db.collection('payments').doc(id).get()));
+        const statuses = docs.map(d => (d.exists ? d.data().status : ''));
+        if (statuses.every(st => st === 'paid')) {
+          box.textContent = 'Payment received. Thank you!';
+          return 'paid';
         }
-      });
-      
-      handler.openIframe();
+        if (statuses.some(st => st === 'failed')) {
+          box.textContent = 'The payment was not completed. You can try again.';
+          return 'failed';
+        }
+      }
+      try {
+        box.textContent = 'Checking payment status with Hubtel...';
+        const check = await firebase.functions().httpsCallable('checkHubtelTransactionStatus')({clientReference});
+        const st = check.data && check.data.status;
+        box.textContent = st === 'paid' ? 'Payment received. Thank you!' : 'Payment not confirmed yet. If you approved it, it will update shortly.';
+        return st === 'paid' ? 'paid' : 'unknown';
+      } catch (err) {
+        console.error('Status check failed:', err);
+        box.textContent = 'Payment not confirmed yet. If you approved it, it will update shortly.';
+        return 'unknown';
+      }
     }
 
     // Form submission
@@ -614,7 +735,9 @@
       const checkboxes = document.querySelectorAll('.month-checkbox:checked');
       const selectedMonths = Array.from(checkboxes).map(cb => ({
         month: parseInt(cb.dataset.month),
-        year: parseInt(cb.dataset.year)
+        year: parseInt(cb.dataset.year),
+        key: cb.dataset.key,
+        status: cb.dataset.status
       }));
 
       const paymentMethod = document.getElementById('paymentMethod').value;
@@ -633,27 +756,84 @@
 
       const totalAmount = selectedMonths.length * MONTHLY_DUES_AMOUNT;
 
-      // Handle Paystack payment
-      if (paymentMethod === 'paystack') {
-        initiatePaystackPayment(selectedMonths, totalAmount, notes);
+      // Mobile money (Hubtel Direct Receive Money)
+      if (paymentMethod === 'hubtel') {
+        const channel = document.getElementById('momoChannel').value;
+        if (!channel) {
+          UIModule.showAlert('Please select your mobile money network', 'error');
+          return;
+        }
+        const momoValidation = validateSelectedMonthsForSubmission(selectedMonths);
+        if (momoValidation) {
+          UIModule.showAlert(momoValidation, 'error');
+          return;
+        }
+        const useAlternate = document.getElementById('useAlternateMomoNumber')?.checked;
+        const alternateMomoNumber = document.getElementById('alternateMomoNumber')?.value.trim() || '';
+        if (useAlternate && !/^((\+233|233|0)?\d{9})$/.test(alternateMomoNumber.replace(/[\s-]/g, ''))) {
+          UIModule.showAlert('Enter a valid Ghana mobile number for this payment.', 'error');
+          return;
+        }
+        const paymentTarget = useAlternate ? alternateMomoNumber : (memberData.phone || '');
+        if (!await AMCAGDialog.confirm(`Send a mobile money prompt for GHS ${totalAmount.toFixed(2)} to ${paymentTarget}?`)) {
+          return;
+        }
+        const submitBtn = document.getElementById('submitBtn');
+        try {
+          submitBtn.disabled = true;
+          UIModule.showLoader('Sending mobile money prompt...');
+          const momoResult = await ensureDuesPaymentFunction()({
+            months: selectedMonths,
+            paymentMethod: 'hubtel',
+            amount: totalAmount,
+            channel: channel,
+            paymentPhone: useAlternate ? alternateMomoNumber : null,
+            notes: notes,
+            paymentAccountScope: resolveDuesPaymentAccount().scope
+          });
+          UIModule.hideLoader();
+          if (momoResult.data.success) {
+            const outcome = await waitForMomoResult(momoResult.data.paymentIds || [], momoResult.data.clientReference);
+            if (outcome === 'paid') {
+              UIModule.showAlert('Payment received. Thank you!', 'success');
+            }
+            loadPaymentData();
+          } else {
+            UIModule.showAlert('Request failed: ' + (momoResult.data.error || 'Unknown error'), 'error');
+          }
+        } catch (error) {
+          UIModule.hideLoader();
+          console.error('Mobile money payment error:', error);
+          UIModule.showAlert('Error: ' + error.message, 'error');
+        } finally {
+          submitBtn.disabled = false;
+        }
+        return;
+      }
+
+      const validationError = validateSelectedMonthsForSubmission(selectedMonths);
+      if (validationError) {
+        UIModule.showAlert(validationError, 'error');
         return;
       }
 
       // Handle manual payments (bank transfer / cash)
-      if (!confirm(`Submit payment request for GHS ${totalAmount.toFixed(2)} for ${selectedMonths.length} month(s)?`)) {
+      if (!await AMCAGDialog.confirm(`Submit payment request for GHS ${totalAmount.toFixed(2)} for ${selectedMonths.length} month(s)?`)) {
         return;
       }
 
       try {
         UIModule.showLoader('Submitting payment request...');
 
-        const result = await processDuesPaymentFunction({
+        const result = await ensureDuesPaymentFunction()({
           months: selectedMonths,
           paymentMethod: paymentMethod,
           amount: totalAmount,
           notes: notes,
           transferReference: transferReference || null,
-          paystackReference: null // Manual payment, no Paystack reference
+          paymentAccountScope: resolveDuesPaymentAccount().scope,
+          hubtelClientReference: null,
+          hubtelTransactionId: null
         });
 
         UIModule.hideLoader();
@@ -694,6 +874,7 @@
       await SuspensionCheckModule.initMemberDashboardCheck();
 
       currentUser = user;
+      ensureDuesPaymentFunction();
       
       const db = firebase.firestore();
       const userDoc = await db.collection('users').doc(user.uid).get();
@@ -714,6 +895,6 @@
       loadPaymentData();
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
 </body>
 </html>

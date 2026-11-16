@@ -8,7 +8,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   
   <style>
     /* Security Command Center Styles */
@@ -294,7 +294,10 @@
       </a>
       <div class="navbar-actions">
         <a href="/national/dashboard.html" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); text-decoration: none; margin-right: 8px;">← Back to Dashboard</a>
-        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="firebase.auth().signOut().then(() => window.location.href = '/index.html')">Sign Out</button>
+        <a href="/profile.html" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); text-decoration: none; margin-right: 8px;">Profile</a>
+        <!-- ✅ NAVIGATION PATCH START -->
+        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="firebase.auth().signOut().then(() => window.location.href = '/membership.html')">Sign Out</button>
+        <!-- ✅ NAVIGATION PATCH END -->
       </div>
     </div>
   </nav>
@@ -437,6 +440,9 @@
   </div>
 
   <!-- Firebase SDKs -->
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -445,11 +451,71 @@
   <!-- App Modules -->
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   
   <script>
-    const { db } = FirebaseModule;
+    const securityAuth = firebase.auth();
+    let securityDb = FirebaseModule.firestore();
     let currentUser = null;
+    let securityListeners = [];
+
+    function setText(id, value, fallback = '0') {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.textContent = value ?? fallback;
+    }
+
+    function setHTML(id, value, fallback = '') {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.innerHTML = value ?? fallback;
+    }
+
+    function getFirestoreDb() {
+      securityDb = securityDb || FirebaseModule.firestore();
+      return securityDb;
+    }
+
+    function hasFirestoreAccess() {
+      getFirestoreDb();
+      if (!securityDb) {
+        console.error('Firestore DB not initialized');
+        return false;
+      }
+
+      if (!securityAuth.currentUser) {
+        console.warn('User not authenticated');
+        return false;
+      }
+
+      return true;
+    }
+
+    function isValidFirestoreQuery(queryRef) {
+      return Boolean(queryRef && typeof queryRef.onSnapshot === 'function');
+    }
+
+    function renderSecurityListenerError(message = 'Unable to load security data.') {
+      setHTML('alerts-container', `<div class="no-data">${message}</div>`);
+      setHTML('events-tbody', `<tr><td colspan="6" class="no-data">${message}</td></tr>`);
+    }
+
+    function cleanupSecurityListeners() {
+      securityListeners.forEach((unsubscribe) => {
+        try {
+          if (typeof unsubscribe === 'function') unsubscribe();
+        } catch (error) {
+          console.warn('Security listener cleanup failed:', error);
+        }
+      });
+      securityListeners = [];
+    }
     
     // Authentication check - super_admin only
     AuthModule.onAuthStateChanged(async (user) => {
@@ -474,6 +540,7 @@
     // Load Dashboard Data
     async function loadSecurityDashboard() {
       try {
+        if (!hasFirestoreAccess()) return;
         await Promise.all([
           loadOverviewStats(),
           loadAlerts(),
@@ -490,33 +557,34 @@
     // Load Overview Statistics
     async function loadOverviewStats() {
       try {
+        if (!hasFirestoreAccess()) return;
         // Open Alerts
-        const openAlerts = await db.collection('security_alerts')
+        const openAlerts = await securityDb.collection('security_alerts')
           .where('status', '==', 'OPEN')
           .get();
-        document.getElementById('stat-open-alerts').textContent = openAlerts.size;
+        setText('stat-open-alerts', openAlerts.size);
         
         // Critical Events (24h)
         const yesterday = Date.now() - (24 * 60 * 60 * 1000);
-        const criticalEvents = await db.collection('security_events')
+        const criticalEvents = await securityDb.collection('security_events')
           .where('severity', '==', 'CRITICAL')
           .where('createdAt', '>=', yesterday)
           .get();
-        document.getElementById('stat-critical-events').textContent = criticalEvents.size;
+        setText('stat-critical-events', criticalEvents.size);
         
         // High-Risk Admins
-        const highRiskAdmins = await db.collection('security_profiles')
+        const highRiskAdmins = await securityDb.collection('security_profiles')
           .where('riskScore', '>=', 50)
           .get();
-        document.getElementById('stat-high-risk-admins').textContent = highRiskAdmins.size;
+        setText('stat-high-risk-admins', highRiskAdmins.size);
         
         // Failed Reauth (1h)
         const oneHourAgo = Date.now() - (60 * 60 * 1000);
-        const failedReauth = await db.collection('security_events')
+        const failedReauth = await securityDb.collection('security_events')
           .where('type', '==', 'FAILED_REAUTH')
           .where('createdAt', '>=', oneHourAgo)
           .get();
-        document.getElementById('stat-failed-reauth').textContent = failedReauth.size;
+        setText('stat-failed-reauth', failedReauth.size);
         
       } catch (error) {
         console.error('Error loading stats:', error);
@@ -526,15 +594,14 @@
     // Load Security Alerts
     async function loadAlerts() {
       try {
-        const alertsSnap = await db.collection('security_alerts')
+        if (!hasFirestoreAccess()) return;
+        const alertsSnap = await securityDb.collection('security_alerts')
           .orderBy('createdAt', 'desc')
           .limit(20)
           .get();
         
-        const container = document.getElementById('alerts-container');
-        
         if (alertsSnap.empty) {
-          container.innerHTML = '<div class="no-data">No security alerts</div>';
+          setHTML('alerts-container', '<div class="no-data">No security alerts</div>');
           return;
         }
         
@@ -559,11 +626,11 @@
         });
         
         html += '</tbody></table>';
-        container.innerHTML = html;
+        setHTML('alerts-container', html);
         
       } catch (error) {
         console.error('Error loading alerts:', error);
-        document.getElementById('alerts-container').innerHTML = '<div class="no-data">Error loading alerts</div>';
+        setHTML('alerts-container', '<div class="no-data">Error loading alerts</div>');
       }
     }
 
@@ -588,19 +655,18 @@
     // Load Security Events
     async function loadEvents() {
       try {
+        if (!hasFirestoreAccess()) return;
         const timeFilter = parseInt(document.getElementById('time-filter').value);
         const cutoffTime = Date.now() - (timeFilter * 60 * 1000);
         
-        const eventsSnap = await db.collection('security_events')
+        const eventsSnap = await securityDb.collection('security_events')
           .where('createdAt', '>=', cutoffTime)
           .orderBy('createdAt', 'desc')
           .limit(50)
           .get();
         
-        const tbody = document.getElementById('events-tbody');
-        
         if (eventsSnap.empty) {
-          tbody.innerHTML = '<tr><td colspan="6" class="no-data">No events in this time range</td></tr>';
+          setHTML('events-tbody', '<tr><td colspan="6" class="no-data">No events in this time range</td></tr>');
           return;
         }
         
@@ -623,93 +689,129 @@
           `;
         });
         
-        tbody.innerHTML = html;
+        setHTML('events-tbody', html);
         
       } catch (error) {
         console.error('Error loading events:', error);
-        document.getElementById('events-tbody').innerHTML = '<tr><td colspan="6" class="no-data">Error loading events</td></tr>';
+        setHTML('events-tbody', '<tr><td colspan="6" class="no-data">Error loading events</td></tr>');
       }
     }
     
     // Load Risk Profiles
     async function loadRiskProfiles() {
       try {
-        const profilesSnap = await db.collection('security_profiles')
+        if (!hasFirestoreAccess()) return;
+        const profilesSnap = await securityDb.collection('security_profiles')
           .orderBy('riskScore', 'desc')
           .limit(20)
           .get();
-        
-        const tbody = document.getElementById('risk-tbody');
-        
+
         if (profilesSnap.empty) {
-          tbody.innerHTML = '<tr><td colspan="6" class="no-data">No risk profiles</td></tr>';
+          setHTML('risk-tbody', '<tr><td colspan="6" class="no-data">No risk profiles</td></tr>');
           return;
         }
-        
-        let html = '';
-        
-        profilesSnap.forEach(doc => {
+
+        const rows = await Promise.all(profilesSnap.docs.map(async (doc) => {
           const profile = doc.data();
           const lastSeen = new Date(profile.lastSeen).toLocaleString();
-          
-          // Get user email from uid
-          db.collection('users').doc(profile.uid).get().then(userDoc => {
-            const userData = userDoc.exists ? userDoc.data() : {};
-            const email = userData.email || profile.uid;
-            
-            const row = `
-              <tr>
-                <td>${email}</td>
-                <td><strong>${profile.riskScore}</strong></td>
-                <td>${profile.counters?.passwordResets_1h || 0}</td>
-                <td>${profile.counters?.roleChanges_24h || 0}</td>
-                <td>${lastSeen}</td>
-                <td>
-                  <button class="killswitch-btn btn-sm" onclick="showKillswitch('${profile.uid}', '${email}')">🛑 Block</button>
-                </td>
-              </tr>
-            `;
-            
-            // Update the row
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = row;
-            tbody.appendChild(tempDiv.firstElementChild);
-          });
-        });
-        
-        // Clear loading state
-        tbody.innerHTML = '';
+          const userDoc = await securityDb.collection('users').doc(profile.uid).get();
+          const userData = userDoc.exists ? userDoc.data() : {};
+          const email = userData.email || profile.uid;
+
+          return `
+            <tr>
+              <td>${email}</td>
+              <td><strong>${profile.riskScore}</strong></td>
+              <td>${profile.counters?.passwordResets_1h || 0}</td>
+              <td>${profile.counters?.roleChanges_24h || 0}</td>
+              <td>${lastSeen}</td>
+              <td>
+                <button class="killswitch-btn btn-sm" onclick="showKillswitch('${profile.uid}', '${email}')">Block</button>
+              </td>
+            </tr>
+          `;
+        }));
+
+        setHTML('risk-tbody', rows.join(''));
         
       } catch (error) {
         console.error('Error loading risk profiles:', error);
-        document.getElementById('risk-tbody').innerHTML = '<tr><td colspan="6" class="no-data">Error loading profiles</td></tr>';
+        setHTML('risk-tbody', '<tr><td colspan="6" class="no-data">Error loading profiles</td></tr>');
       }
     }
     
     // Setup Real-Time Listeners
     function setupRealTimeListeners() {
-      // Listen for new alerts
-      db.collection('security_alerts')
+      if (!hasFirestoreAccess()) return;
+      cleanupSecurityListeners();
+
+      const openAlertsQuery = securityDb.collection('security_alerts')
         .where('status', '==', 'OPEN')
-        .onSnapshot(() => {
-          loadOverviewStats();
-          loadAlerts();
-        });
-      
-      // Listen for new events
-      db.collection('security_events')
+        .limit(1);
+
+      const latestEventsQuery = securityDb.collection('security_events')
         .orderBy('createdAt', 'desc')
-        .limit(1)
-        .onSnapshot(() => {
-          loadEvents();
-          loadOverviewStats();
-        });
+        .limit(1);
+
+      if (!isValidFirestoreQuery(openAlertsQuery) || !isValidFirestoreQuery(latestEventsQuery)) {
+        console.error('Invalid Firestore listener query');
+        renderSecurityListenerError('Unable to load security data.');
+        return;
+      }
+
+      const unsubscribeAlerts = openAlertsQuery.onSnapshot(
+        (snapshot) => {
+          try {
+            if (snapshot.empty) {
+              loadOverviewStats();
+              loadAlerts();
+              return;
+            }
+
+            loadOverviewStats();
+            loadAlerts();
+          } catch (err) {
+            console.error('Snapshot processing error:', err);
+            renderSecurityListenerError();
+          }
+        },
+        (error) => {
+          console.error('Firestore listener failed:', error);
+          renderSecurityListenerError(error?.message || 'Unable to load security alerts.');
+        }
+      );
+
+      const unsubscribeEvents = latestEventsQuery.onSnapshot(
+        (snapshot) => {
+          try {
+            if (snapshot.empty) {
+              loadEvents();
+              loadOverviewStats();
+              return;
+            }
+
+            loadEvents();
+            loadOverviewStats();
+          } catch (err) {
+            console.error('Snapshot processing error:', err);
+            renderSecurityListenerError();
+          }
+        },
+        (error) => {
+          console.error('Firestore listener failed:', error);
+          renderSecurityListenerError(error?.message || 'Unable to load security events.');
+        }
+      );
+
+      securityListeners.push(unsubscribeAlerts, unsubscribeEvents);
     }
+
+    window.addEventListener('beforeunload', cleanupSecurityListeners);
     
     // Investigate Event
     async function investigateEvent(eventId) {
       try {
-        const eventDoc = await db.collection('security_events').doc(eventId).get();
+        const eventDoc = await securityDb.collection('security_events').doc(eventId).get();
         if (!eventDoc.exists) return;
         
         const event = eventDoc.data();
@@ -719,7 +821,7 @@
         const windowStart = event.createdAt - (30 * 60 * 1000);
         const windowEnd = event.createdAt + (30 * 60 * 1000);
         
-        const relatedEvents = await db.collection('security_events')
+        const relatedEvents = await securityDb.collection('security_events')
           .where('actorUid', '==', event.actorUid)
           .where('createdAt', '>=', windowStart)
           .where('createdAt', '<=', windowEnd)
@@ -756,7 +858,7 @@
         
         html += `</div>`;
         
-        document.getElementById('investigation-content').innerHTML = html;
+        setHTML('investigation-content', html);
         document.getElementById('investigation-modal').classList.add('active');
         
       } catch (error) {
@@ -773,7 +875,7 @@
     // Acknowledge Alert
     async function acknowledgeAlert(alertId) {
       try {
-        await db.collection('security_alerts').doc(alertId).update({
+        await securityDb.collection('security_alerts').doc(alertId).update({
           status: 'ACK',
           'ack.by': currentUser.uid,
           'ack.at': Date.now()
@@ -789,10 +891,10 @@
     
     // Resolve Alert
     async function resolveAlert(alertId) {
-      const note = prompt('Resolution note (optional):');
+      const note = await AMCAGDialog.prompt('Resolution note (optional):');
       
       try {
-        await db.collection('security_alerts').doc(alertId).update({
+        await securityDb.collection('security_alerts').doc(alertId).update({
           status: 'RESOLVED',
           'resolution.by': currentUser.uid,
           'resolution.at': Date.now(),
@@ -837,7 +939,7 @@
         </div>
       `;
       
-      document.getElementById('killswitch-content').innerHTML = html;
+      setHTML('killswitch-content', html);
       document.getElementById('killswitch-modal').classList.add('active');
     }
     
@@ -854,7 +956,7 @@
       try {
         const until = duration === 0 ? null : Date.now() + duration;
         
-        await db.collection('security_controls').doc(adminUid).set({
+        await securityDb.collection('security_controls').doc(adminUid).set({
           blockSensitiveActions: true,
           reason: reason,
           until: until,
@@ -863,7 +965,7 @@
         });
         
         // Log security event
-        await db.collection('security_events').add({
+        await securityDb.collection('security_events').add({
           type: 'ADMIN_BLOCKED',
           severity: 'CRITICAL',
           actorUid: currentUser.uid,
@@ -910,6 +1012,6 @@
       });
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

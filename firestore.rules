@@ -68,27 +68,27 @@ service cloud.firestore {
     }
 
     function isNationalPresident() {
-      return hasRole('national_executive') && executiveTitle() in ['president', 'President', 'PRESIDENT', 'National President'];
+      return hasRole('national_executive') && executiveTitle().lower() in ['president', 'national president'];
     }
 
     function isNationalSecretary() {
-      return hasRole('national_executive') && executiveTitle() in ['secretary', 'Secretary', 'SECRETARY', 'National Secretary'];
+      return hasRole('national_executive') && executiveTitle().lower() in ['secretary', 'national secretary'];
     }
 
     function isNationalTreasurer() {
-      return hasRole('national_executive') && executiveTitle() in ['treasurer', 'Treasurer', 'TREASURER', 'National Treasurer'];
+      return hasRole('national_executive') && executiveTitle().lower() in ['treasurer', 'national treasurer'];
     }
 
     function isRegionalPresident() {
-      return hasRole('regional_executive') && executiveTitle() in ['president', 'President', 'PRESIDENT', 'Regional President'];
+      return hasRole('regional_executive') && executiveTitle().lower() in ['president', 'regional president'];
     }
 
     function isRegionalSecretary() {
-      return hasRole('regional_executive') && executiveTitle() in ['secretary', 'Secretary', 'SECRETARY', 'Regional Secretary'];
+      return hasRole('regional_executive') && executiveTitle().lower() in ['secretary', 'regional secretary'];
     }
 
     function isRegionalTreasurer() {
-      return hasRole('regional_executive') && executiveTitle() in ['treasurer', 'Treasurer', 'TREASURER', 'Regional Treasurer'];
+      return hasRole('regional_executive') && executiveTitle().lower() in ['treasurer', 'regional treasurer'];
     }
 
     function canManageMembers() {
@@ -135,6 +135,12 @@ service cloud.firestore {
       return hasRole('super_admin') ||
         isNationalPresident() ||
         isRegionalPresident() ||
+        hasPermission('canManageExecutives');
+    }
+
+    function canPromoteMemberToExecutive() {
+      return hasRole('super_admin') ||
+        isNationalPresident() ||
         hasPermission('canManageExecutives');
     }
 
@@ -238,9 +244,13 @@ service cloud.firestore {
     
     // Users collection
     match /users/{userId} {
-      // Queries (list): any authenticated user may query — needed for region member
-      // counts on public/dashboard pages. Individual doc reads stay restricted.
-      allow list: if isAuthenticated();
+      // Queries (list): executives only. Regional executives must filter by their own
+      // region. Public region counts come from publicStats (maintained by Cloud Functions).
+      allow list: if isAuthenticated() && (
+        hasRole('super_admin') ||
+        hasRole('national_executive') ||
+        (hasRole('regional_executive') && sameExecutiveRegion(resource.data))
+      );
       allow get: if isAuthenticated() && (
         request.auth.uid == userId ||
         hasRole('super_admin') ||
@@ -255,10 +265,36 @@ service cloud.firestore {
                       request.resource.data.uid == request.auth.uid &&
                       request.resource.data.email == request.auth.token.email &&
                       request.resource.data.role == 'member' &&
+                      !request.resource.data.keys().hasAny(['duesStartMonth', 'registrationFeePaid', 'registrationFeePaidAt', 'registrationFeeReference', 'registrationFeeAmount', 'registrationFeeMethod', 'cardToken']) &&
                       request.resource.data.status == 'pending';
       
       // Allow updates by user themselves (own profile) or admins.
       allow update: if (
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['duesStartMonth']) ||
+                      hasAnyRole(['super_admin', 'national_executive'])
+                    ) && (
+                      request.resource.data.role == resource.data.role ||
+                      hasRole('super_admin') ||
+                      (
+                        canPromoteMemberToExecutive() &&
+                        resource.data.role != 'super_admin' &&
+                        request.resource.data.role in ['member', 'regional_executive', 'national_executive'] &&
+                        request.auth.uid != userId
+                      )
+                    ) && (
+                      // Privilege fields (permissions/titles) can only be changed by someone
+                      // else with authority: super admin, national president / permission
+                      // holder, or the regional president for their own region.
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['permissions', 'executiveTitle', 'title', 'canApproveMembership']) ||
+                      hasRole('super_admin') ||
+                      (
+                        request.auth.uid != userId &&
+                        (
+                          canPromoteMemberToExecutive() ||
+                          (isRegionalPresident() && sameExecutiveRegion(resource.data))
+                        )
+                      )
+                    ) && ((
                         // Profile completion path: admin-created leader accounts have
                         // mustCompleteProfile=true set by admin. Allow them to fill in
                         // profile fields without requiring verified email or strict field checks.
@@ -287,15 +323,20 @@ service cloud.firestore {
                        resource.data.status == 'pending' && 
                        request.resource.data.status == 'active' &&
                        canApproveMembers() &&
-                       sameExecutiveRegion(resource.data));
+                       sameExecutiveRegion(resource.data))
+                    );
       
       allow delete: if hasAnyRole(['super_admin']);
     }
     
     // Members collection
     match /members/{memberId} {
-      // Queries (list): any authenticated user may query — needed for region counts.
-      allow list: if isAuthenticated();
+      // Queries (list): executives only (region counts come from publicStats).
+      allow list: if isAuthenticated() && (
+        hasRole('super_admin') ||
+        hasRole('national_executive') ||
+        (hasRole('regional_executive') && sameExecutiveRegion(resource.data))
+      );
       allow get: if isAuthenticated() && (
         request.auth.uid == memberId ||
         hasRole('super_admin') ||
@@ -308,6 +349,7 @@ service cloud.firestore {
                       request.resource.data.uid == request.auth.uid &&
                       request.resource.data.email == request.auth.token.email &&
                       request.resource.data.role == 'member' &&
+                      !request.resource.data.keys().hasAny(['duesStartMonth', 'registrationFeePaid', 'registrationFeePaidAt', 'registrationFeeReference', 'registrationFeeAmount', 'registrationFeeMethod', 'cardToken']) &&
                       request.resource.data.status == 'pending'; // Allow on registration
       
       // Allow members to complete their own profile, and executives to approve/manage records
@@ -748,6 +790,45 @@ service cloud.firestore {
       allow write: if hasAnyRole(['super_admin']);
     }
     
+    // Activity Logs - written by national admin pages, read by super admin
+    match /activity_logs/{logId} {
+      allow read: if hasAnyRole(['super_admin']);
+      allow create: if hasAnyRole(['super_admin', 'national_executive']) &&
+                       request.resource.data.performedBy == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Media metadata - public read, executives write
+    match /media/{mediaId} {
+      allow read: if true;
+      allow write: if hasAnyRole(['super_admin', 'national_executive']);
+    }
+
+    // System counters - Cloud Functions only (Admin SDK bypasses rules)
+    match /system_counters/{counterId} {
+      allow read, write: if false;
+    }
+
+    // Question of the Day answers - only Cloud Functions touch these
+    match /daily_question_answers/{id} {
+      allow read, write: if false;
+    }
+
+    // Registration drafts: saved at sign-up (before email verification), read once after verification
+    match /registration_drafts/{uid} {
+      allow create, update: if isAuthenticated() &&
+                              request.auth.uid == uid &&
+                              request.resource.data.uid == request.auth.uid;
+      allow get, delete: if isAuthenticated() && request.auth.uid == uid;
+      allow list: if false;
+    }
+
+    // Hubtel raw callbacks / status checks - super admin read, Cloud Functions write
+    match /hubtel_callbacks/{id} {
+      allow read: if hasAnyRole(['super_admin']);
+      allow write: if false;
+    }
+
     // Audit Logs - Comprehensive action logs
     match /audit_logs/{logId} {
       allow read: if hasRole('super_admin') || isNationalPresident() || hasPermission('canViewAuditLogs');
@@ -766,7 +847,8 @@ service cloud.firestore {
                      resource.data.uid == request.auth.uid;
       allow create: if false; // Only Cloud Functions
       allow update: if request.auth != null && 
-                       resource.data.uid == request.auth.uid; // Allow marking as read
+                       resource.data.uid == request.auth.uid &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'status']); // Mark as read only
       allow delete: if request.auth != null && 
                        resource.data.uid == request.auth.uid;
     }
@@ -841,18 +923,16 @@ service cloud.firestore {
     // Donation Campaigns - Fundraising campaigns
     match /donation_campaigns/{campaignId} {
       // Read: Public campaigns are readable by all, restricted campaigns by authenticated users
-      allow read: if (resource.data.visibility == 'public') || 
-                     (request.auth != null && resource.data.visibility == 'members_only') ||
+      // Only live (active/completed) campaigns are public; pending and rejected ones are for executives.
+      // (The query on the donate pages filters by status, so the rule is based on status alone.)
+      allow read: if resource.data.status in ['active', 'completed'] ||
                      (request.auth != null && hasAnyRole(['super_admin', 'national_executive', 'regional_executive']));
       
-      // Create: National executives can create campaigns
-      allow create: if hasAnyRole(['super_admin', 'national_executive']);
+      // Create/update go through the saveCampaign, reviewCampaign and setCampaignStatus functions,
+      // which check that the caller is a selected executive and run the regional approval step.
+      allow create, update: if false;
       
-      // Update: Campaign creators and national executives can update
-      allow update: if hasAnyRole(['super_admin', 'national_executive']) ||
-                       (request.auth != null && resource.data.createdBy == request.auth.uid);
-      
-      allow delete: if hasAnyRole(['super_admin', 'national_executive']);
+      allow delete: if hasAnyRole(['super_admin']);
     }
     
     // Distribution Records - Photos and details of donation distributions
@@ -936,6 +1016,13 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid ||
         hasAnyRole(['national_executive', 'super_admin'])
       );
+    }
+
+    // Fee amounts are readable by signed-in users so payment screens can show
+    // the current values. Changes are made only through the secured callable.
+    match /system_settings/{docId} {
+      allow read: if isAuthenticated() && docId == 'fees';
+      allow write: if false;
     }
   }
 }

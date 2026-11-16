@@ -6,7 +6,7 @@
   <title>Waiver Management | AMCAG Regional Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -17,7 +17,7 @@
         <span>AMCAG Regional</span>
       </a>
       <div class="navbar-actions">
-        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+        <a href="/profile.html" class="btn btn-sm" style="margin-right: 8px;">Profile</a><button class="btn btn-sm" onclick="signOut()">Sign Out</button>
       </div>
     </div>
   </nav>
@@ -291,6 +291,10 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
   <script src="/js/suspension-check.js"></script>
 
   <script>
@@ -626,7 +630,7 @@
       }
 
       const actionText = decision === 'approve' ? 'approve' : 'reject';
-      if (!confirm(`${actionText.toUpperCase()} this waiver request?\n\nMember: ${selectedRequest.memberName || 'Unknown'}\nAmount: GHS ${parseAmount(selectedRequest.totalAmount).toFixed(2)}\n\nThis action cannot be undone.`)) {
+      if (!await AMCAGDialog.confirm(`${actionText.toUpperCase()} this waiver request?\n\nMember: ${selectedRequest.memberName || 'Unknown'}\nAmount: GHS ${parseAmount(selectedRequest.totalAmount).toFixed(2)}\n\nThis action cannot be undone.`)) {
         return;
       }
 
@@ -791,7 +795,7 @@
       
       const memberName = member.fullName || 'this member';
       const totalAmount = selectedMonths.length * MONTHLY_DUES_AMOUNT;
-      if (!confirm(`Grant direct waiver to ${memberName}?\n\n${selectedMonths.length} month(s) - GHS ${totalAmount.toFixed(2)}`)) {
+      if (!await AMCAGDialog.confirm(`Grant direct waiver to ${memberName}?\n\n${selectedMonths.length} month(s) - GHS ${totalAmount.toFixed(2)}`)) {
         return;
       }
 
@@ -891,6 +895,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

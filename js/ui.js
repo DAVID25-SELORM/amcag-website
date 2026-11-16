@@ -504,10 +504,10 @@ const UIModule = (function() {
   // ✅ NAVIGATION PATCH START
   function getRoutes() {
     return window.AMCAG_ROUTES || {
-      PUBLIC_HOME: '/index.html',
+      PUBLIC_HOME: '/',
       LOGIN: '/membership.html',
-      VIEW_SITE: '/index.html?preview=admin',
-      MEMBER_VIEW_SITE: '/index.html?preview=member',
+      VIEW_SITE: '/?preview=admin',
+      MEMBER_VIEW_SITE: '/?preview=member',
       ADMIN_DASHBOARD: '/national/dashboard.html',
       ADMIN_PROGRAMS: '/national/events.html',
       ADMIN_MEDIA_UPLOAD: '/national/media-upload.html',
@@ -528,7 +528,8 @@ const UIModule = (function() {
     const cleanPath = String(path || '/').split('?')[0].split('#')[0] || '/';
     if (cleanPath === '/') return '/index.html';
     if (cleanPath === '/region-dashboard/') return '/region-dashboard/index.html';
-    return cleanPath.endsWith('/') ? `${cleanPath.slice(0, -1)}.html` : cleanPath;
+    if (cleanPath.endsWith('/')) return `${cleanPath.slice(0, -1)}/index.html`;
+    return cleanPath.endsWith('.html') ? cleanPath : `${cleanPath}.html`;
   }
 
   function getCurrentUser() {
@@ -612,28 +613,57 @@ const UIModule = (function() {
     window.location.href = routes.LOGIN;
   }
 
+  const EXEC_SHARED_PAGE_LIST = ['/member-dashboard/question-results.html', '/member-dashboard/member-cards.html', '/national/campaigns.html', '/member-dashboard/regional-chat.html', '/member-dashboard/daily-question.html', '/member-dashboard/registration-fee.html', '/member-dashboard/id-card.html'];
+
   function getDashboardNavItems(pathname) {
     const routes = getRoutes();
+    const viewingOthersCard = pathname === '/member-dashboard/id-card.html' && /[?&]uid=/.test(window.location.search);
+    const EXEC_SHARED_PAGES = EXEC_SHARED_PAGE_LIST;
+    if (EXEC_SHARED_PAGES.includes(pathname) || viewingOthersCard) {
+      let role = '';
+      const liveUser = getCurrentUser();
+      role = (liveUser && liveUser.profile && liveUser.profile.role) || '';
+      if (!role) { try { role = (JSON.parse(sessionStorage.getItem('userProfile') || '{}') || {}).role || ''; } catch (e) { role = ''; } }
+      if (role === 'super_admin' || role === 'national_executive') return getDashboardNavItems('/national/_');
+      if (role === 'regional_executive') return getDashboardNavItems('/region-dashboard/_');
+    }
     if (pathname.startsWith('/national/')) {
       return [
         [routes.ADMIN_DASHBOARD, 'Dashboard'],
+        // People
         [routes.ADMIN_USERS, 'Users / Admins'],
         ['/national/member-approval.html', 'Approve Members'],
+        ['/member-dashboard/member-cards.html', 'Member ID Cards'],
         ['/national/regions.html', 'Regions'],
+        // Money
         ['/national/payments.html', 'Payments'],
+        ['/national/payment-approvals.html', 'Payment Approvals'],
         ['/national/dues-management.html', 'Dues'],
+        ['/national/fee-settings.html', 'Fee Settings'],
         ['/national/donations-overview.html', 'Donations'],
+        ['/national/campaigns.html', 'Campaigns'],
+        // Events and meetings
         ['/national/agm-registrations.html', 'AGM'],
         ['/national/meetings.html', 'Meetings'],
         [routes.ADMIN_PROGRAMS, 'Programs / Events'],
+        ['/national/election-calendar.html', 'Election Calendar'],
+        // Website content
         ['/national/certificates.html', 'Certificates'],
-        ['/national/analytics.html', 'Analytics'],
         ['/national/leadership.html', 'Leadership'],
         [routes.ADMIN_SITE_CONTENT, 'Pages / Site Content'],
         [routes.ADMIN_MEDIA_UPLOAD, 'Media Upload'],
+        // Oversight
+        ['/national/analytics.html', 'Analytics'],
         ['/national/regional-permissions.html', 'Regional Permissions'],
-        ['/national/security-command-center.html', 'Security'],
         ['/national/suspension-management.html', 'Suspensions'],
+        ['/national/security-command-center.html', 'Security'],
+        // Me
+        ['/member-dashboard/regional-chat.html', 'Chat & Announcements'],
+        ['/member-dashboard/question-results.html', 'Question Results'],
+        ['/member-dashboard/daily-question.html', 'Question of the Day'],
+        ['/member-dashboard/registration-fee.html', 'Registration Fee'],
+        ['/member-dashboard/id-card.html', 'My ID Card'],
+        [routes.MEMBER_ACCOUNT, 'My Profile'],
         [routes.VIEW_SITE, 'View Site'],
         ['#logout', 'Logout']
       ];
@@ -646,11 +676,18 @@ const UIModule = (function() {
         ['/region-dashboard/payment-approvals.html', 'Payment Approvals'],
         ['/region-dashboard/dues-overview.html', 'Dues Overview'],
         ['/region-dashboard/donations.html', 'Donations'],
+        ['/national/campaigns.html', 'Campaigns'],
         ['/region-dashboard/agm-registrations.html', 'AGM'],
         [routes.REGIONAL_PROGRAMS, 'Programs / Events'],
         [routes.REGIONAL_MEDIA_UPLOAD, 'Media Upload'],
-        ['/member-dashboard/regional-chat.html', 'Regional Chat'],
+        ['/member-dashboard/regional-chat.html', 'Chat & Announcements'],
         ['/region-dashboard/waiver-management.html', 'Waivers'],
+        ['/member-dashboard/question-results.html', 'Question Results'],
+        ['/member-dashboard/daily-question.html', 'Question of the Day'],
+        ['/member-dashboard/member-cards.html', 'Member ID Cards'],
+        ['/member-dashboard/registration-fee.html', 'Registration Fee'],
+        ['/member-dashboard/id-card.html', 'My ID Card'],
+        [routes.MEMBER_ACCOUNT, 'My Profile'],
         [routes.VIEW_SITE, 'View Site'],
         ['#logout', 'Logout']
       ];
@@ -661,12 +698,15 @@ const UIModule = (function() {
         [routes.MEMBER_DASHBOARD, 'Dashboard'],
         [routes.MEMBER_ACCOUNT, 'My Account'],
         ['/member-dashboard/dues-payment.html', 'Dues Payment'],
+        ['/member-dashboard/registration-fee.html', 'Registration Fee'],
         ['/payments.html', 'Payment History'],
         ['/member-dashboard/donate.html', 'Donate'],
         ['/member-dashboard/my-donations.html', 'My Donations'],
         ['/member-dashboard/agm-registration.html', 'AGM'],
         ['/member-dashboard/meetings.html', 'Meetings'],
-        ['/member-dashboard/regional-chat.html', 'Regional Chat'],
+        ['/member-dashboard/regional-chat.html', 'Chat & Announcements'],
+        ['/member-dashboard/daily-question.html', 'Question of the Day'],
+        ['/member-dashboard/id-card.html', 'My ID Card'],
         ['/certificates.html', 'Certificates'],
         ['/member-dashboard/waiver-request.html', 'Waiver Request'],
         [routes.MEMBER_VIEW_SITE, 'View Site'],
@@ -679,6 +719,12 @@ const UIModule = (function() {
 
   function getTopDashboardNavItems(pathname) {
     const routes = getRoutes();
+    if (EXEC_SHARED_PAGE_LIST.includes(pathname) && pathname !== '/member-dashboard/daily-question.html' && pathname !== '/member-dashboard/registration-fee.html' && pathname !== '/member-dashboard/id-card.html' && pathname !== '/member-dashboard/regional-chat.html') {
+      const liveUser = getCurrentUser();
+      const role = (liveUser && liveUser.profile && liveUser.profile.role) || '';
+      if (role === 'regional_executive') return getTopDashboardNavItems('/region-dashboard/_');
+      if (role === 'super_admin' || role === 'national_executive') return getTopDashboardNavItems('/national/_');
+    }
     if (pathname.startsWith('/national/')) {
       return [
         [routes.ADMIN_DASHBOARD, 'Dashboard'],
@@ -704,7 +750,14 @@ const UIModule = (function() {
     }
 
     if (pathname.startsWith('/member-dashboard/') || pathname === '/member-dashboard.html' || pathname === '/profile.html' || pathname === '/dues.html' || pathname === '/payments.html' || pathname === '/certificates.html') {
+      let memberRole = '';
+      const liveUser = getCurrentUser();
+      memberRole = (liveUser && liveUser.profile && liveUser.profile.role) || '';
+      if (!memberRole) { try { memberRole = (JSON.parse(sessionStorage.getItem('userProfile') || '{}') || {}).role || ''; } catch (e) { memberRole = ''; } }
+      const backToAdmin = (memberRole === 'super_admin' || memberRole === 'national_executive') ? [routes.ADMIN_DASHBOARD, 'Admin Dashboard']
+        : memberRole === 'regional_executive' ? [routes.REGIONAL_DASHBOARD, 'Regional Dashboard'] : null;
       return [
+        ...(backToAdmin ? [backToAdmin] : []),
         [routes.MEMBER_DASHBOARD, 'Dashboard'],
         [routes.MEMBER_ACCOUNT, 'My Account'],
         [routes.MEMBER_VIEW_SITE, 'View Site'],
@@ -726,7 +779,9 @@ const UIModule = (function() {
       const navItems = isNavbar ? getTopDashboardNavItems(pathname) : items;
       nav.innerHTML = navItems.map(([href, label]) => {
         const isLogout = href === '#logout';
-        const active = !isLogout && normalizePath(href) === pathname ? ' active' : '';
+        const PARENT_TAB = { '/national/member-details.html': '/national/members.html', '/dues.html': '/member-dashboard/dues-payment.html' };
+        const activePath = (pathname === '/member-dashboard/id-card.html' && /[?&]uid=/.test(window.location.search)) ? '/member-dashboard/member-cards.html' : (PARENT_TAB[pathname] || pathname);
+        const active = !isLogout && normalizePath(href) === activePath ? ' active' : '';
         const className = isNavbar ? `navbar-link${active}` : `dashboard-nav-item${active}`;
         const attr = isLogout ? 'data-nav-logout="true"' : '';
         const link = `<a href="${href}" class="${className}" ${attr}><span aria-hidden="true"></span>${label}</a>`;
@@ -737,26 +792,33 @@ const UIModule = (function() {
     document.querySelectorAll('a[data-nav-logout="true"]').forEach((link) => {
       link.addEventListener('click', signOutAndRedirect);
     });
+
+    document.querySelectorAll('.dashboard-sidebar .dashboard-nav-item.active').forEach((el) => {
+      try { el.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) { /* older browsers */ }
+    });
   }
 
   const PUBLIC_NAV_ITEMS = [
-    { label: 'Home', href: '/index.html', key: 'home' },
+    { label: 'Home', href: '/', key: 'home' },
     { label: 'About', href: '/about.html', key: 'about' },
-    { label: 'Services / Programs', href: '/events.html', key: 'programs' },
-    { label: 'Gallery / Media', href: '/gallery.html', key: 'gallery' },
+    { label: 'Leadership', href: '/leadership.html', key: 'leadership' },
+    { label: 'Events', href: '/events.html', key: 'events' },
+    { label: 'News', href: '/news.html', key: 'news' },
+    { label: 'Gallery', href: '/gallery.html', key: 'gallery' },
+    { label: 'Regions', href: '/regions.html', key: 'regions' },
     { label: 'Contact', href: '/contact.html', key: 'contact' },
-    { label: 'Login', href: '/membership.html', key: 'login', button: true }
+    { label: 'Member Portal', href: '/membership.html', key: 'login', button: true }
   ];
 
   function getGuestPublicNavItems(pathname) {
     if (pathname === '/membership.html') {
       return [
-        { label: 'Home', href: '/index.html', key: 'home' },
+        { label: 'Home', href: '/', key: 'home' },
         { label: 'About', href: '/about.html', key: 'about' },
         { label: 'Services / Programs', href: '/events.html', key: 'programs' },
         { label: 'Gallery / Media', href: '/gallery.html', key: 'gallery' },
         { label: 'Contact', href: '/contact.html', key: 'contact' },
-        { label: 'Back to Site', href: '/index.html', key: 'backToSite', button: true }
+        { label: 'Back to Site', href: '/', key: 'backToSite', button: true }
       ];
     }
 
@@ -884,7 +946,7 @@ const UIModule = (function() {
     publicNav.id = publicNav.id || 'publicNav';
     publicNav.classList.add('public-nav');
     const user = getCurrentUser();
-    const items = user ? getSignedInPublicNavItems(user) : getGuestPublicNavItems(pathname);
+    const items = PUBLIC_NAV_ITEMS;
     publicNav.innerHTML = items.map((item) => {
       const active = !item.logout && normalizePath(item.href) === pathname ? ' active' : '';
       const className = item.button ? `navbar-cta${active}` : `navbar-link${active}`;
@@ -894,12 +956,6 @@ const UIModule = (function() {
 
     publicNav.querySelectorAll('[data-nav-logout="true"]').forEach((link) => {
       link.addEventListener('click', signOutAndRedirect);
-    });
-
-    document.querySelectorAll('.navbar-logo[href="/index.html"], .navbar-logo[href="/"], a.navbar-link[href="/index.html"]').forEach((link) => {
-      if (user && link.textContent.trim().toLowerCase() === 'home') {
-        link.href = getDashboardForUser(user);
-      }
     });
 
     renderPublicDashboardReturn(user);
@@ -913,9 +969,12 @@ const UIModule = (function() {
       return;
     }
 
-    window.AuthModule.onAuthStateChanged(() => {
+    window.AuthModule.onAuthStateChanged((user) => {
       renderPublicNav();
       normalizeDashboardNavigation();
+      // Fill the member's name straight away so the greeting never shows the placeholder.
+      const name = user && user.profile && (user.profile.fullName || user.profile.name);
+      if (name) document.querySelectorAll('[data-user-name]').forEach((el) => { el.textContent = name; });
     });
   }
   // ✅ NAVIGATION PATCH END
@@ -941,13 +1000,30 @@ const UIModule = (function() {
       }
     });
 
+    // Dashboard pages stay hidden until sign-in is confirmed, so the menu appears once, in its final form.
+    try {
+      if (document.body && !document.body.classList.contains('auth-ready') && getDashboardNavItems(normalizePath(window.location.pathname)).length) {
+        document.body.classList.add('amcag-wait');
+      }
+    } catch (e) { /* never block the page */ }
+
     // Show immediate loader feedback when users click dashboard/navbar tabs.
     installNavigationPatchStyles();
     renderPublicNav();
     normalizeDashboardNavigation();
     refreshNavigationWhenAuthReady();
     attachNavigationFeedback();
-    
+
+    // Unread badge on the "Chat & Announcements" menu link (dashboard pages only).
+    try {
+      if (getDashboardNavItems(normalizePath(window.location.pathname)).length && !window.__amcagChatBadge) {
+        const badge = document.createElement('script');
+        badge.src = '/js/chat-badge.js?v=20261116-1';
+        badge.async = true;
+        document.head.appendChild(badge);
+      }
+    } catch (e) { /* the badge is optional */ }
+
     console.log('UI module initialized');
   }
   

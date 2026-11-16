@@ -4,11 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Member Portal | AMCAG</title>
+
+  <script>
+    window.SKIP_ROUTER = true;
+  </script>
   
   <!-- CSS -->
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,22 +21,28 @@
   <!-- ===== NAVBAR START ===== -->
   <nav class="navbar">
     <div class="navbar-container">
-      <a href="/index.html" class="navbar-logo">
+      <!-- ✅ NAVIGATION PATCH START -->
+      <a href="/" class="navbar-logo" data-route-key="PUBLIC_HOME">
+      <!-- ✅ NAVIGATION PATCH END -->
         <img src="/images/logo.jpg" alt="AMCAG Logo">
         <span>AMCAG</span>
       </a>
       
-      <button class="navbar-toggle">
+      <button class="navbar-toggle" onclick="return window.AMCAGToggleNavbar ? window.AMCAGToggleNavbar(this,event) : (function(btn,e){if(e){e.preventDefault();e.stopPropagation();}var nav=btn.closest('.navbar');var menu=nav&&nav.querySelector('.navbar-menu');if(!menu)return false;var open=!menu.classList.contains('active');menu.classList.toggle('active',open);btn.classList.toggle('active',open);btn.setAttribute('aria-expanded',String(open));if(nav)nav.classList.toggle('menu-open',open);document.body.classList.toggle('navbar-menu-open',open);document.body.style.overflow=open?'hidden':'';return false;})(this,event)">
         <span></span>
         <span></span>
         <span></span>
       </button>
       
       <ul class="navbar-menu">
-        <li><a href="/index.html" class="navbar-link">Home</a></li>
-        <li><a href="/about.html" class="navbar-link">About</a></li>
-        <li><a href="/events.html" class="navbar-link">Events</a></li>
-        <li><a href="/contact.html" class="navbar-link">Contact</a></li>
+        <!-- ✅ NAVIGATION PATCH START -->
+        <li><a href="/" class="navbar-link" data-route-key="PUBLIC_HOME">Home</a></li>
+        <li><a href="/about.html" class="navbar-link" data-route-path="/about.html">About</a></li>
+        <li><a href="/events.html" class="navbar-link" data-route-path="/events.html">Services / Programs</a></li>
+        <li><a href="/gallery.html" class="navbar-link" data-route-path="/gallery.html">Gallery / Media</a></li>
+        <li><a href="/contact.html" class="navbar-link" data-route-path="/contact.html">Contact</a></li>
+        <li><a href="/" class="navbar-cta" data-route-key="PUBLIC_HOME">Back to Site</a></li>
+        <!-- ✅ NAVIGATION PATCH END -->
       </ul>
     </div>
   </nav>
@@ -122,7 +132,7 @@
               Register
             </h2>
             
-            <form id="registration-form">
+            <form id="registration-form" novalidate>
               <div class="form-group">
                 <label class="form-label required">Full Name</label>
                 <input type="text" class="form-input" id="register-name" required placeholder="John Doe" minlength="3">
@@ -136,8 +146,8 @@
               
               <div class="form-group">
                 <label class="form-label required">Phone</label>
-                <input type="tel" class="form-input" id="register-phone" required placeholder="+233 24 123 4567" pattern="^\+233\s?\d{2}\s?\d{3}\s?\d{4}$" title="Enter a valid Ghana phone number (e.g., +233 24 123 4567)">
-                <span class="form-help">Format: +233 XX XXX XXXX</span>
+                <input type="tel" class="form-input" id="register-phone" required inputmode="tel" autocomplete="tel" placeholder="024 123 4567" title="Enter a valid Ghana phone number (e.g., 024 123 4567 or +233 24 123 4567)">
+                <span class="form-help">Use 024 123 4567 or +233 24 123 4567</span>
               </div>
               
               <div class="form-group">
@@ -195,7 +205,7 @@
               
               <div class="form-group">
                 <label class="form-label required">Next of Kin Contact</label>
-                <input type="tel" class="form-input" id="register-next-of-kin-contact" required placeholder="+233 24 123 4567" pattern="^\+233\s?\d{2}\s?\d{3}\s?\d{4}$" title="Enter a valid Ghana phone number (e.g., +233 24 123 4567)">
+                <input type="tel" class="form-input" id="register-next-of-kin-contact" required inputmode="tel" autocomplete="tel" placeholder="024 123 4567" title="Enter a valid Ghana phone number (e.g., 024 123 4567 or +233 24 123 4567)">
                 <span class="form-help">Phone number of next of kin</span>
               </div>
               
@@ -289,6 +299,7 @@
     <div class="container">
       <div class="footer-bottom">
         <p>&copy; 2026 AMCAG. All rights reserved.</p>
+        <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p>
       </div>
     </div>
   </footer>
@@ -301,10 +312,51 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <script src="/js/firebase.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/password-toggle.js"></script>
+  <script src="/js/layout-fix.js"></script>
   
   <script>
-    // Prevent any router interference on login page
-    window.SKIP_ROUTER = true;
+    // ✅ NAVIGATION PATCH START
+    function applyMembershipRoutes() {
+      const routes = window.AMCAG_ROUTES || {};
+      document.querySelectorAll('[data-route-key]').forEach((link) => {
+        const route = routes[link.dataset.routeKey];
+        if (route) link.setAttribute('href', route);
+      });
+      document.querySelectorAll('[data-route-path]').forEach((link) => {
+        link.setAttribute('href', link.dataset.routePath);
+      });
+    }
+
+    applyMembershipRoutes();
+
+    function isPreviewMode() {
+      return new URLSearchParams(window.location.search).has('preview');
+    }
+
+    function isMembershipPage() {
+      const path = window.location.pathname;
+      return path === '/membership.html' || path === '/membership';
+    }
+
+    function redirectTo(path) {
+      const target = new URL(path, window.location.origin);
+      const current = new URL(window.location.href);
+      if (current.pathname === target.pathname && current.search === target.search && current.hash === target.hash) {
+        return false;
+      }
+      window.location.href = `${target.pathname}${target.search}${target.hash}`;
+      return true;
+    }
+
+    function getDashboardForRole(role) {
+      const routes = window.AMCAG_ROUTES || {};
+      if (role === 'super_admin' || role === 'national_executive') return routes.ADMIN_DASHBOARD || '/national/dashboard.html';
+      if (role === 'regional_executive') return routes.REGIONAL_DASHBOARD || '/region-dashboard/index.html';
+      return routes.MEMBER_DASHBOARD || '/member-dashboard.html';
+    }
+    // ✅ NAVIGATION PATCH END
     
     // Wait for Firebase to load with timeout
     function waitForFirebase(callback, timeout = 5000) {
@@ -354,13 +406,167 @@
       });
     });
     
+    // Redirect already-authenticated users straight to their dashboard
+    (function checkExistingSession() {
+      if (!isMembershipPage() || isPreviewMode()) return;
+
+      const firebase = window.firebase;
+      if (!firebase || !firebase.apps || !firebase.apps.length) return;
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (!isMembershipPage() || isPreviewMode()) return;
+        if (!user) return;
+        try {
+          const db = firebase.firestore();
+          const doc = await db.collection('users').doc(user.uid).get();
+          if (!doc.exists) {
+            // Verified but no member record yet: create it (or send to the completion form),
+            // never to the dashboard.
+            if (!user.emailVerified) return;
+            const outcome = await SimpleAuth.ensureProfile(user);
+            if (outcome === 'created') {
+              UIModule.hideLoader();
+              redirectTo('/pending-approval.html');
+            } else {
+              redirectTo('/complete-profile.html');
+            }
+            return;
+          }
+          const profile = doc.data();
+          if (profile.status === 'pending' || profile.status === 'rejected') {
+            redirectTo('/pending-approval.html');
+            return;
+          }
+          if (profile.mustResetPassword) { redirectTo('/change-password.html'); return; }
+          if (profile.mustCompleteProfile) { redirectTo('/complete-profile.html'); return; }
+          redirectTo(getDashboardForRole(profile.role));
+        } catch (e) {
+          // Ignore — just show the login form normally
+        }
+      });
+    })();
+
     // Clean up redirect parameter from URL if on membership page
-    if (window.location.search.includes('redirect=%2Fmembership')) {
+    if (isMembershipPage() && !isPreviewMode() && window.location.search.includes('redirect=%2Fmembership')) {
       const url = new URL(window.location.href);
       url.searchParams.delete('redirect');
       window.history.replaceState({}, document.title, url.pathname);
     }
     
+    const blockedEmailDomains = new Set([
+      '10minutemail.com',
+      'guerrillamail.com',
+      'mailinator.com',
+      'tempmail.com',
+      'temp-mail.org',
+      'yopmail.com'
+    ]);
+
+    function normalizeEmail(email) {
+      return String(email || '').trim().toLowerCase();
+    }
+
+    function getEmailDomain(email) {
+      return normalizeEmail(email).split('@')[1] || '';
+    }
+
+    function validateRealEmailAddress(email) {
+      const normalized = normalizeEmail(email);
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+      if (!emailPattern.test(normalized)) {
+        return 'Please enter a valid email address.';
+      }
+
+      if (blockedEmailDomains.has(getEmailDomain(normalized))) {
+        return 'Please use a permanent personal or work email address, not a temporary email service.';
+      }
+
+      return '';
+    }
+
+    function normalizeGhanaPhone(phone) {
+      const digits = String(phone || '').replace(/\D/g, '');
+
+      if (/^0\d{9}$/.test(digits)) {
+        return `+233${digits.slice(1)}`;
+      }
+
+      if (/^233\d{9}$/.test(digits)) {
+        return `+${digits}`;
+      }
+
+      if (/^\d{9}$/.test(digits)) {
+        return `+233${digits}`;
+      }
+
+      return '';
+    }
+
+    function getPendingRegistrationKey(email) {
+      return `amcagPendingRegistration:${normalizeEmail(email)}`;
+    }
+
+    function getEmailVerificationSettings() {
+      return {
+        url: `${window.location.origin}/membership.html?verified=true`,
+        handleCodeInApp: false
+      };
+    }
+
+    async function sendVerificationEmail(user) {
+      try {
+        await user.sendEmailVerification(getEmailVerificationSettings());
+      } catch (error) {
+        if (String(error?.code || '').includes('unauthorized-continue-uri')) {
+          console.warn('[Membership] Current origin is not an authorized verification return URL; using Firebase default.');
+          await user.sendEmailVerification();
+          return;
+        }
+        throw error;
+      }
+    }
+
+    function slugifyRegion(regionName) {
+      return String(regionName || '')
+        .toLowerCase()
+        .trim()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    async function syncMemberToRegion(uid, memberData) {
+      const db = window.FirebaseModule?.db?.() || window.FirebaseModule?.firestore?.();
+      const region = String(memberData.region || '').trim();
+
+      if (!db || !uid || !region || !memberData.email) {
+        console.warn('[Membership] Regional member sync skipped: missing db, uid, region, or email');
+        return;
+      }
+
+      const regionId = slugifyRegion(region);
+      await db.collection('regions').doc(region).collection('members').doc(uid).set({
+        uid,
+        memberId: memberData.memberId || null,
+        fullName: memberData.fullName || '',
+        email: normalizeEmail(memberData.email),
+        phone: memberData.phone || '',
+        region,
+        regionId,
+        status: memberData.status || 'pending',
+        approvalStatus: memberData.approvalStatus || 'pending_approval',
+        updatedAt: window.FirebaseModule.timestamp.now()
+      }, { merge: true });
+
+      await db.collection('publicRegionMembers').doc(regionId).collection('members').doc(uid).set({
+        uid,
+        region,
+        regionId,
+        status: memberData.status || 'pending',
+        updatedAt: window.FirebaseModule.timestamp.now()
+      }, { merge: true });
+    }
+
     // Simple auth module for login page only
     const SimpleAuth = {
       signIn: async function(email, password) {
@@ -370,7 +576,16 @@
           }
           
           const auth = window.FirebaseModule.auth();
-          const userCredential = await auth.signInWithEmailAndPassword(email, password);
+          const userCredential = await auth.signInWithEmailAndPassword(normalizeEmail(email), password);
+          if (!userCredential.user.emailVerified) {
+            return {
+              success: false,
+              emailNotVerified: true,
+              error: 'Please verify your email address before signing in. Check your inbox for the verification link.',
+              user: userCredential.user
+            };
+          }
+
           return { success: true, user: userCredential.user };
         } catch (error) {
           return { 
@@ -380,47 +595,183 @@
         }
       },
       
-      signUp: async function(email, password, profileData) {
+      createVerifiedProfile: async function(user, profileData) {
+        if (!user?.emailVerified) {
+          throw new Error('Please verify your email address before completing registration.');
+        }
+
+        const email = normalizeEmail(user.email);
+        const userData = {
+          uid: user.uid,
+          email,
+          role: 'member',
+          fullName: profileData.fullName,
+          phone: profileData.phone || '',
+          region: profileData.region || '',
+          gender: profileData.gender || '',
+          dateOfBirth: profileData.dateOfBirth || '',
+          maritalStatus: profileData.maritalStatus || '',
+          address: profileData.address || '',
+          employmentStatus: profileData.employmentStatus || 'Not Employed',
+          currentWorkplace: profileData.currentWorkplace || 'N/A',
+          nextOfKin: profileData.nextOfKin || { name: '', contact: '' },
+          registrationDate: window.FirebaseModule.timestamp.now(),
+          status: 'pending',
+          createdAt: window.FirebaseModule.timestamp.now(),
+          updatedAt: window.FirebaseModule.timestamp.now(),
+          emailVerified: true,
+          emailVerifiedAt: window.FirebaseModule.timestamp.now()
+        };
+
+        if (profileData.pharmacyCouncilPin) {
+          userData.pharmacyCouncilPin = profileData.pharmacyCouncilPin;
+        }
+
+        if (profileData.mcaSchool) {
+          userData.mcaSchool = profileData.mcaSchool;
+        }
+
+        if (profileData.profilePictureUrl) {
+          userData.profilePictureUrl = profileData.profilePictureUrl;
+          userData.photoURL = profileData.profilePictureUrl;
+        }
+
+        await window.FirebaseModule.collections.users()
+          .doc(user.uid)
+          .set(userData);
+
+        await window.FirebaseModule.collections.members()
+          .doc(user.uid)
+          .set({
+            ...userData,
+            memberId: null,
+            membershipType: 'regular',
+            joiningDate: null,
+            approvalStatus: 'pending_approval'
+          });
+
+        try {
+          await syncMemberToRegion(user.uid, {
+            ...userData,
+            memberId: null,
+            approvalStatus: 'pending_approval'
+          });
+        } catch (regionSyncError) {
+          console.warn('[Membership] Regional member sync skipped:', regionSyncError);
+        }
+
+        localStorage.removeItem(getPendingRegistrationKey(email));
+        try {
+          await window.FirebaseModule.firestore().collection('registration_drafts').doc(user.uid).delete();
+        } catch (draftError) {
+          console.warn('Registration draft cleanup skipped:', draftError);
+        }
+        return userData;
+      },
+
+      getPendingRegistration: function(email) {
+        try {
+          const raw = localStorage.getItem(getPendingRegistrationKey(email));
+          return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+          console.warn('Unable to read pending registration:', error);
+          return null;
+        }
+      },
+
+      // Creates the pending member record for a verified user who has none yet.
+      // Returns 'created' (details found and saved) or 'needs-profile' (send to the completion form).
+      // Single-flight: the sign-in handler and the session check can both call it safely.
+      ensureProfile: function(user) {
+        if (!SimpleAuth._ensureInFlight) {
+          SimpleAuth._ensureInFlight = (async function() {
+            const pending = await SimpleAuth.getPendingRegistrationForUser(user);
+            if (pending) {
+              await SimpleAuth.createVerifiedProfile(user, pending);
+              return 'created';
+            }
+            return 'needs-profile';
+          })().finally(function() { SimpleAuth._ensureInFlight = null; });
+        }
+        return SimpleAuth._ensureInFlight;
+      },
+
+      // Reads the registration details saved at sign-up: this browser first, then the database
+      // (so verifying the email on another phone or browser still works).
+      getPendingRegistrationForUser: async function(user) {
+        const local = SimpleAuth.getPendingRegistration(user.email);
+        if (local) return local;
+        try {
+          const snap = await window.FirebaseModule.firestore().collection('registration_drafts').doc(user.uid).get();
+          if (snap.exists) {
+            const d = snap.data();
+            delete d.savedAt;
+            delete d.uid;
+            return d;
+          }
+        } catch (error) {
+          console.warn('Unable to read registration draft:', error);
+        }
+        return null;
+      },
+
+      signUp: async function(email, password, profileData, profilePictureFile = null) {
         try {
           if (!window.FirebaseModule) {
             throw new Error('Firebase not initialized');
           }
+
+          const emailError = validateRealEmailAddress(email);
+          if (emailError) {
+            throw new Error(emailError);
+          }
           
           const auth = window.FirebaseModule.auth();
-          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+          const normalizedEmail = normalizeEmail(email);
+          const userCredential = await auth.createUserWithEmailAndPassword(normalizedEmail, password);
           const user = userCredential.user;
-          
-          const userData = {
-            uid: user.uid,
-            email: email,
-            role: 'member',
-            fullName: profileData.fullName,
-            phone: profileData.phone || '',
-            region: profileData.region || '',
-            registrationDate: window.FirebaseModule.timestamp.now(),
-            status: 'pending',
-            createdAt: window.FirebaseModule.timestamp.now(),
-            updatedAt: window.FirebaseModule.timestamp.now()
-          };
-          
-          // Create user profile in users collection
-          await window.FirebaseModule.collections.users()
-            .doc(user.uid)
-            .set(userData);
-          
-          // Create member record in members collection (for regional dashboards)
-          await window.FirebaseModule.collections.members()
-            .doc(user.uid)
-            .set({
-              ...userData,
-              memberId: null, // Will be assigned after approval
-              membershipType: 'regular',
-              joiningDate: null, // Set when approved
-              approvalStatus: 'pending_approval'
+          let profilePictureUrl = '';
+
+          if (profilePictureFile) {
+            const storage = window.FirebaseModule.storage();
+            if (!storage) {
+              throw new Error('Profile picture upload is not available. Please refresh and try again.');
+            }
+
+            const extension = (profilePictureFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+            const photoRef = storage.ref(`profiles/${user.uid}/profile-photo-${Date.now()}.${extension}`);
+            const uploadSnapshot = await photoRef.put(profilePictureFile, {
+              contentType: profilePictureFile.type,
+              customMetadata: {
+                uploadedBy: user.uid
+              }
             });
+            profilePictureUrl = await uploadSnapshot.ref.getDownloadURL();
+          }
+
+          // Keep a copy in the database too, so the details survive a different browser or device.
+          try {
+            await window.FirebaseModule.firestore().collection('registration_drafts').doc(user.uid).set({
+              ...profileData,
+              profilePictureUrl,
+              email: normalizedEmail,
+              uid: user.uid,
+              savedAt: window.FirebaseModule.timestamp.now()
+            });
+          } catch (draftError) {
+            console.warn('Registration draft could not be saved online:', draftError);
+          }
+
+          localStorage.setItem(getPendingRegistrationKey(normalizedEmail), JSON.stringify({
+            ...profileData,
+            profilePictureUrl,
+            email: normalizedEmail,
+            savedAt: new Date().toISOString()
+          }));
           
           // Send email verification
-          await user.sendEmailVerification();
+          await sendVerificationEmail(user);
+          await auth.signOut();
           
           return { success: true, user };
         } catch (error) {
@@ -434,7 +785,7 @@
       resetPassword: async function(email) {
         try {
           const auth = window.FirebaseModule.auth();
-          await auth.sendPasswordResetEmail(email);
+          await auth.sendPasswordResetEmail(normalizeEmail(email));
           return { success: true };
         } catch (error) {
           return { 
@@ -452,8 +803,8 @@
     }
     
     // Show forgot password modal
-    function showForgotPassword() {
-      const email = prompt('Enter your email address:');
+    async function showForgotPassword() {
+      const email = await AMCAGDialog.prompt('Enter your email address:');
       if (email) {
         UIModule.showLoader('Sending reset email...');
         SimpleAuth.resetPassword(email).then(result => {
@@ -471,7 +822,7 @@
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const email = document.getElementById('login-email').value;
+      const email = normalizeEmail(document.getElementById('login-email').value);
       const password = document.getElementById('login-password').value;
       
       console.log('[Login] ==========================================================');
@@ -479,8 +830,11 @@
       console.log('[Login] Email:', email);
       console.log('[Login] ==========================================================');
       
-      // Check if Firebase is initialized
-      if (!window.firebase || !window.FirebaseModule || !window.FirebaseModule.firestore()) {
+      // Wait for Firebase to finish initializing before checking services.
+      if (window.FirebaseModule?.whenReady) {
+        await window.FirebaseModule.whenReady(12000);
+      }
+      if (!window.firebase || !window.FirebaseModule || !window.FirebaseModule.auth() || !window.FirebaseModule.firestore()) {
         console.error('[Login] ❌ Firebase not ready!');
         UIModule.showAlert('Firebase is not ready. Please refresh the page.', 'error');
         return;
@@ -498,10 +852,10 @@
         UIModule.hideLoader();
         
         // Show option to resend verification email
-        const resend = confirm('Your email address is not verified yet. Would you like us to resend the verification email?');
+        const resend = await AMCAGDialog.confirm('Your email address is not verified yet. Would you like us to resend the verification email?');
         if (resend && result.user) {
           try {
-            await result.user.sendEmailVerification();
+            await sendVerificationEmail(result.user);
             UIModule.showAlert('Verification email sent! Please check your inbox and click the verification link.', 'success');
           } catch (error) {
             console.error('Resend verification error:', error);
@@ -528,9 +882,18 @@
           console.log('[Login] User document fetched, exists:', userDoc.exists);
           
           if (!userDoc.exists) {
-            console.error('[Login] User document does not exist!');
+            console.warn('[Login] User document does not exist. Checking verified registration draft...');
+            const outcome = await SimpleAuth.ensureProfile(result.user);
+
+            if (outcome === 'created') {
+              UIModule.hideLoader();
+              redirectTo('/pending-approval.html');
+              return;
+            }
+
             UIModule.hideLoader();
-            UIModule.showAlert('User profile not found. Please contact support.', 'error');
+            UIModule.showAlert('Your email is verified. Please complete your membership profile.', 'info');
+            redirectTo('/complete-profile.html');
             return;
           }
           
@@ -549,6 +912,12 @@
           console.log('[Login] Region:', userData.region);
           console.log('[Login] ========================================');
           
+          if (status === 'pending' || status === 'rejected') {
+            UIModule.hideLoader();
+            redirectTo('/pending-approval.html');
+            return;
+          }
+
           // Check if account is approved
           if (status !== 'approved' && status !== 'active') {
             console.error('[Login] ❌ Account not approved! Status:', status);
@@ -569,14 +938,14 @@
           if (mustResetPassword) {
             console.log('[Login] 🚀 REDIRECTING → /change-password.html');
             UIModule.hideLoader();
-            window.location.href = '/change-password.html';
+            redirectTo('/change-password.html');
             return;
           }
 
           if (mustCompleteProfile) {
             console.log('[Login] 🚀 REDIRECTING → /complete-profile.html');
             UIModule.hideLoader();
-            window.location.href = '/complete-profile.html';
+            redirectTo('/complete-profile.html');
             return;
           }
           
@@ -587,16 +956,9 @@
           await new Promise(resolve => setTimeout(resolve, 100));
           
           // Redirect based on role
-          if (role === 'super_admin' || role === 'national_executive') {
-            console.log('[Login] 🚀 REDIRECTING → /national/dashboard.html');
-            window.location.href = '/national/dashboard.html';
-          } else if (role === 'regional_executive') {
-            console.log('[Login] 🚀 REDIRECTING → /region-dashboard/index.html');
-            window.location.href = '/region-dashboard/index.html';
-          } else {
-            console.log('[Login] 🚀 REDIRECTING → /member-dashboard.html');
-            window.location.href = '/member-dashboard.html';
-          }
+          const dashboardPath = getDashboardForRole(role);
+          console.log(`[Login] 🚀 REDIRECTING → ${dashboardPath}`);
+          redirectTo(dashboardPath);
         } catch (error) {
           console.error('[Login] ========================================');
           console.error('[Login] ❌ ERROR OCCURRED');
@@ -622,8 +984,8 @@
       e.preventDefault();
       
       const name = document.getElementById('register-name').value.trim();
-      const email = document.getElementById('register-email').value.trim();
-      const phone = document.getElementById('register-phone').value.trim();
+      const email = normalizeEmail(document.getElementById('register-email').value);
+      const phoneInput = document.getElementById('register-phone').value.trim();
       const gender = document.getElementById('register-gender').value;
       const dob = document.getElementById('register-dob').value;
       const maritalStatus = document.getElementById('register-marital-status').value;
@@ -631,7 +993,7 @@
       const isEmployed = document.getElementById('register-currently-employed').checked;
       const workplace = document.getElementById('register-workplace').value.trim();
       const nextOfKinName = document.getElementById('register-next-of-kin-name').value.trim();
-      const nextOfKinContact = document.getElementById('register-next-of-kin-contact').value.trim();
+      const nextOfKinContactInput = document.getElementById('register-next-of-kin-contact').value.trim();
       const region = document.getElementById('register-region').value;
       const pharmacyPin = document.getElementById('register-pharmacy-pin').value.trim();
       const mcaSchool = document.getElementById('register-mca-school').value;
@@ -639,6 +1001,12 @@
       const profilePictureFile = document.getElementById('register-photo').files[0];
       const password = document.getElementById('register-password').value;
       const confirmPassword = document.getElementById('register-confirm-password').value;
+
+      const emailError = validateRealEmailAddress(email);
+      if (emailError) {
+        UIModule.showAlert(emailError, 'error');
+        return;
+      }
       
       // Validate full name (at least first and last name)
       const nameParts = name.split(' ').filter(part => part.length > 0);
@@ -647,10 +1015,22 @@
         return;
       }
       
-      // Validate phone number format (Ghana)
-      const phoneRegex = /^\+233\s?\d{2}\s?\d{3}\s?\d{4}$/;
-      if (!phoneRegex.test(phone)) {
-        UIModule.showAlert('Please enter a valid Ghana phone number (e.g., +233 24 123 4567)', 'error');
+      const phone = normalizeGhanaPhone(phoneInput);
+      if (!phone) {
+        UIModule.showAlert('Please enter a valid Ghana phone number (e.g., 024 123 4567 or +233 24 123 4567)', 'error');
+        document.getElementById('register-phone').focus();
+        return;
+      }
+
+      if (!gender) {
+        UIModule.showAlert('Please select your gender', 'error');
+        document.getElementById('register-gender').focus();
+        return;
+      }
+
+      if (!dob) {
+        UIModule.showAlert('Please enter your date of birth', 'error');
+        document.getElementById('register-dob').focus();
         return;
       }
       
@@ -666,21 +1046,48 @@
         return;
       }
       
+      if (!maritalStatus) {
+        UIModule.showAlert('Please select your marital status', 'error');
+        document.getElementById('register-marital-status').focus();
+        return;
+      }
+
+      if (address.length < 10) {
+        UIModule.showAlert('Please enter your full residential address', 'error');
+        document.getElementById('register-address').focus();
+        return;
+      }
+
+      if (nextOfKinName.length < 3) {
+        UIModule.showAlert('Please enter the full name of your next of kin', 'error');
+        document.getElementById('register-next-of-kin-name').focus();
+        return;
+      }
+
       // Validate next of kin contact
-      if (!phoneRegex.test(nextOfKinContact)) {
-        UIModule.showAlert('Please enter a valid Ghana phone number for Next of Kin contact (e.g., +233 24 123 4567)', 'error');
+      const nextOfKinContact = normalizeGhanaPhone(nextOfKinContactInput);
+      if (!nextOfKinContact) {
+        UIModule.showAlert('Please enter a valid Ghana phone number for Next of Kin contact (e.g., 024 123 4567 or +233 24 123 4567)', 'error');
+        document.getElementById('register-next-of-kin-contact').focus();
+        return;
+      }
+
+      if (!region) {
+        UIModule.showAlert('Please select your region', 'error');
+        document.getElementById('register-region').focus();
         return;
       }
       
       // Validate workplace if employed
       if (isEmployed && !workplace) {
         UIModule.showAlert('Please enter your current place of work or uncheck "I am currently employed"', 'error');
+        document.getElementById('register-workplace').focus();
         return;
       }
       
       // Validate profile picture (show reminder if not provided)
       if (!profilePictureFile) {
-        const proceed = confirm('⚠️ REMINDER: You have not uploaded a profile picture. A profile picture is required for full account functionality and chat access. Do you want to continue anyway?');
+        const proceed = await AMCAGDialog.confirm('⚠️ REMINDER: You have not uploaded a profile picture. A profile picture is required for full account functionality and chat access. Do you want to continue anyway?');
         if (!proceed) {
           return;
         }
@@ -797,6 +1204,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

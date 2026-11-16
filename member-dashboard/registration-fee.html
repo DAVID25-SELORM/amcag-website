@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration Fee | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .rf-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(11,93,59,.12); padding: 24px; max-width: 620px; }
+    .rf-amount { font-size: 2.2rem; font-weight: 800; color: #0b5d3b; margin: 4px 0 14px; }
+    .rf-status { display: inline-block; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: .85rem; }
+    .rf-status.paid { background: #e3f4ea; color: #0b5d3b; }
+    .rf-status.unpaid { background: #fff1d6; color: #8a5200; }
+    .rf-wait { text-align: center; padding: 18px 0; }
+    .rf-spin { width: 34px; height: 34px; border: 4px solid #dfe8e2; border-top-color: #0b5d3b; border-radius: 50%; margin: 0 auto 12px; animation: rfspin 1s linear infinite; }
+    @keyframes rfspin { to { transform: rotate(360deg); } }
+    .rf-note { font-size: .85rem; color: #5a6778; margin-top: 14px; line-height: 1.5; }
+    .rf-field { margin-bottom: 14px; }
+    .rf-field label { display: block; font-weight: 600; margin-bottom: 6px; font-size: .9rem; }
+    .rf-field select, .rf-field input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cfd8d2; border-radius: 8px; font: inherit; }
+  </style>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo"><img src="/images/logo.jpg" alt="AMCAG Logo"><span>AMCAG Member</span></a>
+      <div class="navbar-actions"><button class="btn btn-sm" onclick="signOut()">Sign Out</button></div>
+    </div>
+  </nav>
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item"><span>📊</span> Dashboard</a>
+      </nav>
+    </aside>
+    <main class="dashboard-content">
+      <div class="dashboard-header"><div><h1 class="dashboard-title">Registration Fee</h1><p class="dashboard-subtitle">A one-time fee that confirms your membership and unlocks your AMCAG ID card.</p></div></div>
+      <div class="rf-card" id="box">Loading...</div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script>
+    function signOut() { AuthModule.signOut(); }
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+      });
+    }
+    function call(name, data) {
+      return firebase.functions().httpsCallable(name)(data || {}).then(function (r) { return r.data; });
+    }
+    function money(n) { return 'GHS ' + Number(n || 0).toFixed(2); }
+    var METHODS = {hubtel: 'Mobile money', cash: 'Cash', bank_transfer: 'Bank transfer', mobile_money_manual: 'Mobile money (recorded by an executive)'};
+    var box = document.getElementById('box');
+    var polling = null;
+
+    function render(s) {
+      stopPolling();
+      if (s.paid) {
+        var when = s.paidAt ? new Date(s.paidAt).toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'}) : '';
+        box.innerHTML = '<span class="rf-status paid">Paid</span>' +
+          '<div class="rf-amount">' + money(s.fee) + '</div>' +
+          '<p>Your registration fee is confirmed' + (when ? ' (' + esc(when) + ')' : '') + (s.method ? ' &middot; ' + esc(METHODS[s.method] || s.method) : '') + '. Thank you!</p>' +
+          '<p><a class="btn btn-primary" href="/member-dashboard/id-card.html">View my ID card</a></p>';
+        return;
+      }
+      if (s.status !== 'active') {
+        box.innerHTML = '<span class="rf-status unpaid">Not available yet</span>' +
+          '<p class="rf-note">You can pay the registration fee once your membership has been approved.</p>';
+        return;
+      }
+      if (s.pendingReference) { waiting(s.pendingReference); return; }
+      box.innerHTML = '<span class="rf-status unpaid">Unpaid</span>' +
+        '<div class="rf-amount">' + money(s.fee) + '</div>' +
+        '<div class="rf-field"><label for="net">Mobile money network</label><select id="net">' +
+        '<option value="">Select network...</option><option value="mtn-gh">MTN Mobile Money</option>' +
+        '<option value="vodafone-gh">Telecel Cash</option><option value="tigo-gh">AirtelTigo Money</option></select></div>' +
+        '<div class="rf-field"><label for="phone">Mobile money number (optional)</label>' +
+        '<input id="phone" type="tel" placeholder="Leave empty to use the number on your profile"></div>' +
+        '<button class="btn btn-primary" id="payBtn" type="button">Pay ' + money(s.fee) + '</button>' +
+        '<p class="rf-note">A payment prompt is sent to your phone. Approve it with your mobile money PIN. ' +
+        'Prefer to pay in cash or by bank transfer? Pay your regional treasurer or executive, and they will record it for you.</p>';
+      document.getElementById('payBtn').addEventListener('click', function () { pay(s.fee); });
+    }
+
+    async function pay(fee) {
+      var channel = document.getElementById('net').value;
+      if (!channel) { alert('Please select your mobile money network.'); return; }
+      if (!await AMCAGDialog.confirm('Send a mobile money prompt for ' + money(fee) + '?', {title: 'Pay registration fee', okText: 'Send prompt'})) return;
+      var btn = document.getElementById('payBtn');
+      btn.disabled = true;
+      btn.textContent = 'Sending prompt...';
+      try {
+        var r = await call('payRegistrationFee', {channel: channel, paymentPhone: document.getElementById('phone').value});
+        waiting(r.clientReference);
+      } catch (e) {
+        alert(e.message || 'Could not start the payment.');
+        load();
+      }
+    }
+
+    function stopPolling() { if (polling) { clearInterval(polling); polling = null; } }
+
+    function waiting(reference) {
+      box.innerHTML = '<div class="rf-wait"><div class="rf-spin"></div><strong>Waiting for your approval</strong>' +
+        '<p class="rf-note">Check your phone and enter your mobile money PIN to approve the payment. This page updates by itself.</p></div>';
+      var ticks = 0;
+      var checked = false;
+      stopPolling();
+      polling = setInterval(async function () {
+        ticks++;
+        try {
+          var s = await call('getRegistrationFeeStatus');
+          if (s.paid) { render(s); return; }
+          if (!s.pendingReference && ticks > 2) { stopPolling(); render(s); return; }
+        } catch (e) { /* keep waiting */ }
+        // Hubtel requires a status check when no callback arrives within 5 minutes.
+        if (ticks === 60 && !checked) {
+          checked = true;
+          try { await call('checkHubtelTransactionStatus', {clientReference: reference}); } catch (e) { /* ignore */ }
+        }
+        if (ticks > 72) {
+          stopPolling();
+          box.innerHTML = '<span class="rf-status unpaid">Still waiting</span><p class="rf-note">We have not received the payment yet. If you approved it, it may take a few minutes.</p>' +
+            '<p><button class="btn btn-primary" type="button" onclick="load()">Check again</button></p>';
+        }
+      }, 5000);
+    }
+
+    async function load() {
+      try { render(await call('getRegistrationFeeStatus')); }
+      catch (e) { box.textContent = e.message || 'Unable to load your registration fee status.'; }
+    }
+
+    AuthModule.onAuthStateChanged(function (user) {
+      if (!user) { window.location.href = '/membership.html'; return; }
+      load();
+    });
+  </script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
+</body>
+</html>

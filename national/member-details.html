@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -63,6 +63,8 @@
           <p class="dashboard-subtitle" id="memberEmail"></p>
         </div>
         <div class="flex gap-2">
+          <button class="btn btn-primary" onclick="requestPaymentPrompt()">Request MoMo Prompt</button>
+          <button class="btn btn-outline" onclick="window.location.href='/member-dashboard/id-card.html?uid='+encodeURIComponent(memberId)">View ID Card</button>
           <button class="btn btn-outline" onclick="editMember()">Edit Member</button>
           <button class="btn btn-danger" onclick="suspendMember()">Suspend</button>
         </div>
@@ -254,15 +256,19 @@
   <!-- App Modules -->
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     let memberData = null;
     let memberId = null;
 
-    function signOut() {
+    async function signOut() {
       AuthModule.signOut();
     }
 
@@ -570,6 +576,48 @@
       }
     }
 
+    async function requestPaymentPrompt() {
+      if (!memberData || memberData.status !== 'active') {
+        UIModule.showAlert('Only active members can receive a dues payment prompt.', 'error');
+        return;
+      }
+      const monthText = await AMCAGDialog.prompt('Enter unpaid months as YYYY-MM, separated by commas (for example 2026-10,2026-11):');
+      if (!monthText) return;
+      const months = monthText.split(',').map(value => value.trim()).filter(Boolean).map(value => {
+        const match = /^(\\d{4})-(0[1-9]|1[0-2])$/.exec(value);
+        return match ? {year: Number(match[1]), month: Number(match[2])} : null;
+      });
+      if (!months.length || months.some(month => !month)) {
+        UIModule.showAlert('Use the format YYYY-MM, for example 2026-11.', 'error');
+        return;
+      }
+      const channel = await AMCAGDialog.prompt('Mobile-money network: mtn-gh, vodafone-gh, or tigo-gh', 'mtn-gh');
+      if (!['mtn-gh', 'vodafone-gh', 'tigo-gh'].includes(String(channel || '').trim())) {
+        UIModule.showAlert('Enter mtn-gh, vodafone-gh, or tigo-gh.', 'error');
+        return;
+      }
+      const paymentPhone = await AMCAGDialog.prompt(`Prompt number (leave blank to use ${memberData.phone || memberData.phoneNumber || 'the member phone'}):`, '');
+      try {
+        const settingsResult = await firebase.functions().httpsCallable('getFeeSettings')({});
+        const monthlyDues = Number(settingsResult.data?.settings?.monthlyDues || 10);
+        const amount = Number((months.length * monthlyDues).toFixed(2));
+        if (!await AMCAGDialog.confirm(`Send a GHS ${amount.toFixed(2)} dues prompt to ${paymentPhone || memberData.phone || memberData.phoneNumber}? The member must approve it.`)) return;
+        const result = await firebase.functions().httpsCallable('processDuesPayment')({
+          memberUid: memberId,
+          months,
+          paymentMethod: 'hubtel',
+          channel: String(channel).trim(),
+          amount,
+          paymentPhone: String(paymentPhone || '').trim() || null,
+          notes: 'Payment prompt issued by executive'
+        });
+        UIModule.showAlert(result.data?.message || 'Payment prompt sent.', 'success');
+        loadMemberDetails();
+      } catch (error) {
+        UIModule.showAlert(error.message || 'Unable to send payment prompt.', 'error');
+      }
+    }
+
     function editMember() {
       // Show edit modal
       const modal = document.createElement('div');
@@ -622,6 +670,11 @@
                   <option value="suspended" ${memberData.status === 'suspended' ? 'selected' : ''}>Suspended</option>
                 </select>
               </div>
+              <div class="form-group">
+                <label for="editDuesStartMonth">Dues Start Month</label>
+                <input type="month" id="editDuesStartMonth" class="form-input" max="${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}" value="${/^\d{4}-(0[1-9]|1[0-2])$/.test(memberData.duesStartMonth || '') ? memberData.duesStartMonth : ''}">
+                <small>Set the first month this member owes dues, including earlier years. Leave blank to use their joining or registration date. Paid and waived months remain settled.</small>
+              </div>
               <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
                 <button type="button" class="btn btn-outline" onclick="this.closest('.modal').remove()">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -640,7 +693,13 @@
         submitBtn.textContent = 'Saving...';
         
         try {
+          const duesStartMonth = document.getElementById('editDuesStartMonth').value;
+          const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+          if (duesStartMonth && (!/^\d{4}-(0[1-9]|1[0-2])$/.test(duesStartMonth) || duesStartMonth > currentMonthKey)) {
+            throw new Error('Choose a valid dues start month no later than the current month.');
+          }
           const updates = {
+            duesStartMonth: duesStartMonth || firebase.firestore.FieldValue.delete(),
             fullName: document.getElementById('editFullName').value.trim(),
             email: document.getElementById('editEmail').value.trim(),
             phone: document.getElementById('editPhone').value.trim(),
@@ -667,8 +726,8 @@
       });
     }
 
-    function suspendMember() {
-      if (!confirm(`Are you sure you want to suspend ${memberData.fullName || 'this member'}?`)) {
+    async function suspendMember() {
+      if (!await AMCAGDialog.confirm(`Are you sure you want to suspend ${memberData.fullName || 'this member'}?`)) {
         return;
       }
       
@@ -791,7 +850,7 @@
       });
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 
   <style>
     .tab-btn {

@@ -4,15 +4,46 @@
 // ================================================================
 
 // ===== FIREBASE CONFIGURATION =====
+const runtimeHostname = window.location.hostname;
+const runtimeAuthDomain = runtimeHostname === "amcag-af624.web.app" ||
+  runtimeHostname === "amcag-af624.firebaseapp.com"
+  ? runtimeHostname
+  : "amcag-af624.firebaseapp.com";
+
 const firebaseConfig = {
-  apiKey: "AIzaSyCLQQdTlLUVT7L-DIWXhuLq1ftpW2azUZ8",
-  authDomain: "amcag-website.firebaseapp.com",
-  projectId: "amcag-website",
-  storageBucket: "amcag-website.firebasestorage.app",
-  messagingSenderId: "341720720945",
-  appId: "1:341720720945:web:ef59ad086ee6e0dcc2e52f",
-  measurementId: "G-25G3EVFBBF"
+  apiKey: "AIzaSyDArX-BdyqmTaLV0GRn8mAJ6jMlPN_12LI",
+  authDomain: runtimeAuthDomain,
+  databaseURL: "https://amcag-af624-default-rtdb.firebaseio.com",
+  projectId: "amcag-af624",
+  storageBucket: "amcag-af624.firebasestorage.app",
+  messagingSenderId: "772149261606",
+  appId: "1:772149261606:web:b3b805d94ab018da643de7",
+  measurementId: "G-338RLN6NYC"
 };
+
+// ✅ NAVIGATION PATCH START
+const AMCAG_ROUTES = Object.freeze({
+  PUBLIC_HOME: '/',
+  LOGIN: '/membership.html',
+  VIEW_SITE: '/?preview=admin',
+  MEMBER_VIEW_SITE: '/?preview=member',
+  ADMIN_DASHBOARD: '/national/dashboard.html',
+  ADMIN_PROGRAMS: '/national/events.html',
+  ADMIN_MEDIA_UPLOAD: '/national/media-upload.html',
+  // Media upload page also manages recent gallery/video uploads; no separate media manager page exists yet.
+  ADMIN_MEDIA_MANAGER: '/national/media-upload.html',
+  ADMIN_SITE_CONTENT: '/national/news-management.html',
+  ADMIN_USERS: '/national/members.html',
+  REGIONAL_DASHBOARD: '/region-dashboard/index.html',
+  REGIONAL_PROGRAMS: '/region-dashboard/meetings.html',
+  REGIONAL_MEDIA_UPLOAD: '/region-dashboard/media-upload.html',
+  MEMBER_DASHBOARD: '/member-dashboard.html',
+  MEMBER_ACCOUNT: '/profile.html',
+  LOGOUT_REDIRECT: '/membership.html'
+});
+
+window.AMCAG_ROUTES = AMCAG_ROUTES;
+// ✅ NAVIGATION PATCH END
 
 // ===== INITIALIZE FIREBASE =====
 let app;
@@ -21,6 +52,100 @@ let db;
 let storage;
 let analytics;
 let functions;
+let firebaseReadyPromise;
+let firebaseReadyResolve;
+let authPersistenceConfigured = false;
+const firebaseCacheVersion = '2026-05-30-listener-cache-reset';
+
+function isIndexedDbAbortError(error) {
+  const name = String(error?.name || '');
+  const message = String(error?.message || error || '');
+  const stack = String(error?.stack || '');
+  return name === 'AbortError' ||
+    (message.toLowerCase().includes('transaction was aborted') && stack.toLowerCase().includes('indexed'));
+}
+
+function installFirebaseStorageErrorGuard() {
+  if (window.__amcagFirebaseStorageErrorGuardInstalled) return;
+  window.__amcagFirebaseStorageErrorGuardInstalled = true;
+
+  window.addEventListener('unhandledrejection', (event) => {
+    if (!isIndexedDbAbortError(event.reason)) return;
+    console.warn('Ignored transient Firebase IndexedDB abort. The app will retry storage reads automatically.');
+    event.preventDefault();
+  });
+
+  window.addEventListener('error', (event) => {
+    if (!isIndexedDbAbortError(event.error)) return;
+    console.warn('Ignored transient Firebase IndexedDB abort. The app will retry storage reads automatically.');
+    event.preventDefault();
+  });
+}
+
+function clearStaleClientCaches() {
+  if (window.__amcagClientCacheCleanupStarted) return;
+  window.__amcagClientCacheCleanupStarted = true;
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+      .catch((error) => console.warn('Service worker cleanup failed:', error));
+  }
+}
+
+function clearFirestorePersistenceIfStale(firestoreInstance) {
+  if (!firestoreInstance || typeof firestoreInstance.clearPersistence !== 'function') {
+    return Promise.resolve(false);
+  }
+
+  try {
+    if (localStorage.getItem('amcagFirebaseCacheVersion') === firebaseCacheVersion) {
+      return Promise.resolve(false);
+    }
+
+    return firestoreInstance.clearPersistence()
+      .then(() => {
+        localStorage.setItem('amcagFirebaseCacheVersion', firebaseCacheVersion);
+        console.info('Cleared stale Firestore persistence cache.');
+        return true;
+      })
+      .catch((error) => {
+        localStorage.setItem('amcagFirebaseCacheVersion', firebaseCacheVersion);
+        console.warn('Firestore persistence cache cleanup skipped:', error);
+        return false;
+      });
+  } catch (error) {
+    console.warn('Firestore persistence cache cleanup unavailable:', error);
+    return Promise.resolve(false);
+  }
+}
+
+function configureAuthPersistence(authInstance) {
+  if (authPersistenceConfigured || !authInstance || !firebase?.auth?.Auth?.Persistence) {
+    if (!authPersistenceConfigured) {
+      console.warn('Auth persistence API unavailable.');
+    }
+    return;
+  }
+  authPersistenceConfigured = true;
+
+  authInstance.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((error) => {
+    if (!isIndexedDbAbortError(error)) {
+      console.warn('Firebase local auth persistence unavailable, falling back to session persistence:', error);
+    }
+
+    return authInstance.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch((sessionError) => {
+      console.warn('Firebase session auth persistence unavailable, continuing with default persistence:', sessionError);
+    });
+  });
+}
+
+function markFirebaseReady(isReady) {
+  if (firebaseReadyResolve) {
+    firebaseReadyResolve(isReady);
+    firebaseReadyResolve = null;
+  }
+}
 
 function initializeFirebase() {
   try {
@@ -30,40 +155,22 @@ function initializeFirebase() {
       return false;
     }
     
-    // Check if already initialized
-    if (firebase.apps && firebase.apps.length > 0) {
+    if (!firebase.apps || !firebase.apps.length) {
+      app = firebase.initializeApp(firebaseConfig);
+    } else {
       console.log('Firebase already initialized');
       app = firebase.apps[0];
-      
-      // Get references to already initialized services
-      if (typeof firebase.auth === 'function') {
-        auth = firebase.auth();
-      }
-      if (typeof firebase.firestore === 'function') {
-        db = firebase.firestore();
-      }
-      if (typeof firebase.storage === 'function') {
-        storage = firebase.storage();
-      }
-      if (typeof firebase.analytics === 'function') {
-        analytics = firebase.analytics();
-      }
-      if (typeof firebase.functions === 'function') {
-        functions = firebase.functions();
-      }
-      return true;
     }
-    
-    // Initialize Firebase App
-    app = firebase.initializeApp(firebaseConfig);
     
     // Initialize Firebase Services (only if loaded)
     if (typeof firebase.auth === 'function') {
       auth = firebase.auth();
+      configureAuthPersistence(auth);
     }
     
     if (typeof firebase.firestore === 'function') {
       db = firebase.firestore();
+      clearFirestorePersistenceIfStale(db);
     }
     
     if (typeof firebase.storage === 'function') {
@@ -81,38 +188,72 @@ function initializeFirebase() {
     }
     
     console.log('Firebase initialized successfully');
+    markFirebaseReady(true);
     return true;
   } catch (error) {
     console.error('Firebase initialization error:', error.message || error);
+    markFirebaseReady(false);
     return false;
   }
 }
 
+function whenReady(timeoutMs = 12000) {
+  if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+    return Promise.resolve(true);
+  }
+
+  if (!firebaseReadyPromise) {
+    firebaseReadyPromise = new Promise((resolve) => {
+      firebaseReadyResolve = resolve;
+    });
+  }
+
+  return Promise.race([
+    firebaseReadyPromise,
+    new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
+  ]);
+}
+
+function requireFirestoreDb() {
+  if (!db || typeof db.collection !== 'function') {
+    throw new Error('Firestore is not initialized yet.');
+  }
+  return db;
+}
+
+function requireStorage() {
+  if (!storage || typeof storage.ref !== 'function') {
+    throw new Error('Firebase Storage is not initialized yet.');
+  }
+  return storage;
+}
+
 // ===== FIRESTORE COLLECTION REFERENCES =====
 const collections = {
-  users: () => db.collection('users'),
-  members: () => db.collection('members'),
-  regions: () => db.collection('regions'),
-  leadership: () => db.collection('leadership'),
-  events: () => db.collection('events'),
-  payments: () => db.collection('payments'),
-  dues: () => db.collection('dues'),
-  contributions: () => db.collection('contributions'),
-  media: () => db.collection('media'),
-  certificates: () => db.collection('certificates'),
-  announcements: () => db.collection('announcements'),
-  news: () => db.collection('news'),
-  gallery: () => db.collection('gallery'),
-  videos: () => db.collection('videos')
+  users: () => requireFirestoreDb().collection('users'),
+  members: () => requireFirestoreDb().collection('members'),
+  regions: () => requireFirestoreDb().collection('regions'),
+  leadership: () => requireFirestoreDb().collection('leadership'),
+  events: () => requireFirestoreDb().collection('events'),
+  payments: () => requireFirestoreDb().collection('payments'),
+  dues: () => requireFirestoreDb().collection('dues'),
+  contributions: () => requireFirestoreDb().collection('contributions'),
+  media: () => requireFirestoreDb().collection('media'),
+  certificates: () => requireFirestoreDb().collection('certificates'),
+  agmRegistrations: () => requireFirestoreDb().collection('agmRegistrations'),
+  announcements: () => requireFirestoreDb().collection('announcements'),
+  news: () => requireFirestoreDb().collection('news'),
+  gallery: () => requireFirestoreDb().collection('gallery'),
+  videos: () => requireFirestoreDb().collection('videos')
 };
 
 // ===== STORAGE REFERENCES =====
 const storageRefs = {
-  photos: () => storage.ref('media/photos'),
-  videos: () => storage.ref('media/videos'),
-  documents: () => storage.ref('documents'),
-  certificates: () => storage.ref('certificates'),
-  profiles: () => storage.ref('profiles')
+  photos: () => requireStorage().ref('media/photos'),
+  videos: () => requireStorage().ref('media/videos'),
+  documents: () => requireStorage().ref('documents'),
+  certificates: () => requireStorage().ref('certificates'),
+  profiles: () => requireStorage().ref('profiles')
 };
 
 // ===== TIMESTAMP UTILITIES =====
@@ -153,7 +294,8 @@ window.FirebaseModule = {
   storageRefs,
   timestamp,
   handleFirebaseError,
-  initializeFirebase
+  initializeFirebase,
+  whenReady
 };
 
 function bootFirebase(retries = 20) {
@@ -162,6 +304,7 @@ function bootFirebase(retries = 20) {
       setTimeout(() => bootFirebase(retries - 1), 50);
     } else {
       console.error('Firebase SDK not available after retries.');
+      markFirebaseReady(false);
     }
     return;
   }
@@ -170,6 +313,8 @@ function bootFirebase(retries = 20) {
 }
 
 // Auto-initialize immediately. Firebase setup has no DOM dependency.
+installFirebaseStorageErrorGuard();
+clearStaleClientCaches();
 bootFirebase();
 
 // Retry once DOM is ready as a safety net for slow script loading.

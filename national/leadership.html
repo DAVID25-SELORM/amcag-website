@@ -6,7 +6,7 @@
   <title>Leadership Management | AMCAG National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -66,19 +66,19 @@
 
       <div class="grid grid-4 gap-4 mb-6">
         <div class="stat-card">
-          <div class="stat-value">24</div>
+          <div class="stat-value" id="leadership-national-count">0</div>
           <div class="stat-label">National Leaders</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">78</div>
+          <div class="stat-value" id="leadership-regional-count">0</div>
           <div class="stat-label">Regional Leaders</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">156</div>
+          <div class="stat-value" id="leadership-district-count">0</div>
           <div class="stat-label">District Leaders</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">12</div>
+          <div class="stat-value" id="leadership-committee-count">0</div>
           <div class="stat-label">Committees</div>
         </div>
       </div>
@@ -86,53 +86,9 @@
       <!-- National Executive -->
       <div class="card mb-6">
         <h3 class="card-title mb-4">National Executive</h3>
-        <div class="grid grid-3 gap-4">
-          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); text-align: center;">
-            <div style="width: 80px; height: 80px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); margin: 0 auto var(--space-3); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--text-2xl); font-weight: 700;">
-              KM
-            </div>
-            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.25rem;">Kwame Mensah</h4>
-            <div style="color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); margin-bottom: 0.5rem;">National President</div>
-            <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.75rem;">
-              📧 kwame.mensah@amcag.org<br>
-              📱 +233 24 123 4567
-            </div>
-            <div style="display: flex; gap: 0.5rem; justify-content: center;">
-              <button class="btn btn-sm btn-outline" onclick="viewProfile('AMCAG-LDR-0001')">View Profile</button>
-              <button class="btn btn-sm btn-outline" onclick="contactLeader('AMCAG-LDR-0001')">Contact</button>
-            </div>
-          </div>
-
-          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); text-align: center;">
-            <div style="width: 80px; height: 80px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); margin: 0 auto var(--space-3); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--text-2xl); font-weight: 700;">
-              AB
-            </div>
-            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.25rem;">Akosua Boateng</h4>
-            <div style="color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); margin-bottom: 0.5rem;">Vice President</div>
-            <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.75rem;">
-              📧 akosua.boateng@amcag.org<br>
-              📱 +233 24 234 5678
-            </div>
-            <div style="display: flex; gap: 0.5rem; justify-content: center;">
-              <button class="btn btn-sm btn-outline" onclick="viewProfile('AMCAG-LDR-0002')">View Profile</button>
-              <button class="btn btn-sm btn-outline" onclick="contactLeader('AMCAG-LDR-0002')">Contact</button>
-            </div>
-          </div>
-
-          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); text-align: center;">
-            <div style="width: 80px; height: 80px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-success), var(--color-primary)); margin: 0 auto var(--space-3); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--text-2xl); font-weight: 700;">
-              KA
-            </div>
-            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.25rem;">Kofi Asante</h4>
-            <div style="color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); margin-bottom: 0.5rem;">General Secretary</div>
-            <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.75rem;">
-              📧 kofi.asante@amcag.org<br>
-              📱 +233 24 345 6789
-            </div>
-            <div style="display: flex; gap: 0.5rem; justify-content: center;">
-              <button class="btn btn-sm btn-outline" onclick="viewProfile('AMCAG-LDR-0003')">View Profile</button>
-              <button class="btn btn-sm btn-outline" onclick="contactLeader('AMCAG-LDR-0003')">Contact</button>
-            </div>
+        <div class="grid grid-3 gap-4" id="nationalExecutiveGrid">
+          <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: var(--space-6); color: var(--text-secondary);">
+            No national executives have been added yet.
           </div>
         </div>
       </div>
@@ -172,126 +128,7 @@
               </tr>
             </thead>
             <tbody id="leadershipTableBody">
-              <tr>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
-                      KM
-                    </div>
-                    <div>
-                      <div style="font-weight: 600;">Kwame Mensah</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0001</div>
-                    </div>
-                  </div>
-                </td>
-                <td>National President</td>
-                <td><span class="badge" style="background: var(--color-primary-95); color: var(--color-primary);">National</span></td>
-                <td>Nationwide</td>
-                <td>Jan 2024</td>
-                <td>
-                  <div style="font-size: var(--text-sm);">kwame.m@amcag.org</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 123 4567</div>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0001')">Manage</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
-                      AB
-                    </div>
-                    <div>
-                      <div style="font-weight: 600;">Akosua Boateng</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0002</div>
-                    </div>
-                  </div>
-                </td>
-                <td>Vice President</td>
-                <td><span class="badge" style="background: var(--color-primary-95); color: var(--color-primary);">National</span></td>
-                <td>Nationwide</td>
-                <td>Jan 2024</td>
-                <td>
-                  <div style="font-size: var(--text-sm);">akosua.b@amcag.org</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 234 5678</div>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0002')">Manage</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-success), var(--color-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
-                      KA
-                    </div>
-                    <div>
-                      <div style="font-weight: 600;">Kofi Asante</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0003</div>
-                    </div>
-                  </div>
-                </td>
-                <td>General Secretary</td>
-                <td><span class="badge" style="background: var(--color-primary-95); color: var(--color-primary);">National</span></td>
-                <td>Nationwide</td>
-                <td>Jan 2024</td>
-                <td>
-                  <div style="font-size: var(--text-sm);">kofi.a@amcag.org</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 345 6789</div>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0003')">Manage</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-warning), var(--color-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
-                      AO
-                    </div>
-                    <div>
-                      <div style="font-weight: 600;">Ama Owusu</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0004</div>
-                    </div>
-                  </div>
-                </td>
-                <td>Chief Financial Officer</td>
-                <td><span class="badge" style="background: var(--color-primary-95); color: var(--color-primary);">National</span></td>
-                <td>Nationwide</td>
-                <td>Jan 2024</td>
-                <td>
-                  <div style="font-size: var(--text-sm);">ama.o@amcag.org</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 456 7890</div>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0004')">Manage</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-info), var(--color-primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
-                      YM
-                    </div>
-                    <div>
-                      <div style="font-weight: 600;">Yaw Mohammed</div>
-                      <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: AMCAG-LDR-0005</div>
-                    </div>
-                  </div>
-                </td>
-                <td>Regional Chairperson</td>
-                <td><span class="badge" style="background: var(--color-secondary-95); color: var(--color-secondary);">Regional</span></td>
-                <td>Greater Accra</td>
-                <td>Mar 2024</td>
-                <td>
-                  <div style="font-size: var(--text-sm);">yaw.m@amcag.org</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">+233 24 567 8901</div>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="manageLeader('AMCAG-LDR-0005')">Manage</button>
-                </td>
-              </tr>
+              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No leadership records found.</td></tr>
             </tbody>
           </table>
         </div>
@@ -309,35 +146,8 @@
       <div class="grid grid-2 gap-4 mt-6">
         <div class="card">
           <h3 class="card-title mb-4">Active Committees</h3>
-          <div class="space-y-3">
-            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
-              <div>
-                <div style="font-weight: 600;">Finance Committee</div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">8 members</div>
-              </div>
-              <button class="btn btn-sm btn-outline" onclick="viewCommittee('Finance Committee')">View</button>
-            </div>
-            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
-              <div>
-                <div style="font-weight: 600;">Programs & Events</div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">12 members</div>
-              </div>
-              <button class="btn btn-sm btn-outline" onclick="viewCommittee('Programs & Events')">View</button>
-            </div>
-            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
-              <div>
-                <div style="font-weight: 600;">Membership & Growth</div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">10 members</div>
-              </div>
-              <button class="btn btn-sm btn-outline" onclick="viewCommittee('Membership & Growth')">View</button>
-            </div>
-            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
-              <div>
-                <div style="font-weight: 600;">Communications</div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">6 members</div>
-              </div>
-              <button class="btn btn-sm btn-outline" onclick="viewCommittee('Communications')">View</button>
-            </div>
+          <div id="committeesList" class="space-y-3">
+            <div class="empty-state" style="text-align: center; padding: var(--space-4); color: var(--text-secondary);">No active committees have been added yet.</div>
           </div>
         </div>
 
@@ -347,23 +157,20 @@
             <div class="flex-between p-3" style="background: var(--color-primary-95); border-radius: var(--radius-md);">
               <div>
                 <div style="font-size: var(--text-sm); color: var(--text-secondary);">Avg. Tenure</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">2.3 years</div>
+                <div id="avgTenureStat" style="font-weight: 600; font-size: var(--text-xl);">Not available</div>
               </div>
-              <div style="font-size: var(--text-2xl);">📅</div>
             </div>
             <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
               <div>
                 <div style="font-size: var(--text-sm); color: var(--text-secondary);">Active Positions</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">258</div>
+                <div id="activePositionsStat" style="font-weight: 600; font-size: var(--text-xl);">0</div>
               </div>
-              <div style="font-size: var(--text-2xl);">👥</div>
             </div>
             <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
               <div>
                 <div style="font-size: var(--text-sm); color: var(--text-secondary);">Vacant Positions</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">12</div>
+                <div id="vacantPositionsStat" style="font-weight: 600; font-size: var(--text-xl);">0</div>
               </div>
-              <div style="font-size: var(--text-2xl);">📋</div>
             </div>
           </div>
         </div>
@@ -379,9 +186,13 @@
   <!-- App Modules -->
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     const leadershipPagination = {
@@ -391,166 +202,81 @@
       rowsPerPage: 2,
       totalPages: 1
     };
-    const committeeDirectory = {
-      'Finance Committee': {
-        chair: 'Akosua Boateng',
-        viceChair: 'Ama Owusu',
-        meetingDay: 'First Monday, 10:00 AM',
-        focus: 'Budget planning, treasury oversight, and financial compliance.',
-        members: [
-          { name: 'Akosua Boateng', role: 'Chair', region: 'National' },
-          { name: 'Ama Owusu', role: 'Vice Chair', region: 'National' },
-          { name: 'Kojo Mensah', role: 'Member', region: 'Greater Accra' },
-          { name: 'Ruth Agyeman', role: 'Member', region: 'Ashanti' },
-          { name: 'Yaw Boadi', role: 'Member', region: 'Central' },
-          { name: 'David Osei', role: 'Member', region: 'Eastern' },
-          { name: 'Esi Kwarteng', role: 'Member', region: 'Western' },
-          { name: 'Naa Lartey', role: 'Secretary', region: 'National' }
-        ]
-      },
-      'Programs & Events': {
-        chair: 'Kofi Asante',
-        viceChair: 'Paulina Tetteh',
-        meetingDay: 'Second Wednesday, 2:00 PM',
-        focus: 'National events planning, program quality, and execution tracking.',
-        members: [
-          { name: 'Kofi Asante', role: 'Chair', region: 'National' },
-          { name: 'Paulina Tetteh', role: 'Vice Chair', region: 'Greater Accra' },
-          { name: 'Felix Owusu', role: 'Member', region: 'Ashanti' },
-          { name: 'Mavis Adjei', role: 'Member', region: 'Western' },
-          { name: 'Nana Aidoo', role: 'Member', region: 'Central' },
-          { name: 'Joyce Mensima', role: 'Member', region: 'Volta' },
-          { name: 'Bernard Bediako', role: 'Member', region: 'Eastern' },
-          { name: 'Yvonne Asante', role: 'Member', region: 'Northern' },
-          { name: 'Kwaku Apea', role: 'Member', region: 'Bono' },
-          { name: 'Selina Ofori', role: 'Member', region: 'Ahafo' },
-          { name: 'Eric Tetteh', role: 'Member', region: 'Western North' },
-          { name: 'Priscilla Ankrah', role: 'Secretary', region: 'National' }
-        ]
-      },
-      'Membership & Growth': {
-        chair: 'Kwame Mensah',
-        viceChair: 'Yaw Mohammed',
-        meetingDay: 'Third Tuesday, 11:00 AM',
-        focus: 'Membership expansion, retention strategy, and onboarding quality.',
-        members: [
-          { name: 'Kwame Mensah', role: 'Chair', region: 'National' },
-          { name: 'Yaw Mohammed', role: 'Vice Chair', region: 'Greater Accra' },
-          { name: 'Abena Ofori', role: 'Member', region: 'Ashanti' },
-          { name: 'Samuel Hagan', role: 'Member', region: 'Northern' },
-          { name: 'Deborah Aidoo', role: 'Member', region: 'Central' },
-          { name: 'Nana Boateng', role: 'Member', region: 'Eastern' },
-          { name: 'Francis Boadu', role: 'Member', region: 'Western' },
-          { name: 'Martha Serwaa', role: 'Member', region: 'Bono East' },
-          { name: 'Isaac Donkor', role: 'Member', region: 'Savannah' },
-          { name: 'Vida Oppong', role: 'Secretary', region: 'National' }
-        ]
-      },
-      Communications: {
-        chair: 'Ama Owusu',
-        viceChair: 'Kofi Asante',
-        meetingDay: 'Every Friday, 9:00 AM',
-        focus: 'Internal updates, media strategy, and stakeholder communication.',
-        members: [
-          { name: 'Ama Owusu', role: 'Chair', region: 'National' },
-          { name: 'Kofi Asante', role: 'Vice Chair', region: 'National' },
-          { name: 'Ernestina Baah', role: 'Member', region: 'Greater Accra' },
-          { name: 'John Biney', role: 'Member', region: 'Western' },
-          { name: 'Grace Kumi', role: 'Member', region: 'Ashanti' },
-          { name: 'Linda Akyea', role: 'Secretary', region: 'National' }
-        ]
-      }
+    const nationalExecutivePositions = [
+      'President',
+      'Vice President',
+      'Secretary',
+      'Assistant Secretary',
+      'Treasurer',
+      'Financial Secretary',
+      'P.R.O',
+      'Organizer',
+      'Assistant Organizer'
+    ];
+    const regionalExecutivePositions = [
+      'President',
+      'Vice President',
+      'Secretary',
+      'Assistant Secretary',
+      'Treasurer',
+      'Financial Secretary',
+      'P.R.O',
+      'Organizer',
+      'Assistant Organizer'
+    ];
+    const positionTitleAliases = {
+      'national president': 'President',
+      'vice president': 'Vice President',
+      'general secretary': 'Secretary',
+      'assistant secretary': 'Assistant Secretary',
+      'chief financial officer': 'Financial Secretary',
+      'financial secretary': 'Financial Secretary',
+      'national treasurer': 'Treasurer',
+      'public relations officer': 'P.R.O',
+      'pro': 'P.R.O',
+      'regional chairperson': 'President'
     };
-    const leaderDirectory = {
-      'AMCAG-LDR-0001': {
-        id: 'AMCAG-LDR-0001',
-        name: 'Kwame Mensah',
-        initials: 'KM',
-        position: 'National President',
-        level: 'National',
-        region: 'Nationwide',
-        termStart: 'Jan 2024',
-        email: 'kwame.mensah@amcag.org',
-        phone: '+233 24 123 4567',
-        responsibilities: [
-          'Strategic leadership and national policy direction',
-          'Oversight of regional coordination and governance',
-          'External stakeholder and partner engagement'
-        ]
-      },
-      'AMCAG-LDR-0002': {
-        id: 'AMCAG-LDR-0002',
-        name: 'Akosua Boateng',
-        initials: 'AB',
-        position: 'Vice President',
-        level: 'National',
-        region: 'Nationwide',
-        termStart: 'Jan 2024',
-        email: 'akosua.boateng@amcag.org',
-        phone: '+233 24 234 5678',
-        responsibilities: [
-          'Operational support for national programs',
-          'Committee coordination and reporting',
-          'Policy implementation across national units'
-        ]
-      },
-      'AMCAG-LDR-0003': {
-        id: 'AMCAG-LDR-0003',
-        name: 'Kofi Asante',
-        initials: 'KA',
-        position: 'General Secretary',
-        level: 'National',
-        region: 'Nationwide',
-        termStart: 'Jan 2024',
-        email: 'kofi.asante@amcag.org',
-        phone: '+233 24 345 6789',
-        responsibilities: [
-          'Secretariat administration and records management',
-          'Communication of executive decisions',
-          'Agenda planning and meeting documentation'
-        ]
-      },
-      'AMCAG-LDR-0004': {
-        id: 'AMCAG-LDR-0004',
-        name: 'Ama Owusu',
-        initials: 'AO',
-        position: 'Chief Financial Officer',
-        level: 'National',
-        region: 'Nationwide',
-        termStart: 'Jan 2024',
-        email: 'ama.owusu@amcag.org',
-        phone: '+233 24 456 7890',
-        responsibilities: [
-          'Budget planning and treasury oversight',
-          'Financial controls and audit readiness',
-          'Resource allocation for national projects'
-        ]
-      },
-      'AMCAG-LDR-0005': {
-        id: 'AMCAG-LDR-0005',
-        name: 'Yaw Mohammed',
-        initials: 'YM',
-        position: 'Regional Chairperson',
-        level: 'Regional',
-        region: 'Greater Accra',
-        termStart: 'Mar 2024',
-        email: 'yaw.mohammed@amcag.org',
-        phone: '+233 24 567 8901',
-        responsibilities: [
-          'Regional leadership and coordination',
-          'Execution of national directives in-region',
-          'Regional performance and compliance reporting'
-        ]
-      }
-    };
+    const committeeDirectory = {};
+    const leaderDirectory = {};
+    const eligibleMemberDirectory = {};
     const ghanaRegions = [
       'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Northern',
       'Upper East', 'Upper West', 'Volta', 'Western', 'Western North',
       'Bono', 'Bono East', 'Ahafo', 'Savannah', 'North East', 'Oti'
     ];
 
-    function signOut() {
+    function setText(id, value, fallback = "0") {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.textContent = value ?? fallback;
+    }
+
+    function setHTML(id, value, fallback = "") {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.innerHTML = value ?? fallback;
+    }
+
+    async function signOut() {
       AuthModule.signOut();
+    }
+
+    function getOfficialPositionTitle(position) {
+      const raw = String(position || '').trim();
+      return positionTitleAliases[raw.toLowerCase()] || raw;
+    }
+
+    function getExecutivePositionRank(leader) {
+      const level = String(leader?.level || '').toLowerCase();
+      const positions = level === 'regional' ? regionalExecutivePositions : nationalExecutivePositions;
+      const index = positions.findIndex((position) => position.toLowerCase() === String(leader?.position || '').toLowerCase());
+      return index === -1 ? Number.MAX_SAFE_INTEGER : index;
     }
 
     function viewOrgChart() {
@@ -624,20 +350,33 @@
         content: `
           <div style="display: grid; gap: 0.75rem;">
             <div style="font-size: var(--text-sm); color: var(--text-secondary);">
-              ID format follows <strong>AMCAG-LDR-0000</strong>.
+              Select an existing member first, then assign executive level, position, permissions, term dates, and approval status.
+            </div>
+            <div>
+              <label for="addLeaderMember" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Select Existing Member</label>
+              <select id="addLeaderMember" class="form-input">
+                <option value="">Loading members...</option>
+              </select>
+              <div id="addLeaderMemberHelp" style="margin-top: 0.35rem; font-size: var(--text-sm); color: var(--text-secondary);">
+                Leaders must be promoted from existing member records to prevent duplicate people.
+              </div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem;">
               <div>
-                <label for="addLeaderId" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Leader ID</label>
+                <label for="addLeaderId" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Executive ID</label>
                 <input id="addLeaderId" class="form-input" value="${nextLeaderId}" readonly>
               </div>
               <div>
                 <label for="addLeaderName" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Full Name</label>
-                <input id="addLeaderName" class="form-input" placeholder="e.g. Jane Doe">
+                <input id="addLeaderName" class="form-input" placeholder="Auto-filled from selected member" readonly>
               </div>
               <div>
                 <label for="addLeaderPosition" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Position</label>
-                <input id="addLeaderPosition" class="form-input" placeholder="e.g. National Organizer">
+                 <select id="addLeaderPosition" class="form-input"></select>
+              </div>
+              <div>
+                <label for="addLeaderRoleCode" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Role Code</label>
+                <input id="addLeaderRoleCode" class="form-input" readonly>
               </div>
               <div>
                 <label for="addLeaderLevel" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Level</label>
@@ -660,17 +399,73 @@
                 </div>
               </div>
               <div>
+                <label for="addLeaderDistrict" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">District / Branch</label>
+                <input id="addLeaderDistrict" class="form-input" placeholder="e.g. Tema">
+              </div>
+              <div>
                 <label for="addLeaderTermStart" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Term Start</label>
                 <input id="addLeaderTermStart" class="form-input" type="month" value="${defaultMonth}">
               </div>
               <div>
+                <label for="addLeaderTermEnd" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Term End</label>
+                <input id="addLeaderTermEnd" class="form-input" type="month">
+              </div>
+              <div>
+                <label for="addLeaderStatus" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Status</label>
+                <input id="addLeaderStatus" class="form-input" value="Pending Approval" readonly>
+                <div id="addLeaderApprovalHelp" style="margin-top: 0.35rem; font-size: var(--text-sm); color: var(--text-secondary);">
+                  Final status is assigned by the approval workflow.
+                </div>
+              </div>
+              <div>
                 <label for="addLeaderEmail" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Email</label>
-                <input id="addLeaderEmail" class="form-input" type="email" placeholder="name@amcag.org">
+                <input id="addLeaderEmail" class="form-input" type="email" placeholder="Auto-filled from selected member" readonly>
               </div>
               <div>
                 <label for="addLeaderPhone" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Phone</label>
-                <input id="addLeaderPhone" class="form-input" placeholder="+233 ...">
+                <input id="addLeaderPhone" class="form-input" placeholder="Auto-filled from selected member" readonly>
               </div>
+              <div>
+                <label for="addLeaderWhatsapp" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">WhatsApp Number</label>
+                <input id="addLeaderWhatsapp" class="form-input" placeholder="+233 ...">
+              </div>
+              <div>
+                <label for="addLeaderMembershipId" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Membership ID</label>
+                <input id="addLeaderMembershipId" class="form-input" placeholder="Auto-filled from selected member" readonly>
+              </div>
+              <div>
+                <label for="addLeaderGender" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Gender</label>
+                <select id="addLeaderGender" class="form-input">
+                  <option value="">Select gender...</option>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="addLeaderPhoto" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Profile Photo URL</label>
+                <input id="addLeaderPhoto" class="form-input" type="url" placeholder="https://...">
+              </div>
+              <div>
+                <label for="addLeaderNationalId" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">National ID / License No.</label>
+                <input id="addLeaderNationalId" class="form-input" placeholder="Optional">
+              </div>
+              <div>
+                <label for="addLeaderResidentialArea" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Residential Area / City</label>
+                <input id="addLeaderResidentialArea" class="form-input" placeholder="e.g. Madina">
+              </div>
+              <div>
+                <label for="addLeaderEmergencyContact" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Emergency Contact</label>
+                <input id="addLeaderEmergencyContact" class="form-input" placeholder="Name and phone">
+              </div>
+              <div>
+                <label for="addLeaderSignature" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Digital Signature URL</label>
+                <input id="addLeaderSignature" class="form-input" type="url" placeholder="Optional">
+              </div>
+            </div>
+            <div>
+              <label for="addLeaderBio" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Bio / Profile Summary</label>
+              <textarea id="addLeaderBio" class="form-input" rows="3" placeholder="Brief leadership profile"></textarea>
             </div>
             <div>
               <label for="addLeaderResponsibilities" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Responsibilities (one per line)</label>
@@ -742,6 +537,297 @@
       `;
     }
 
+    function getExecutivePositionsForLevel(level) {
+      const normalizedLevel = String(level || '').toLowerCase();
+      if (normalizedLevel === 'national') return nationalExecutivePositions;
+      if (normalizedLevel === 'regional') return regionalExecutivePositions;
+      if (normalizedLevel === 'district' || normalizedLevel === 'branch') return regionalExecutivePositions;
+      return [];
+    }
+
+    function getPositionOptionsMarkup(positions, selectedPosition = '') {
+      const selected = String(selectedPosition || '').trim();
+      const uniquePositions = [...new Set([...positions, selected].filter(Boolean))];
+      return `
+        <option value="">Select position...</option>
+        ${uniquePositions.map((position) => `
+          <option value="${escapeHtml(position)}" ${position === selected ? 'selected' : ''}>${escapeHtml(position)}</option>
+        `).join('')}
+      `;
+    }
+
+    function getExecutiveRoleCode(position) {
+      const normalized = String(position || '')
+        .trim()
+        .toUpperCase()
+        .replace(/&/g, 'AND')
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      if (normalized.includes('VICE') && normalized.includes('PRESIDENT')) return 'VICE_PRESIDENT';
+      if (normalized.includes('PRESIDENT')) return 'PRESIDENT';
+      if (normalized.includes('TREASURER')) return 'TREASURER';
+      if (normalized.includes('FINANCIAL') && normalized.includes('SECRETARY')) return 'FINANCIAL_SECRETARY';
+      if (normalized.includes('ASSISTANT') && normalized.includes('SECRETARY')) return 'ASSISTANT_SECRETARY';
+      if (normalized.includes('SECRETARY')) return 'SECRETARY';
+      if (normalized.includes('ASSISTANT') && normalized.includes('ORGANIZER')) return 'ASSISTANT_ORGANIZER';
+      if (normalized.includes('ORGANIZER')) return 'ORGANIZER';
+      if (normalized === 'PRO' || normalized === 'P_R_O' || normalized.includes('PUBLIC_RELATIONS')) return 'PRO';
+      return normalized || 'EXECUTIVE';
+    }
+
+    function normalizeMemberForExecutive(doc) {
+      const data = doc.data ? (doc.data() || {}) : {};
+      const fullName = data.fullName || data.name || data.displayName || `${data.firstName || ''} ${data.lastName || ''}`.trim();
+      const email = String(data.email || '').trim().toLowerCase();
+      return {
+        memberId: data.memberId || data.membershipId || data.uid || doc.id,
+        uid: data.uid || doc.id,
+        fullName,
+        email,
+        phone: data.phone || data.phoneNumber || '',
+        whatsapp: data.whatsapp || data.whatsappNumber || data.phone || '',
+        membershipId: data.membershipId || data.memberId || data.amcagId || doc.id,
+        region: data.region || data.regionId || '',
+        district: data.district || data.branch || data.city || '',
+        gender: data.gender || '',
+        profilePhoto: data.profilePictureUrl || data.photoURL || data.photoUrl || data.profilePhoto || '',
+        nationalId: data.nationalId || data.ghanaCard || data.licenseNumber || '',
+        residentialArea: data.residentialArea || data.address || data.city || '',
+        emergencyContact: data.emergencyContact || data.nextOfKin || ''
+      };
+    }
+
+    function renderEligibleMemberOptions(members) {
+      const select = document.getElementById('addLeaderMember');
+      if (!select) return;
+
+      if (!members.length) {
+        select.innerHTML = '<option value="">No eligible members found</option>';
+        return;
+      }
+
+      select.innerHTML = `
+        <option value="">Select member...</option>
+        ${members.map((member) => `
+          <option value="${escapeHtml(member.uid)}">${escapeHtml(member.fullName || member.email || member.membershipId)} - ${escapeHtml(member.membershipId || member.uid)}</option>
+        `).join('')}
+      `;
+    }
+
+    async function loadEligibleMembersForLeadership() {
+      Object.keys(eligibleMemberDirectory).forEach((id) => delete eligibleMemberDirectory[id]);
+
+      try {
+        if (!firebase || !firebase.apps || firebase.apps.length === 0) {
+          throw new Error('Firebase is not initialized.');
+        }
+
+        const db = firebase.firestore();
+        let snapshot = await db.collection('members')
+          .where('status', 'in', ['active', 'approved'])
+          .limit(200)
+          .get();
+
+        if (snapshot.empty) {
+          snapshot = await db.collection('users')
+            .where('role', '==', 'member')
+            .limit(200)
+            .get();
+        }
+
+        const members = snapshot.docs
+          .map((doc) => normalizeMemberForExecutive(doc))
+          .filter((member) => member.uid && member.fullName && member.email);
+
+        members.forEach((member) => {
+          eligibleMemberDirectory[member.uid] = member;
+        });
+
+        renderEligibleMemberOptions(members);
+      } catch (error) {
+        console.error('Unable to load members for leadership promotion:', error);
+        const select = document.getElementById('addLeaderMember');
+        if (select) {
+          select.innerHTML = '<option value="">Unable to load members</option>';
+        }
+      }
+    }
+
+    function getSelectedExecutiveMember() {
+      const memberUid = document.getElementById('addLeaderMember')?.value || '';
+      return eligibleMemberDirectory[memberUid] || null;
+    }
+
+    function applySelectedMemberToLeaderForm() {
+      const member = getSelectedExecutiveMember();
+      if (!member) return;
+
+      const fieldValues = {
+        addLeaderName: member.fullName,
+        addLeaderEmail: member.email,
+        addLeaderPhone: member.phone,
+        addLeaderWhatsapp: member.whatsapp || member.phone,
+        addLeaderMembershipId: member.membershipId,
+        addLeaderDistrict: member.district,
+        addLeaderGender: member.gender,
+        addLeaderPhoto: member.profilePhoto,
+        addLeaderNationalId: member.nationalId,
+        addLeaderResidentialArea: member.residentialArea,
+        addLeaderEmergencyContact: typeof member.emergencyContact === 'string'
+          ? member.emergencyContact
+          : [member.emergencyContact?.name, member.emergencyContact?.phone].filter(Boolean).join(' - ')
+      };
+
+      Object.entries(fieldValues).forEach(([id, value]) => {
+        const input = document.getElementById(id);
+        if (input && value) {
+          input.value = value;
+        }
+      });
+
+      const level = document.getElementById('addLeaderLevel')?.value || 'National';
+      const normalizedLevel = String(level).toLowerCase();
+      if ((normalizedLevel === 'regional' || normalizedLevel === 'district') && member.region) {
+        const regionSelect = document.getElementById('addLeaderRegionSelect');
+        if (regionSelect && [...regionSelect.options].some((option) => option.value === member.region)) {
+          regionSelect.value = member.region;
+        }
+      } else if (normalizedLevel !== 'national' && member.region) {
+        const regionInput = document.getElementById('addLeaderRegion');
+        if (regionInput && !regionInput.value) {
+          regionInput.value = member.region;
+        }
+      }
+
+      syncAddLeaderGovernanceFields();
+      syncAddLeaderApprovalStatus();
+    }
+
+    function getApprovalStatusForExecutive(level) {
+      const normalizedLevel = String(level || '').toLowerCase();
+      const isSuperAdmin = AuthModule.hasRole('super_admin');
+      const isNationalPresident = AuthModule.hasRole('national_executive') &&
+        ['president', 'national president'].includes(String(AuthModule.getExecutiveTitle?.() || '').toLowerCase());
+
+      if (isSuperAdmin) return 'active';
+      if (normalizedLevel === 'national') return 'pending_super_admin_approval';
+      if (isNationalPresident) return 'active';
+      return 'pending_national_approval';
+    }
+
+    function syncAddLeaderApprovalStatus() {
+      const level = document.getElementById('addLeaderLevel')?.value || 'National';
+      const status = getApprovalStatusForExecutive(level);
+      const statusInput = document.getElementById('addLeaderStatus');
+      const help = document.getElementById('addLeaderApprovalHelp');
+
+      if (statusInput) {
+        statusInput.value = toDisplayCase(status.replace(/_/g, ' '));
+        statusInput.dataset.status = status;
+      }
+
+      if (help) {
+        help.textContent = status === 'active'
+          ? 'This assignment can be activated immediately by your current role.'
+          : 'This assignment will be saved pending approval before portal access is activated.';
+      }
+    }
+
+    function getRegionExecutivePrefix(level, region) {
+      const normalizedLevel = String(level || '').toLowerCase();
+      if (normalizedLevel === 'national') return 'NAT';
+
+      const words = String(region || '')
+        .replace(/[^A-Za-z\s]/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+      if (!words.length) return 'EXE';
+      if (words.length === 1) return words[0].slice(0, 3).toUpperCase().padEnd(3, 'X');
+      return words.map((word) => word.charAt(0)).join('').slice(0, 3).toUpperCase().padEnd(3, 'X');
+    }
+
+    function getNextExecutiveId(level = 'National', region = 'Nationwide') {
+      const year = new Date().getFullYear();
+      const prefix = getRegionExecutivePrefix(level, region);
+      let highest = 0;
+
+      Object.values(leaderDirectory).forEach((leader) => {
+        const id = String(leader.executiveId || leader.id || '');
+        const match = new RegExp(`^${prefix}-EXE-${year}-(\\d+)$`).exec(id);
+        if (!match) return;
+        const numeric = Number.parseInt(match[1], 10);
+        if (Number.isFinite(numeric) && numeric > highest) {
+          highest = numeric;
+        }
+      });
+
+      return `${prefix}-EXE-${year}-${String(highest + 1).padStart(3, '0')}`;
+    }
+
+    function getDefaultExecutivePermissions(level, position) {
+      const normalizedLevel = String(level || '').toLowerCase();
+      const roleCode = getExecutiveRoleCode(position);
+      const isNational = normalizedLevel === 'national';
+      const isRegional = normalizedLevel === 'regional' || normalizedLevel === 'district';
+
+      return {
+        canApproveMembers: roleCode === 'PRESIDENT' || roleCode === 'SECRETARY',
+        canViewPayments: roleCode === 'PRESIDENT' || roleCode === 'TREASURER' || roleCode === 'FINANCIAL_SECRETARY',
+        canManageEvents: roleCode === 'PRESIDENT' || roleCode === 'SECRETARY' || roleCode === 'PRO',
+        canBroadcastMessages: roleCode === 'PRESIDENT' || roleCode === 'SECRETARY' || roleCode === 'PRO',
+        canExportReports: roleCode === 'PRESIDENT' || roleCode === 'SECRETARY' || roleCode === 'TREASURER' || roleCode === 'FINANCIAL_SECRETARY',
+        canManageMembers: roleCode === 'PRESIDENT' || roleCode === 'SECRETARY',
+        canManagePayments: roleCode === 'TREASURER',
+        canViewFinancialReports: roleCode === 'PRESIDENT' || roleCode === 'TREASURER' || roleCode === 'FINANCIAL_SECRETARY',
+        canViewNationalPayments: isNational && (roleCode === 'PRESIDENT' || roleCode === 'TREASURER' || roleCode === 'FINANCIAL_SECRETARY'),
+        canViewRegionalPayments: (isNational || isRegional) && (roleCode === 'PRESIDENT' || roleCode === 'TREASURER' || roleCode === 'FINANCIAL_SECRETARY'),
+        canExportFinancialReports: roleCode === 'TREASURER',
+        canCreateEvents: roleCode === 'PRESIDENT' || roleCode === 'SECRETARY' || roleCode === 'PRO',
+        canManageExecutives: roleCode === 'PRESIDENT',
+        canSuspendMembers: isNational && roleCode === 'PRESIDENT',
+        canViewSensitiveContactDetails: roleCode === 'PRESIDENT' || roleCode === 'SECRETARY'
+      };
+    }
+
+    function syncAddLeaderGovernanceFields() {
+      const level = document.getElementById('addLeaderLevel')?.value || 'National';
+      const position = document.getElementById('addLeaderPosition')?.value || '';
+      const region = getAddLeaderRegionValue(level) || 'Nationwide';
+      const leaderIdInput = document.getElementById('addLeaderId');
+      const roleCodeInput = document.getElementById('addLeaderRoleCode');
+
+      if (leaderIdInput) {
+        leaderIdInput.value = getNextExecutiveId(level, region);
+      }
+
+      if (roleCodeInput) {
+        roleCodeInput.value = getExecutiveRoleCode(position);
+      }
+    }
+
+    function renderPositionOptions(select, positions, selectedPosition = '') {
+      if (!select) return;
+      select.innerHTML = getPositionOptionsMarkup(positions, selectedPosition);
+      syncAddLeaderGovernanceFields();
+    }
+
+    function syncAddLeaderPositionOptions() {
+      const levelSelect = document.getElementById('addLeaderLevel');
+      const positionSelect = document.getElementById('addLeaderPosition');
+      if (!levelSelect || !positionSelect) return;
+      const positions = getExecutivePositionsForLevel(levelSelect.value);
+      const selectedPosition = positions.includes(positionSelect.value) ? positionSelect.value : '';
+
+      renderPositionOptions(
+        positionSelect,
+        positions,
+        selectedPosition
+      );
+    }
+
     function syncAddLeaderRegionInputMode() {
       const levelSelect = document.getElementById('addLeaderLevel');
       const regionInput = document.getElementById('addLeaderRegion');
@@ -772,8 +858,6 @@
         if (!regionInput.value) {
           if (normalizedLevel === 'national') {
             regionInput.value = 'Nationwide';
-          } else if (normalizedLevel === 'district') {
-            regionInput.placeholder = 'e.g. Kumasi Metro';
           } else if (normalizedLevel === 'zonal' || normalizedLevel === 'local') {
             regionInput.placeholder = 'e.g. East Zone';
           } else {
@@ -786,19 +870,37 @@
     async function initializeAddLeaderForm() {
       addLeaderRegionOptions = await getRegionOptionsForAddLeader();
       renderAddLeaderRegionSelectOptions(addLeaderRegionOptions);
+      await loadEligibleMembersForLeadership();
       syncAddLeaderRegionInputMode();
+      syncAddLeaderPositionOptions();
+      syncAddLeaderApprovalStatus();
+
+      document.getElementById('addLeaderMember')?.addEventListener('change', applySelectedMemberToLeaderForm);
 
       const levelSelect = document.getElementById('addLeaderLevel');
       if (levelSelect) {
-        levelSelect.addEventListener('change', syncAddLeaderRegionInputMode);
+        levelSelect.addEventListener('change', () => {
+          syncAddLeaderRegionInputMode();
+          syncAddLeaderPositionOptions();
+          syncAddLeaderGovernanceFields();
+          syncAddLeaderApprovalStatus();
+          applySelectedMemberToLeaderForm();
+        });
       }
+
+      ['addLeaderPosition', 'addLeaderRegion', 'addLeaderRegionSelect'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', syncAddLeaderGovernanceFields);
+        document.getElementById(id)?.addEventListener('input', syncAddLeaderGovernanceFields);
+      });
+
+      syncAddLeaderGovernanceFields();
     }
 
     function getAddLeaderRegionValue(level) {
       const normalizedLevel = String(level || '').toLowerCase();
       const regionInput = document.getElementById('addLeaderRegion');
       const regionSelect = document.getElementById('addLeaderRegionSelect');
-      if (normalizedLevel === 'regional') {
+      if (normalizedLevel === 'regional' || normalizedLevel === 'district') {
         return String(regionSelect?.value || '').trim();
       }
       return String(regionInput?.value || '').trim();
@@ -815,16 +917,7 @@
     }
 
     function getNextLeaderId() {
-      let highest = 0;
-      Object.keys(leaderDirectory).forEach((id) => {
-        const match = /^AMCAG-LDR-(\d+)$/.exec(id);
-        if (!match) return;
-        const numeric = Number.parseInt(match[1], 10);
-        if (Number.isFinite(numeric) && numeric > highest) {
-          highest = numeric;
-        }
-      });
-      return `AMCAG-LDR-${String(highest + 1).padStart(4, '0')}`;
+      return getNextExecutiveId('National', 'Nationwide');
     }
 
     function formatTermStart(monthValue) {
@@ -869,32 +962,161 @@
 
     function buildLeaderRow(leader) {
       const badgeStyle = getLevelBadgeStyle(leader.level);
+      const avatarContent = leader.profilePhoto
+        ? `<img src="${escapeHtml(leader.profilePhoto)}" alt="${escapeHtml(leader.name)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-full);">`
+        : escapeHtml(leader.initials);
       return `
         <tr>
           <td>
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: ${getAvatarGradient(leader.level)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
-                ${escapeHtml(leader.initials)}
+              <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: ${getAvatarGradient(leader.level)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; overflow: hidden;">
+                ${avatarContent}
               </div>
               <div>
                 <div style="font-weight: 600;">${escapeHtml(leader.name)}</div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: ${escapeHtml(leader.id)}</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: ${escapeHtml(leader.executiveId || leader.id)}</div>
               </div>
             </div>
           </td>
           <td>${escapeHtml(leader.position)}</td>
           <td><span class="badge" style="background: ${badgeStyle.background}; color: ${badgeStyle.color};">${escapeHtml(toDisplayCase(leader.level))}</span></td>
-          <td>${escapeHtml(leader.region)}</td>
-          <td>${escapeHtml(leader.termStart)}</td>
+          <td>
+            <div>${escapeHtml(leader.region)}</div>
+            ${leader.district ? `<div style="font-size: var(--text-sm); color: var(--text-secondary);">${escapeHtml(leader.district)}</div>` : ''}
+          </td>
+          <td>
+            <div>${escapeHtml(leader.termStart)}</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">Ends: ${escapeHtml(leader.termEnd || 'Not set')}</div>
+          </td>
           <td>
             <div style="font-size: var(--text-sm);">${escapeHtml(leader.email)}</div>
-            <div style="font-size: var(--text-sm); color: var(--text-secondary);">${escapeHtml(leader.phone)}</div>
+            <div style="font-size: var(--text-sm); color: var(--text-secondary);">${escapeHtml(leader.whatsapp || leader.phone)}</div>
           </td>
           <td>
             <button class="btn btn-sm btn-outline" onclick="manageLeader('${leader.id}')">Manage</button>
           </td>
         </tr>
       `;
+    }
+
+    function buildNationalExecutiveCard(leader) {
+      const avatarContent = leader.profilePhoto
+        ? `<img src="${escapeHtml(leader.profilePhoto)}" alt="${escapeHtml(leader.name)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-full);">`
+        : escapeHtml(leader.initials);
+      return `
+        <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); text-align: center;">
+          <div style="width: 80px; height: 80px; border-radius: var(--radius-full); background: ${getAvatarGradient(leader.level)}; margin: 0 auto var(--space-3); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--text-2xl); font-weight: 700; overflow: hidden;">
+            ${avatarContent}
+          </div>
+          <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.25rem;">${escapeHtml(leader.name)}</h4>
+          <div style="color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); margin-bottom: 0.5rem;">${escapeHtml(leader.position)}</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.75rem;">
+            ${escapeHtml(leader.email)}<br>
+            ${escapeHtml(leader.whatsapp || leader.phone)}
+          </div>
+          <div style="display: flex; gap: 0.5rem; justify-content: center;">
+            <button class="btn btn-sm btn-outline" onclick="viewProfile('${leader.id}')">View Profile</button>
+            <button class="btn btn-sm btn-outline" onclick="contactLeader('${leader.id}')">Contact</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderNationalExecutiveGrid() {
+      const grid = document.getElementById('nationalExecutiveGrid');
+      if (!grid) return;
+
+      const nationalLeaders = Object.values(leaderDirectory)
+        .filter((leader) => String(leader.level || '').toLowerCase() === 'national')
+        .sort((a, b) => getExecutivePositionRank(a) - getExecutivePositionRank(b));
+
+      setHTML('nationalExecutiveGrid', nationalLeaders.length
+        ? nationalLeaders.map((leader) => buildNationalExecutiveCard(leader)).join('')
+        : '<div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: var(--space-6); color: var(--text-secondary);">No national executives have been added yet.</div>');
+    }
+
+    function updateLeadershipStats() {
+      const leaders = Object.values(leaderDirectory);
+      setText('leadership-national-count', String(leaders.filter((leader) => String(leader.level || '').toLowerCase() === 'national').length));
+      setText('leadership-regional-count', String(leaders.filter((leader) => String(leader.level || '').toLowerCase() === 'regional').length));
+      setText('leadership-district-count', String(leaders.filter((leader) => String(leader.level || '').toLowerCase() === 'district').length));
+      setText('leadership-committee-count', String(Object.keys(committeeDirectory).length));
+      setText('activePositionsStat', String(leaders.length));
+      setText('vacantPositionsStat', '0');
+    }
+
+    function renderCommitteesList() {
+      const container = document.getElementById('committeesList');
+      if (!container) return;
+
+      const committees = Object.entries(committeeDirectory);
+      setHTML('committeesList', committees.length
+        ? committees.map(([name, committee]) => `
+          <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
+            <div>
+              <div style="font-weight: 600;">${escapeHtml(name)}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-secondary);">${committee.members.length} members</div>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="viewCommittee('${escapeHtml(name)}')">View</button>
+          </div>
+        `).join('')
+        : '<div class="empty-state" style="text-align: center; padding: var(--space-4); color: var(--text-secondary);">No active committees have been added yet.</div>');
+    }
+
+    function normalizeLeadershipDoc(doc) {
+      const data = doc.data ? (doc.data() || {}) : {};
+      const id = data.executiveId || data.id || doc.id;
+      const name = data.fullName || data.name || data.incumbentName || '';
+      const position = data.title || data.position || data.positionTitle || 'Position';
+      const level = toDisplayCase(data.level || data.executiveLevel || 'National');
+      return {
+        id,
+        executiveId: data.executiveId || id,
+        memberId: data.memberId || data.membershipId || '',
+        memberUid: data.memberUid || data.uid || '',
+        sourceMemberPath: data.sourceMemberPath || '',
+        name,
+        initials: data.initials || getLeaderInitials(name || id),
+        position: getOfficialPositionTitle(position),
+        title: getOfficialPositionTitle(position),
+        roleCode: data.roleCode || getExecutiveRoleCode(position),
+        level,
+        region: data.region || (String(data.level || '').toLowerCase() === 'regional' ? 'Not set' : 'Nationwide'),
+        district: data.district || data.branch || '',
+        termStart: formatTermStart(data.termStart || data.termStartDate) || 'Not set',
+        termStartRaw: data.termStartRaw || data.termStartDate || null,
+        termEnd: formatTermStart(data.termEnd || data.termEndDate) || 'Not set',
+        termEndRaw: data.termEndRaw || data.termEndDate || null,
+        email: data.email || '',
+        phone: data.phone || '',
+        whatsapp: data.whatsapp || data.whatsappNumber || data.phone || '',
+        membershipId: data.membershipId || data.memberId || '',
+        profilePhoto: data.profilePhoto || data.photoURL || data.photoUrl || '',
+        permissions: data.permissions || getDefaultExecutivePermissions(level, position),
+        status: data.status || 'active',
+        gender: data.gender || '',
+        bio: data.bio || data.profileSummary || '',
+        emergencyContact: data.emergencyContact || '',
+        residentialArea: data.residentialArea || data.city || '',
+        nationalId: data.nationalId || data.licenseNumber || '',
+        digitalSignature: data.digitalSignature || '',
+        attendanceMetrics: data.attendanceMetrics || {
+          meetingsAttended: 0,
+          eventsOrganized: 0,
+          announcementsSent: 0
+        },
+        createdBy: data.createdBy || null,
+        approvedBy: data.approvedBy || null,
+        addedBy: data.addedBy || data.createdBy || null,
+        approvalStatus: data.approvalStatus || (data.status === 'active' ? 'approved' : 'pending'),
+        approvalRequiredFrom: data.approvalRequiredFrom || null,
+        submittedAt: data.submittedAt || null,
+        approvedAt: data.approvedAt || null,
+        portalAccessEnabled: data.portalAccessEnabled !== false,
+        twoFactorEnabled: data.twoFactorEnabled === true,
+        lastLogin: data.lastLogin || null,
+        responsibilities: Array.isArray(data.responsibilities) ? data.responsibilities : []
+      };
     }
 
     function refreshPaginationAfterInsert() {
@@ -908,18 +1130,27 @@
       renderLeadershipPage(leadershipPagination.totalPages);
     }
 
+    function renderLeadershipDirectoryTable(targetPage = leadershipPagination.currentPage) {
+      const tbody = document.getElementById('leadershipTableBody');
+      if (!tbody) return;
+
+      const leaders = Object.values(leaderDirectory);
+      setHTML('leadershipTableBody', leaders.length
+        ? leaders.map((leader) => buildLeaderRow(leader)).join('')
+        : '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No leadership records found.</td></tr>');
+
+      leadershipPagination.rows = Array.from(tbody.querySelectorAll('tr'));
+      leadershipPagination.totalPages = Math.max(
+        1,
+        Math.ceil(leadershipPagination.rows.length / leadershipPagination.rowsPerPage)
+      );
+      renderLeadershipPage(Math.min(targetPage, leadershipPagination.totalPages));
+      renderNationalExecutiveGrid();
+      updateLeadershipStats();
+    }
+
     function incrementLeaderStat(level) {
-      const statValues = document.querySelectorAll('.grid.grid-4 .stat-card .stat-value');
-      if (!statValues || statValues.length < 3) return;
-
-      const normalized = String(level || '').toLowerCase();
-      const indexMap = { national: 0, regional: 1, district: 2 };
-      const targetIndex = indexMap[normalized];
-      if (targetIndex === undefined) return;
-
-      const currentValue = Number.parseInt(statValues[targetIndex].textContent.replace(/,/g, ''), 10);
-      if (!Number.isFinite(currentValue)) return;
-      statValues[targetIndex].textContent = String(currentValue + 1);
+      updateLeadershipStats();
     }
 
     async function addRegionalExecutiveToRegion(leader) {
@@ -945,14 +1176,42 @@
         }, { merge: true });
 
         await regionRef.collection('executives').doc(leader.id).set({
+          executiveId: leader.executiveId || leader.id,
           leaderId: leader.id,
-          name: leader.name,
-          position: leader.position,
+          memberId: leader.memberId || leader.membershipId || '',
+          memberUid: leader.memberUid || '',
+          fullName: leader.name,
+          title: leader.position,
+          roleCode: leader.roleCode,
           level: leader.level,
           region: leader.region,
-          email: leader.email,
+          district: leader.district,
           phone: leader.phone,
-          status: 'active',
+          whatsapp: leader.whatsapp,
+          email: leader.email,
+          membershipId: leader.membershipId,
+          profilePhoto: leader.profilePhoto,
+          permissions: leader.permissions,
+          status: leader.status,
+          termStart: leader.termStart,
+          termEnd: leader.termEnd,
+          gender: leader.gender,
+          bio: leader.bio,
+          emergencyContact: leader.emergencyContact,
+          residentialArea: leader.residentialArea,
+          nationalId: leader.nationalId,
+          digitalSignature: leader.digitalSignature,
+          attendanceMetrics: leader.attendanceMetrics,
+          createdBy: leader.createdBy,
+          approvedBy: leader.approvedBy,
+          addedBy: leader.addedBy || leader.createdBy,
+          approvalStatus: leader.approvalStatus,
+          approvalRequiredFrom: leader.approvalRequiredFrom,
+          submittedAt: leader.submittedAt,
+          approvedAt: leader.approvedAt,
+          portalAccessEnabled: leader.portalAccessEnabled,
+          twoFactorEnabled: leader.twoFactorEnabled,
+          lastLogin: null,
           source: 'national_leadership',
           addedByUid: currentUser?.uid || null,
           addedByEmail: currentUser?.email || null,
@@ -964,6 +1223,114 @@
       } catch (error) {
         console.error('Failed to link regional leader to region executives:', error);
         return { synced: false, message: error.message || 'Unknown error' };
+      }
+    }
+
+    function buildExecutiveRecord(leader, fieldValue) {
+      const timestamp = fieldValue?.serverTimestamp ? fieldValue.serverTimestamp() : new Date();
+      return {
+        executiveId: leader.executiveId || leader.id,
+        id: leader.id,
+        memberId: leader.memberId || leader.membershipId || '',
+        memberUid: leader.memberUid || '',
+        sourceMemberPath: leader.sourceMemberPath || '',
+        fullName: leader.fullName || leader.name,
+        name: leader.name,
+        title: leader.title || leader.position,
+        position: leader.position,
+        roleCode: leader.roleCode,
+        level: leader.level,
+        region: leader.region,
+        district: leader.district || '',
+        phone: leader.phone,
+        whatsapp: leader.whatsapp || leader.phone,
+        email: leader.email,
+        membershipId: leader.membershipId,
+        profilePhoto: leader.profilePhoto || '',
+        permissions: leader.permissions || getDefaultExecutivePermissions(leader.level, leader.position),
+        status: leader.status || 'active',
+        termStart: leader.termStart,
+        termStartRaw: leader.termStartRaw || null,
+        termEnd: leader.termEnd || 'Not set',
+        termEndRaw: leader.termEndRaw || null,
+        gender: leader.gender || '',
+        bio: leader.bio || '',
+        emergencyContact: leader.emergencyContact || '',
+        residentialArea: leader.residentialArea || '',
+        nationalId: leader.nationalId || '',
+        digitalSignature: leader.digitalSignature || '',
+        attendanceMetrics: leader.attendanceMetrics || {
+          meetingsAttended: 0,
+          eventsOrganized: 0,
+          announcementsSent: 0
+        },
+        createdBy: leader.createdBy || null,
+        approvedBy: leader.approvedBy || null,
+        addedBy: leader.addedBy || leader.createdBy || null,
+        approvalStatus: leader.approvalStatus || (leader.status === 'active' ? 'approved' : 'pending'),
+        approvalRequiredFrom: leader.approvalRequiredFrom || null,
+        submittedAt: leader.submittedAt || null,
+        approvedAt: leader.approvedAt || null,
+        portalAccessEnabled: leader.portalAccessEnabled !== false,
+        twoFactorEnabled: leader.twoFactorEnabled === true,
+        lastLogin: leader.lastLogin || null,
+        responsibilities: Array.isArray(leader.responsibilities) ? leader.responsibilities : [],
+        updatedAt: timestamp
+      };
+    }
+
+    async function saveExecutiveGovernanceRecord(leader, includeCreatedAt = false) {
+      try {
+        if (!firebase || !firebase.apps || firebase.apps.length === 0) {
+          return { saved: false, message: 'Firebase is not initialized.' };
+        }
+
+        const db = firebase.firestore();
+        const fieldValue = firebase.firestore.FieldValue;
+        const record = buildExecutiveRecord(leader, fieldValue);
+        const payload = includeCreatedAt
+          ? { ...record, createdAt: fieldValue.serverTimestamp() }
+          : record;
+        const batch = db.batch();
+
+        batch.set(db.collection('leadership').doc(leader.id), payload, { merge: true });
+        batch.set(db.collection('leaders').doc(leader.executiveId || leader.id), {
+          ...payload,
+          roleTitle: payload.title,
+          leadershipLevel: payload.level,
+          regionId: payload.region,
+          districtId: payload.district
+        }, { merge: true });
+
+        if (String(leader.level || '').toLowerCase() === 'regional') {
+          batch.set(db.collection('regionalExecutives').doc(leader.executiveId || leader.id), payload, { merge: true });
+        }
+
+        if (String(leader.level || '').toLowerCase() === 'district') {
+          batch.set(db.collection('districtExecutives').doc(leader.executiveId || leader.id), payload, { merge: true });
+        }
+
+        if (String(leader.level || '').toLowerCase() === 'national') {
+          batch.set(db.collection('nationalExecutives').doc(leader.executiveId || leader.id), payload, { merge: true });
+        }
+
+        if (leader.status !== 'active') {
+          batch.set(db.collection('executive_requests').doc(leader.executiveId || leader.id), {
+            ...payload,
+            requestType: 'executive_promotion',
+            createdBy: leader.createdBy?.uid || null,
+            createdByProfile: leader.createdBy || null,
+            approvalRequiredFrom: leader.approvalRequiredFrom || 'national_president',
+            status: leader.status,
+            createdAt: includeCreatedAt ? fieldValue.serverTimestamp() : leader.submittedAt || null
+          }, { merge: true });
+        }
+
+        await batch.commit();
+        return { saved: true };
+      } catch (error) {
+        console.error('Failed to save executive governance record:', error);
+        return { saved: false, message: error.message || 'Unknown error' };
       }
     }
 
@@ -1005,11 +1372,23 @@
         const updates = {
           fullName: leader.name,
           phone: leader.phone,
+          whatsapp: leader.whatsapp || leader.phone,
           region: leader.region,
+          regionId: leader.region,
+          district: leader.district || '',
+          membershipId: leader.membershipId,
+          gender: leader.gender || '',
           leadershipId: leader.id,
+          executiveId: leader.executiveId || leader.id,
           leadershipLevel: toDisplayCase(leader.level),
           leadershipPosition: leader.position,
           leadershipRegion: leader.region,
+          executiveTitle: leader.position,
+          roleCode: leader.roleCode,
+          permissions: leader.permissions,
+          termStart: leader.termStart,
+          termEnd: leader.termEnd,
+          executiveStatus: leader.status,
           mustCompleteProfile: true,
           profileCompletionStatus: 'required',
           profileCompletionRequiredAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1034,34 +1413,70 @@
     }
 
     async function submitAddLeader() {
+      const selectedMember = getSelectedExecutiveMember();
       const leaderId = document.getElementById('addLeaderId')?.value.trim();
       const name = document.getElementById('addLeaderName')?.value.trim();
       const position = document.getElementById('addLeaderPosition')?.value.trim();
       const level = document.getElementById('addLeaderLevel')?.value.trim();
       const region = getAddLeaderRegionValue(level);
       const termStartInput = document.getElementById('addLeaderTermStart')?.value.trim();
+      const termEndInput = document.getElementById('addLeaderTermEnd')?.value.trim();
+      const status = document.getElementById('addLeaderStatus')?.dataset.status || getApprovalStatusForExecutive(level);
       const email = document.getElementById('addLeaderEmail')?.value.trim().toLowerCase();
       const phone = document.getElementById('addLeaderPhone')?.value.trim();
+      const whatsapp = document.getElementById('addLeaderWhatsapp')?.value.trim() || phone;
+      const membershipId = document.getElementById('addLeaderMembershipId')?.value.trim();
+      const district = document.getElementById('addLeaderDistrict')?.value.trim();
+      const gender = document.getElementById('addLeaderGender')?.value.trim();
+      const profilePhoto = document.getElementById('addLeaderPhoto')?.value.trim();
+      const nationalId = document.getElementById('addLeaderNationalId')?.value.trim();
+      const residentialArea = document.getElementById('addLeaderResidentialArea')?.value.trim();
+      const emergencyContact = document.getElementById('addLeaderEmergencyContact')?.value.trim();
+      const digitalSignature = document.getElementById('addLeaderSignature')?.value.trim();
+      const bio = document.getElementById('addLeaderBio')?.value.trim();
       const responsibilitiesInput = document.getElementById('addLeaderResponsibilities')?.value || '';
       const normalizedLevel = String(level || '').toLowerCase();
+      const roleCode = getExecutiveRoleCode(position);
 
-      if (!leaderId || !name || !position || !level || !region || !email || !phone) {
+      if (!selectedMember) {
+        UIModule.showAlert('Please select an existing member before assigning leadership.', 'error');
+        return;
+      }
+
+      if (!leaderId || !name || !position || !level || !region || !email || !phone || !membershipId || !termStartInput || !termEndInput) {
         UIModule.showAlert('Please complete all required fields.', 'error');
         return;
       }
 
-      if (normalizedLevel === 'regional' && !addLeaderRegionOptions.includes(region)) {
+      if ((normalizedLevel === 'regional' || normalizedLevel === 'district') && !addLeaderRegionOptions.includes(region)) {
         UIModule.showAlert('Please select a valid region from the dropdown.', 'error');
         return;
       }
 
-      if (!/^AMCAG-LDR-\d{4,}$/.test(leaderId)) {
-        UIModule.showAlert('Leader ID must match AMCAG-LDR-0000 format.', 'error');
+      const officialPositions = getExecutivePositionsForLevel(normalizedLevel);
+      if (officialPositions.length && !officialPositions.includes(position)) {
+        UIModule.showAlert('Please select an official executive position for this level.', 'error');
+        return;
+      }
+
+      if (!/^[A-Z]{2,4}-EXE-\d{4}-\d{3}$/.test(leaderId)) {
+        UIModule.showAlert('Executive ID must match REGION-EXE-YYYY-000 format.', 'error');
         return;
       }
 
       if (leaderDirectory[leaderId]) {
         UIModule.showAlert(`Leader ID already exists: ${leaderId}`, 'error');
+        return;
+      }
+
+      const duplicateLeader = Object.values(leaderDirectory).find((leader) => {
+        return leader.memberUid === selectedMember.uid ||
+          leader.memberId === selectedMember.memberId ||
+          String(leader.membershipId || '').toLowerCase() === String(selectedMember.membershipId || '').toLowerCase();
+      });
+
+      if (duplicateLeader) {
+        UIModule.showAlert(`${selectedMember.fullName} already has a leadership assignment (${duplicateLeader.id}).`, 'error');
         return;
       }
 
@@ -1075,17 +1490,64 @@
         .split('\n')
         .map((item) => item.trim())
         .filter(Boolean);
+      const currentUser = AuthModule.getCurrentUser();
+      const actor = {
+        uid: currentUser?.uid || null,
+        email: currentUser?.email || null,
+        name: currentUser?.profile?.fullName || currentUser?.displayName || currentUser?.email || 'Unknown'
+      };
+      const approvedBy = status === 'active' ? actor : null;
+      const nowIso = new Date().toISOString();
 
       const leader = {
         id: leaderId,
+        executiveId: leaderId,
+        memberId: selectedMember.memberId || selectedMember.membershipId || selectedMember.uid,
+        memberUid: selectedMember.uid,
+        sourceMemberPath: `members/${selectedMember.uid}`,
         name,
+        fullName: name,
         initials: getLeaderInitials(name),
         position,
+        title: position,
+        roleCode,
         level: toDisplayCase(level),
         region,
+        district,
         termStart: formatTermStart(termStartInput) || 'Not set',
+        termStartRaw: termStartInput || null,
+        termEnd: formatTermStart(termEndInput) || 'Not set',
+        termEndRaw: termEndInput || null,
         email,
         phone,
+        whatsapp,
+        membershipId,
+        profilePhoto,
+        permissions: getDefaultExecutivePermissions(level, position),
+        status,
+        gender,
+        bio,
+        emergencyContact,
+        residentialArea,
+        nationalId,
+        digitalSignature,
+        attendanceMetrics: {
+          meetingsAttended: 0,
+          eventsOrganized: 0,
+          announcementsSent: 0
+        },
+        createdBy: actor,
+        approvedBy,
+        addedBy: actor,
+        approvalStatus: status === 'active' ? 'approved' : 'pending',
+        approvalRequiredFrom: status === 'pending_super_admin_approval'
+          ? 'super_admin'
+          : (status === 'pending_national_approval' ? 'national_president' : null),
+        submittedAt: nowIso,
+        approvedAt: status === 'active' ? nowIso : null,
+        portalAccessEnabled: status === 'active',
+        twoFactorEnabled: false,
+        lastLogin: null,
         responsibilities: responsibilities.length
           ? responsibilities
           : ['Leadership responsibilities pending assignment']
@@ -1093,18 +1555,20 @@
 
       leaderDirectory[leader.id] = leader;
 
-      const tableBody = document.getElementById('leadershipTableBody');
-      if (tableBody) {
-        tableBody.insertAdjacentHTML('beforeend', buildLeaderRow(leader));
-        refreshPaginationAfterInsert();
-      }
+      renderLeadershipDirectoryTable(Number.MAX_SAFE_INTEGER);
 
+      const governanceSave = await saveExecutiveGovernanceRecord(leader, true);
       const regionSync = await addRegionalExecutiveToRegion(leader);
-      const profileCompletionSync = await flagLeaderForProfileCompletion(leader);
+      const profileCompletionSync = leader.status === 'active'
+        ? await flagLeaderForProfileCompletion(leader)
+        : { linked: true, skipped: true };
       incrementLeaderStat(leader.level);
       closeAddLeaderModal();
 
       const warnings = [];
+      if (!governanceSave.saved) {
+        warnings.push(`governance record save failed (${governanceSave.message || 'permission issue'})`);
+      }
       if (normalizedLevel === 'regional' && !regionSync.synced) {
         warnings.push(`regional executive sync failed (${regionSync.message || 'permission issue'})`);
       }
@@ -1122,14 +1586,18 @@
 
       if (normalizedLevel === 'regional') {
         UIModule.showAlert(
-          `Leader added: ${leader.name} (${leader.id}); assigned to ${leader.region} executives. Profile completion required at next login.`,
+          leader.status === 'active'
+            ? `Leader approved: ${leader.name} (${leader.id}); assigned to ${leader.region} executives. Profile completion required at next login.`
+            : `Leadership request submitted for ${leader.name} (${leader.id}); pending approval before portal access is activated.`,
           'success'
         );
         return;
       }
 
       UIModule.showAlert(
-        `Leader added: ${leader.name} (${leader.id}). Profile completion required at next login.`,
+        leader.status === 'active'
+          ? `Leader approved: ${leader.name} (${leader.id}). Profile completion required at next login.`
+          : `Leadership request submitted for ${leader.name} (${leader.id}); pending approval before portal access is activated.`,
         'success'
       );
     }
@@ -1150,29 +1618,52 @@
       }
 
       const responsibilities = leader.responsibilities
-        .map((item) => `<li>${item}</li>`)
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
         .join('');
+      const avatarContent = leader.profilePhoto
+        ? `<img src="${escapeHtml(leader.profilePhoto)}" alt="${escapeHtml(leader.name)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-full);">`
+        : escapeHtml(leader.initials);
 
       UIModule.showModal({
-        title: `${leader.name} Profile`,
+        title: `${escapeHtml(leader.name)} Profile`,
         content: `
           <div style="display: grid; gap: 1rem;">
             <div style="display: flex; align-items: center; gap: 1rem;">
-              <div style="width: 64px; height: 64px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: var(--text-xl);">
-                ${leader.initials}
+              <div style="width: 64px; height: 64px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: var(--text-xl); overflow: hidden;">
+                ${avatarContent}
               </div>
               <div>
-                <div style="font-weight: 700; font-size: var(--text-xl);">${leader.name}</div>
-                <div style="color: var(--color-primary); font-weight: 600;">${leader.position}</div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: ${leader.id}</div>
+                <div style="font-weight: 700; font-size: var(--text-xl);">${escapeHtml(leader.name)}</div>
+                <div style="color: var(--color-primary); font-weight: 600;">${escapeHtml(leader.position)}</div>
+                <div style="font-size: var(--text-sm); color: var(--text-secondary);">ID: ${escapeHtml(leader.executiveId || leader.id)}</div>
               </div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem;">
-              <div><strong>Level:</strong> ${leader.level}</div>
-              <div><strong>Region:</strong> ${leader.region}</div>
-              <div><strong>Term Start:</strong> ${leader.termStart}</div>
-              <div><strong>Email:</strong> ${leader.email}</div>
-              <div><strong>Phone:</strong> ${leader.phone}</div>
+              <div><strong>Membership ID:</strong> ${escapeHtml(leader.membershipId || 'Not set')}</div>
+              <div><strong>Role Code:</strong> ${escapeHtml(leader.roleCode || 'Not set')}</div>
+              <div><strong>Level:</strong> ${escapeHtml(leader.level)}</div>
+              <div><strong>Region:</strong> ${escapeHtml(leader.region)}</div>
+              <div><strong>District / Branch:</strong> ${escapeHtml(leader.district || 'Not set')}</div>
+              <div><strong>Status:</strong> ${escapeHtml(toDisplayCase(leader.status || 'active'))}</div>
+              <div><strong>Term Start:</strong> ${escapeHtml(leader.termStart)}</div>
+              <div><strong>Term End:</strong> ${escapeHtml(leader.termEnd || 'Not set')}</div>
+              <div><strong>Email:</strong> ${escapeHtml(leader.email)}</div>
+              <div><strong>Phone:</strong> ${escapeHtml(leader.phone)}</div>
+              <div><strong>WhatsApp:</strong> ${escapeHtml(leader.whatsapp || leader.phone)}</div>
+              <div><strong>Gender:</strong> ${escapeHtml(leader.gender || 'Not set')}</div>
+              <div><strong>Residential Area:</strong> ${escapeHtml(leader.residentialArea || 'Not set')}</div>
+              <div><strong>Emergency Contact:</strong> ${escapeHtml(leader.emergencyContact || 'Not set')}</div>
+            </div>
+            ${leader.bio ? `
+              <div>
+                <strong>Bio</strong>
+                <p style="margin: 0.5rem 0 0;">${escapeHtml(leader.bio)}</p>
+              </div>
+            ` : ''}
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem;">
+              <div><strong>Meetings:</strong> ${escapeHtml(leader.attendanceMetrics?.meetingsAttended ?? 0)}</div>
+              <div><strong>Events:</strong> ${escapeHtml(leader.attendanceMetrics?.eventsOrganized ?? 0)}</div>
+              <div><strong>Announcements:</strong> ${escapeHtml(leader.attendanceMetrics?.announcementsSent ?? 0)}</div>
             </div>
             <div>
               <strong>Key Responsibilities</strong>
@@ -1196,7 +1687,7 @@
         return;
       }
 
-      const text = `${leader.name}\n${leader.position}\nEmail: ${leader.email}\nPhone: ${leader.phone}\nID: ${leader.id}`;
+      const text = `${leader.name}\n${leader.position}\nExecutive ID: ${leader.executiveId || leader.id}\nMembership ID: ${leader.membershipId || 'Not set'}\nEmail: ${leader.email}\nPhone: ${leader.phone}\nWhatsApp: ${leader.whatsapp || leader.phone}`;
       try {
         await navigator.clipboard.writeText(text);
         UIModule.showAlert(`Contact copied for ${leader.name}`, 'success');
@@ -1216,15 +1707,18 @@
         title: `Contact ${leader.name}`,
         content: `
           <div style="display: grid; gap: 0.75rem;">
-            <div><strong>Leader ID:</strong> ${leader.id}</div>
-            <div><strong>Position:</strong> ${leader.position}</div>
-            <div><strong>Email:</strong> <a href="mailto:${leader.email}?subject=AMCAG%20Leadership%20Communication">${leader.email}</a></div>
-            <div><strong>Phone:</strong> <a href="tel:${getDialLink(leader.phone)}">${leader.phone}</a></div>
+            <div><strong>Executive ID:</strong> ${escapeHtml(leader.executiveId || leader.id)}</div>
+            <div><strong>Membership ID:</strong> ${escapeHtml(leader.membershipId || 'Not set')}</div>
+            <div><strong>Position:</strong> ${escapeHtml(leader.position)}</div>
+            <div><strong>Email:</strong> <a href="mailto:${escapeHtml(leader.email)}?subject=AMCAG%20Leadership%20Communication">${escapeHtml(leader.email)}</a></div>
+            <div><strong>Phone:</strong> <a href="tel:${getDialLink(leader.phone)}">${escapeHtml(leader.phone)}</a></div>
+            <div><strong>WhatsApp:</strong> <a href="https://wa.me/${getDialLink(leader.whatsapp || leader.phone)}">${escapeHtml(leader.whatsapp || leader.phone)}</a></div>
           </div>
         `,
         footer: `
-          <a class="btn btn-outline" href="mailto:${leader.email}?subject=AMCAG%20Leadership%20Communication">Send Email</a>
+          <a class="btn btn-outline" href="mailto:${escapeHtml(leader.email)}?subject=AMCAG%20Leadership%20Communication">Send Email</a>
           <a class="btn btn-outline" href="tel:${getDialLink(leader.phone)}">Call</a>
+          <a class="btn btn-outline" href="https://wa.me/${getDialLink(leader.whatsapp || leader.phone)}">WhatsApp</a>
           <button class="btn btn-primary" onclick="copyLeaderContact('${leader.id}')">Copy Details</button>
         `,
         size: 'medium'
@@ -1232,11 +1726,19 @@
     }
 
     function manageLeader(leaderId) {
-      const leader = leadershipDirectory.find(l => l.id === leaderId);
+      const leader = getLeaderRecord(leaderId);
       if (!leader) {
         UIModule.showAlert('Leader not found', 'error');
         return;
       }
+
+      const positionOptions = getPositionOptionsMarkup(
+        getExecutivePositionsForLevel(leader.level),
+        leader.position
+      );
+      const regionOptions = ghanaRegions
+        .map((region) => `<option value="${escapeHtml(region)}" ${leader.region === region ? 'selected' : ''}>${escapeHtml(region)}</option>`)
+        .join('');
       
       // Show manage leader modal
       const modal = document.createElement('div');
@@ -1244,42 +1746,39 @@
       modal.innerHTML = `
         <div class="modal-content" style="max-width: 600px;">
           <div class="modal-header">
-            <h2>Manage Leader: ${leader.name}</h2>
+            <h2>Manage Leader: ${escapeHtml(leader.name)}</h2>
             <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
           </div>
           <div class="modal-body">
             <form id="manageLeaderForm">
               <div class="form-group">
                 <label>Name *</label>
-                <input type="text" id="leaderName" value="${leader.name}" required class="form-input">
+                <input type="text" id="leaderName" value="${escapeHtml(leader.name)}" required class="form-input">
               </div>
               <div class="form-group">
                 <label>Position *</label>
-                <input type="text" id="leaderPosition" value="${leader.position}" required class="form-input">
+                <select id="leaderPosition" required class="form-input">
+                  ${positionOptions}
+                </select>
               </div>
               <div class="form-group">
                 <label>Email *</label>
-                <input type="email" id="leaderEmail" value="${leader.email}" required class="form-input">
+                <input type="email" id="leaderEmail" value="${escapeHtml(leader.email)}" required class="form-input">
               </div>
               <div class="form-group">
                 <label>Phone *</label>
-                <input type="tel" id="leaderPhone" value="${leader.phone}" required class="form-input">
+                <input type="tel" id="leaderPhone" value="${escapeHtml(leader.phone)}" required class="form-input">
               </div>
               <div class="form-group">
                 <label>Region</label>
                 <select id="leaderRegion" class="form-input">
                   <option value="">National</option>
-                  <option value="Greater Accra" ${leader.region === 'Greater Accra' ? 'selected' : ''}>Greater Accra</option>
-                  <option value="Ashanti" ${leader.region === 'Ashanti' ? 'selected' : ''}>Ashanti</option>
-                  <option value="Western" ${leader.region === 'Western' ? 'selected' : ''}>Western</option>
-                  <option value="Eastern" ${leader.region === 'Eastern' ? 'selected' : ''}>Eastern</option>
-                  <option value="Central" ${leader.region === 'Central' ? 'selected' : ''}>Central</option>
-                  <option value="Northern" ${leader.region === 'Northern' ? 'selected' : ''}>Northern</option>
+                  ${regionOptions}
                 </select>
               </div>
               <div class="form-group">
                 <label>Bio</label>
-                <textarea id="leaderBio" rows="3" class="form-input">${leader.bio || ''}</textarea>
+                <textarea id="leaderBio" rows="3" class="form-input">${escapeHtml(leader.bio || '')}</textarea>
               </div>
               <div class="form-actions" style="display: flex; gap: 1rem; justify-content: space-between; margin-top: 1.5rem;">
                 <button type="button" class="btn btn-danger" onclick="removeLeader('${leaderId}')">Remove Leader</button>
@@ -1304,24 +1803,24 @@
         try {
           const updates = {
             name: document.getElementById('leaderName').value.trim(),
+            fullName: document.getElementById('leaderName').value.trim(),
             position: document.getElementById('leaderPosition').value.trim(),
+            title: document.getElementById('leaderPosition').value.trim(),
+            roleCode: getExecutiveRoleCode(document.getElementById('leaderPosition').value.trim()),
             email: document.getElementById('leaderEmail').value.trim(),
             phone: document.getElementById('leaderPhone').value.trim(),
-            region: document.getElementById('leaderRegion').value || null,
+            region: document.getElementById('leaderRegion').value || 'Nationwide',
             bio: document.getElementById('leaderBio').value.trim() || null,
             updatedAt: new Date()
           };
           
-          // Update in the directory
-          const index = leadershipDirectory.findIndex(l => l.id === leaderId);
-          if (index !== -1) {
-            leadershipDirectory[index] = { ...leadershipDirectory[index], ...updates };
-            renderLeadershipCards();
+          leaderDirectory[leaderId] = { ...leaderDirectory[leaderId], ...updates };
+          renderLeadershipDirectoryTable();
+
+          const saveResult = await saveExecutiveGovernanceRecord(leaderDirectory[leaderId]);
+          if (!saveResult.saved) {
+            throw new Error(saveResult.message || 'Unable to save leader changes.');
           }
-          
-          // In production, save to Firestore
-          // const db = firebase.firestore();
-          // await db.collection('leadership').doc(leaderId).update(updates);
           
           UIModule.showAlert('Leader updated successfully', 'success');
           modal.remove();
@@ -1334,17 +1833,17 @@
       });
     }
     
-    function removeLeader(leaderId) {
-      if (!confirm('Are you sure you want to remove this leader? This action cannot be undone.')) {
+    async function removeLeader(leaderId) {
+      if (!await AMCAGDialog.confirm('Are you sure you want to remove this leader? This action cannot be undone.')) {
         return;
       }
       
       try {
-        const index = leadershipDirectory.findIndex(l => l.id === leaderId);
-        if (index !== -1) {
-          const leaderName = leadershipDirectory[index].name;
-          leadershipDirectory.splice(index, 1);
-          renderLeadershipCards();
+        const leader = getLeaderRecord(leaderId);
+        if (leader) {
+          const leaderName = leader.name;
+          delete leaderDirectory[leaderId];
+          renderLeadershipDirectoryTable();
           
           // Close any open modals
           document.querySelectorAll('.modal').forEach(m => m.remove());
@@ -1358,7 +1857,7 @@
       } catch (error) {
         console.error('Error removing leader:', error);
         UIModule.showAlert('Error removing leader: ' + error.message, 'error');
-        }
+      }
     }
 
     function viewCommittee(committeeName) {
@@ -1557,11 +2056,20 @@
           };
         }
 
-        // Process and render leadership data
+        Object.keys(leaderDirectory).forEach((id) => delete leaderDirectory[id]);
+        snapshot.docs.forEach((doc) => {
+          const leader = normalizeLeadershipDoc(doc);
+          if (leader.name) {
+            leaderDirectory[leader.id] = leader;
+          }
+        });
+
+        renderLeadershipDirectoryTable(1);
         console.log('Leadership loaded:', snapshot.size);
       } catch (error) {
         console.error('Error loading leadership:', error);
         UIModule.showAlert('Error loading leadership data', 'error');
+        renderLeadershipDirectoryTable(1);
       }
     }
 
@@ -1570,10 +2078,26 @@
         const db = firebase.firestore();
         const committeesRef = db.collection('committees').where('status', '==', 'active');
         const snapshot = await committeesRef.get();
-        
+
+        Object.keys(committeeDirectory).forEach((name) => delete committeeDirectory[name]);
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data() || {};
+          const name = data.name || data.title || doc.id;
+          committeeDirectory[name] = {
+            chair: data.chair || data.chairName || 'Not assigned',
+            viceChair: data.viceChair || data.viceChairName || 'Not assigned',
+            meetingDay: data.meetingDay || 'Not scheduled',
+            focus: data.focus || data.description || '',
+            members: Array.isArray(data.members) ? data.members : []
+          };
+        });
+
+        renderCommitteesList();
+        updateLeadershipStats();
         console.log('Committees loaded:', snapshot.size);
       } catch (error) {
         console.error('Error loading committees:', error);
+        renderCommitteesList();
       }
     }
 
@@ -1592,6 +2116,9 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="/js/image-pick.js"></script>
+  <script>window.addEventListener("load", function () { if (window.AMCAGImagePick) AMCAGImagePick.attach("addLeaderPhoto"); });</script>
 </body>
 </html>

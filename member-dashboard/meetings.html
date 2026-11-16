@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meetings | AMCAG Member Portal</title>
   <link rel="stylesheet" href="/css/material-you.css">
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
   <style>
     .meeting-card {
       background: white;
@@ -187,34 +187,74 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
   <script src="/js/suspension-check.js"></script>
 
   <script>
     let currentUser = null;
     let userProfile = null;
+    let meetingsById = new Map();
 
     function signOut() {
       AuthModule.signOut();
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function toDateValue(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
     async function loadMeetings() {
       try {
         const db = firebase.firestore();
-        const now = new Date();
 
-        // Get meetings user has access to
-        const snapshot = await db.collection('meetings')
-          .where('visibility', 'in', ['public', 'members', userProfile.region])
-          .orderBy('scheduledTime', 'desc')
-          .get();
+        const meetingQueries = [
+          db.collection('meetings').where('visibility', '==', 'public').get(),
+          db.collection('meetings').where('visibility', '==', 'members').get()
+        ];
 
-        const meetings = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          scheduledTime: doc.data().scheduledTime?.toDate()
-        }));
+        if (userProfile?.region) {
+          meetingQueries.push(
+            db.collection('meetings')
+              .where('type', '==', 'regional')
+              .where('region', '==', userProfile.region)
+              .where('visibility', '==', 'regional')
+              .get()
+          );
+        }
+
+        const snapshots = await Promise.all(meetingQueries);
+        const meetingMap = new Map();
+
+        snapshots.forEach((snapshot) => {
+          snapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            meetingMap.set(doc.id, {
+              id: doc.id,
+              ...data,
+              scheduledTime: toDateValue(data.scheduledTime)
+            });
+          });
+        });
+
+        const meetings = Array.from(meetingMap.values())
+          .sort((a, b) => (b.scheduledTime?.getTime() || 0) - (a.scheduledTime?.getTime() || 0));
+        meetingsById = new Map(meetings.map((meeting) => [meeting.id, meeting]));
 
         // Categorize meetings
         const liveMeetings = meetings.filter(m => isLive(m));
@@ -260,9 +300,15 @@
       }
 
       section.style.display = 'block';
-      container.innerHTML = meetings.map(meeting => `
+      container.innerHTML = meetings.map(meeting => {
+        const meetingId = escapeHtml(meeting.id);
+        const title = escapeHtml(meeting.title || 'Untitled Meeting');
+        const description = escapeHtml(meeting.description || '');
+        const hostName = escapeHtml(meeting.hostName || 'Unknown host');
+
+        return `
         <div class="meeting-card" style="border: 2px solid #4caf50;">
-          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
             <div style="flex: 1;">
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                 <span class="meeting-status live">🔴 LIVE</span>
@@ -270,19 +316,20 @@
                 ${meeting.type === 'national' ? '<span class="badge badge-primary">National</span>' : ''}
                 ${meeting.type === 'general' ? '<span class="badge">General</span>' : ''}
               </div>
-              <h4 style="margin: 0 0 0.5rem 0;">${meeting.title}</h4>
-              <p style="color: var(--text-secondary); margin: 0; font-size: 0.875rem;">${meeting.description || ''}</p>
+              <h4 style="margin: 0 0 0.5rem 0;">${title}</h4>
+              <p style="color: var(--text-secondary); margin: 0; font-size: 0.875rem;">${description}</p>
             </div>
-            <button class="btn btn-success" onclick="joinMeeting('${meeting.id}', '${meeting.title}')">
+            <button class="btn btn-success" data-meeting-action="join" data-meeting-id="${meetingId}">
               🎥 Join Now
             </button>
           </div>
           <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
             <span>👤 ${meeting.participants || 0} participants</span>
-            <span>👨‍💼 Host: ${meeting.hostName}</span>
+            <span>👨‍💼 Host: ${hostName}</span>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function renderUpcomingMeetings(meetings) {
@@ -298,30 +345,38 @@
         return;
       }
 
-      container.innerHTML = meetings.map(meeting => `
+      container.innerHTML = meetings.map(meeting => {
+        const meetingId = escapeHtml(meeting.id);
+        const title = escapeHtml(meeting.title || 'Untitled Meeting');
+        const description = escapeHtml(meeting.description || '');
+        const hostName = escapeHtml(meeting.hostName || 'Unknown host');
+        const duration = Number.isFinite(Number(meeting.duration)) ? Number(meeting.duration) : 60;
+
+        return `
         <div class="meeting-card mb-3">
-          <div style="display: flex; justify-content: space-between; align-items: start;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
             <div style="flex: 1;">
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                 <span class="meeting-status upcoming">UPCOMING</span>
                 ${meeting.type === 'regional' ? '<span class="badge badge-secondary">Regional</span>' : ''}
                 ${meeting.type === 'national' ? '<span class="badge badge-primary">National</span>' : ''}
               </div>
-              <h4 style="margin: 0 0 0.5rem 0;">${meeting.title}</h4>
-              <p style="color: var(--text-secondary); margin: 0 0 0.5rem 0; font-size: 0.875rem;">${meeting.description || ''}</p>
+              <h4 style="margin: 0 0 0.5rem 0;">${title}</h4>
+              <p style="color: var(--text-secondary); margin: 0 0 0.5rem 0; font-size: 0.875rem;">${description}</p>
               <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
                 <span>📅 ${formatDate(meeting.scheduledTime)}</span>
                 <span>⏰ ${formatTime(meeting.scheduledTime)}</span>
-                <span>⏱️ ${meeting.duration || 60} mins</span>
-                <span>👨‍💼 ${meeting.hostName}</span>
+                <span>⏱️ ${duration} mins</span>
+                <span>👨‍💼 ${hostName}</span>
               </div>
             </div>
-            <button class="btn btn-outline" onclick="downloadCalendar('${meeting.id}', '${meeting.title}', '${meeting.scheduledTime}', ${meeting.duration})">
+            <button class="btn btn-outline" data-meeting-action="calendar" data-meeting-id="${meetingId}">
               📅 Download Calendar
             </button>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function renderPastMeetings(meetings) {
@@ -336,42 +391,76 @@
         return;
       }
 
-      container.innerHTML = meetings.slice(0, 10).map(meeting => `
+      container.innerHTML = meetings.slice(0, 10).map(meeting => {
+        const meetingId = escapeHtml(meeting.id);
+        const title = escapeHtml(meeting.title || 'Untitled Meeting');
+
+        return `
         <div class="meeting-card mb-3">
-          <div style="display: flex; justify-content: space-between; align-items: start;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
             <div style="flex: 1;">
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                 <span class="meeting-status ended">ENDED</span>
                 ${meeting.recordingUrl ? '<span class="badge badge-success">📹 Recorded</span>' : ''}
               </div>
-              <h4 style="margin: 0 0 0.5rem 0;">${meeting.title}</h4>
+              <h4 style="margin: 0 0 0.5rem 0;">${title}</h4>
               <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
                 <span>📅 ${formatDate(meeting.scheduledTime)}</span>
                 <span>👥 ${meeting.participantCount || 0} attended</span>
               </div>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
               ${meeting.recordingUrl ? `
-                <button class="btn btn-outline" onclick="window.open('${meeting.recordingUrl}', '_blank')">
+                <button class="btn btn-outline" data-meeting-action="watch" data-meeting-id="${meetingId}">
                   ▶️ Watch Recording
                 </button>
               ` : ''}
-              <button class="btn btn-outline" onclick="showNotesModal('${meeting.id}', '${meeting.title}')">
+              <button class="btn btn-outline" data-meeting-action="notes" data-meeting-id="${meetingId}">
                 📝 Notes
               </button>
             </div>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-meeting-action]');
+      if (!button) return;
+
+      const meeting = meetingsById.get(button.dataset.meetingId);
+      if (!meeting) {
+        UIModule.showAlert('Meeting record not found. Please refresh.', 'error');
+        return;
+      }
+
+      if (button.dataset.meetingAction === 'join') {
+        joinMeeting(meeting.id, meeting.title || 'AMCAG Meeting');
+      } else if (button.dataset.meetingAction === 'calendar') {
+        downloadCalendar(meeting.id, meeting.title || 'AMCAG Meeting', meeting.scheduledTime, meeting.duration || 60);
+      } else if (button.dataset.meetingAction === 'watch' && meeting.recordingUrl) {
+        window.open(meeting.recordingUrl, '_blank', 'noopener');
+      } else if (button.dataset.meetingAction === 'notes') {
+        showNotesModal(meeting.id, meeting.title || 'AMCAG Meeting');
+      }
+    });
+
     function joinMeeting(meetingId, meetingTitle) {
+      const meeting = meetingsById.get(meetingId);
+      const isAudioOnly = meeting?.meetingFormat === 'audio';
+
       const roomName = `amcag-${meetingId}`;
       const displayName = userProfile.fullName || 'AMCAG Member';
       const userEmail = userProfile.email || '';
-      
-      // Construct Jitsi Meet URL with recording enabled
-      const jitsiUrl = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true&config.startWithVideoMuted=false&config.fileRecordingsEnabled=true&config.dropbox.appKey=YOUR_DROPBOX_KEY&userInfo.displayName=${encodeURIComponent(displayName)}&userInfo.email=${encodeURIComponent(userEmail)}`;
+
+      const jitsiUrl = `https://meet.jit.si/${roomName}`
+        + `#config.prejoinPageEnabled=false`
+        + `&config.startWithAudioMuted=false`
+        + `&config.startWithVideoMuted=${isAudioOnly}`
+        + `&config.disableVideo=${isAudioOnly}`
+        + `&userInfo.displayName=${encodeURIComponent(displayName)}`
+        + `&userInfo.email=${encodeURIComponent(userEmail)}`;
 
       // Show meeting container
       document.getElementById('jitsiFrame').src = jitsiUrl;
@@ -444,12 +533,12 @@
         'VERSION:2.0',
         'PRODID:-//AMCAG//Meeting//EN',
         'BEGIN:VEVENT',
-        `UID:${meetingId}@amcag-website.web.app`,
+        `UID:${meetingId}@amcag-af624.web.app`,
         `DTSTAMP:${formatDate(new Date())}`,
         `DTSTART:${formatDate(start)}`,
         `DTEND:${formatDate(end)}`,
         `SUMMARY:${title}`,
-        `DESCRIPTION:Join AMCAG meeting: https://amcag-website.web.app/member-dashboard/meetings.html`,
+        `DESCRIPTION:Join AMCAG meeting: https://amcag-af624.web.app/member-dashboard/meetings.html`,
         `LOCATION:https://meet.jit.si/amcag-${meetingId}`,
         'STATUS:CONFIRMED',
         'END:VEVENT',
@@ -518,7 +607,6 @@
         const db = firebase.firestore();
         const notesSnapshot = await db.collection('meeting_notes')
           .where('meetingId', '==', meetingId)
-          .orderBy('createdAt', 'desc')
           .get();
 
         const container = document.getElementById('notesList');
@@ -532,25 +620,31 @@
           return;
         }
 
-        container.innerHTML = notesSnapshot.docs.map(doc => {
-          const note = doc.data();
-          const createdAt = note.createdAt?.toDate();
+        const notes = notesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })).sort((a, b) => (toDateValue(b.createdAt)?.getTime() || 0) - (toDateValue(a.createdAt)?.getTime() || 0));
+
+        container.innerHTML = notes.map(note => {
+          const createdAt = toDateValue(note.createdAt);
           const isOwner = note.userId === currentUser.uid;
+          const userName = escapeHtml(note.userName || 'Member');
+          const content = escapeHtml(note.content || '');
 
           return `
             <div class="card mb-3" style="background: ${isOwner ? 'var(--color-primary-95)' : 'white'};">
-              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
                 <div>
-                  <strong>${note.userName}</strong>
+                  <strong>${userName}</strong>
                   <span style="color: var(--text-secondary); font-size: 0.875rem; margin-left: 0.5rem;">
                     ${createdAt ? createdAt.toLocaleString() : 'Just now'}
                   </span>
                 </div>
                 ${isOwner ? `
-                  <button class="btn btn-sm btn-outline" onclick="deleteNote('${doc.id}')" style="color: #f44336;">Delete</button>
+                  <button class="btn btn-sm btn-outline" onclick="deleteNote('${note.id}')" style="color: #f44336;">Delete</button>
                 ` : ''}
               </div>
-              <p style="margin: 0; white-space: pre-wrap;">${note.content}</p>
+              <p style="margin: 0; white-space: pre-wrap;">${content}</p>
             </div>
           `;
         }).join('');
@@ -587,7 +681,7 @@
     });
 
     async function deleteNote(noteId) {
-      if (!confirm('Delete this note?')) return;
+      if (!await AMCAGDialog.confirm('Delete this note?')) return;
 
       try {
         const db = firebase.firestore();
@@ -630,6 +724,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
 </body>
 </html>

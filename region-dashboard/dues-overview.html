@@ -6,7 +6,7 @@
   <title>Dues Overview | AMCAG Regional Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -17,7 +17,7 @@
         <span>AMCAG Regional</span>
       </a>
       <div class="navbar-actions">
-        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+        <a href="/profile.html" class="btn btn-sm" style="margin-right: 8px;">Profile</a><button class="btn btn-sm" onclick="signOut()">Sign Out</button>
       </div>
     </div>
   </nav>
@@ -190,6 +190,7 @@
         </div>
       </div>
       <div class="modal-footer">
+        <button class="btn btn-primary" onclick="requestRegionalPaymentPrompt()">Request MoMo Prompt</button>
         <button class="btn btn-secondary" onclick="closeMemberModal()">Close</button>
       </div>
     </div>
@@ -201,6 +202,10 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     const MONTHLY_DUES_AMOUNT = 50.00;
@@ -208,6 +213,7 @@
     let userRegion = null;
     let allMembers = [];
     let allPayments = [];
+    let modalMemberUid = null;
 
     function getMonthName(month) {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -492,9 +498,9 @@
 
         return `
           <tr>
-            <td><strong>${escapeHtml(member.memberId || 'Pending')}</strong></td>
-            <td>${escapeHtml(member.fullName || 'N/A')}</td>
-            <td>${escapeHtml(member.phone || 'N/A')}</td>
+            <td><strong>${escapeHtml(member.memberId || 'N/A')}</strong></td>
+            <td>${escapeHtml(member.fullName || member.name || member.displayName || 'N/A')}</td>
+            <td>${escapeHtml(member.phone || member.phoneNumber || member.contact || 'N/A')}</td>
             <td>${escapeHtml(lastPaymentText)}</td>
             <td style="font-weight: 600; color: ${status.overdueMonths > 0 ? 'var(--color-error)' : 'inherit'};">
               ${status.overdueMonths}
@@ -531,10 +537,11 @@
       }
 
       const status = getMemberDuesStatus(member);
+      modalMemberUid = member.uid;
 
-      document.getElementById('modalMemberName').textContent = member.fullName || 'N/A';
-      document.getElementById('modalMemberId').textContent = member.memberId || 'Pending';
-      document.getElementById('modalPhone').textContent = member.phone || 'N/A';
+      document.getElementById('modalMemberName').textContent = member.fullName || member.name || member.displayName || 'N/A';
+      document.getElementById('modalMemberId').textContent = member.memberId || 'N/A';
+      document.getElementById('modalPhone').textContent = member.phone || member.phoneNumber || member.contact || 'N/A';
       document.getElementById('modalEmail').textContent = member.email || 'N/A';
       
       document.getElementById('modalRegDate').textContent = formatDate(member.registrationDate);
@@ -588,6 +595,26 @@
       document.getElementById('memberModal').style.display = 'flex';
     }
 
+    async function requestRegionalPaymentPrompt() {
+      const member = allMembers.find(item => item.uid === modalMemberUid);
+      if (!member || member.status !== 'active') { UIModule.showAlert('Only active members can receive a prompt.', 'error'); return; }
+      const monthText = await AMCAGDialog.prompt('Enter unpaid months as YYYY-MM, separated by commas:');
+      if (!monthText) return;
+      const months = monthText.split(',').map(v => v.trim()).filter(Boolean).map(v => { const m = /^(\\d{4})-(0[1-9]|1[0-2])$/.exec(v); return m ? {year: Number(m[1]), month: Number(m[2])} : null; });
+      if (!months.length || months.some(v => !v)) { UIModule.showAlert('Use YYYY-MM format.', 'error'); return; }
+      const channel = String(await AMCAGDialog.prompt('Mobile-money network: mtn-gh, vodafone-gh, or tigo-gh', 'mtn-gh') || '').trim();
+      if (!['mtn-gh', 'vodafone-gh', 'tigo-gh'].includes(channel)) { UIModule.showAlert('Invalid mobile-money network.', 'error'); return; }
+      const paymentPhone = await AMCAGDialog.prompt(`Prompt number (blank uses ${member.phone || member.phoneNumber || 'member phone'}):`, '');
+      try {
+        const settings = await firebase.functions().httpsCallable('getFeeSettings')({});
+        const amount = Number((months.length * Number(settings.data?.settings?.monthlyDues || 10)).toFixed(2));
+        if (!await AMCAGDialog.confirm(`Send GHS ${amount.toFixed(2)} prompt to ${paymentPhone || member.phone || member.phoneNumber}?`)) return;
+        const result = await firebase.functions().httpsCallable('processDuesPayment')({ memberUid: member.uid, months, paymentMethod: 'hubtel', channel, amount, paymentPhone: String(paymentPhone || '').trim() || null, notes: 'Payment prompt issued by regional executive' });
+        UIModule.showAlert(result.data?.message || 'Payment prompt sent.', 'success');
+        closeMemberModal();
+      } catch (error) { UIModule.showAlert(error.message || 'Unable to send payment prompt.', 'error'); }
+    }
+
     function closeMemberModal() {
       document.getElementById('memberModal').style.display = 'none';
     }
@@ -607,7 +634,7 @@
         
         const statusText = status.isCurrentlyOverdue ? 'Overdue' : 'Current';
 
-        csv += `${csvEscape(member.memberId || 'Pending')},${csvEscape(member.fullName || 'N/A')},${csvEscape(member.phone || 'N/A')},${csvEscape(lastPayment)},${status.overdueMonths},${status.amountOwed.toFixed(2)},${status.totalPaid.toFixed(2)},${csvEscape(statusText)}\n`;
+        csv += `${csvEscape(member.memberId || 'N/A')},${csvEscape(member.fullName || member.name || member.displayName || 'N/A')},${csvEscape(member.phone || member.phoneNumber || member.contact || 'N/A')},${csvEscape(lastPayment)},${status.overdueMonths},${status.amountOwed.toFixed(2)},${status.totalPaid.toFixed(2)},${csvEscape(statusText)}\n`;
       });
 
       // Download
@@ -675,6 +702,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

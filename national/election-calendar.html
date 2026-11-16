@@ -6,7 +6,7 @@
   <title>Election Calendar | AMCAG National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -164,7 +164,19 @@
         <form id="addTermForm">
           <div class="form-group">
             <label class="form-label required">Position Title</label>
-            <input type="text" id="positionTitle" class="form-input" placeholder="e.g., National President" required>
+            <input type="text" id="positionTitle" class="form-input" list="executivePositionTitles" placeholder="e.g., President" required>
+            <datalist id="executivePositionTitles">
+              <option value="President">
+              <option value="Vice">
+              <option value="Secretary">
+              <option value="Assistant">
+              <option value="Financial secretary">
+              <option value="Treasurer">
+              <option value="Public Relations Officer">
+              <option value="Registrar">
+              <option value="Assistant Organizer">
+              <option value="Organizer">
+            </datalist>
           </div>
 
           <div class="form-group">
@@ -286,10 +298,36 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     const TERM_LENGTH_YEARS = 4;
     const WARNING_DAYS = 90; // Start showing warnings 90 days before expiration
+    const NATIONAL_EXECUTIVE_POSITIONS = [
+      'President',
+      'Vice',
+      'Secretary',
+      'Assistant',
+      'Financial secretary',
+      'Treasurer',
+      'Public Relations Officer',
+      'Registrar',
+      'Organizer'
+    ];
+    const REGIONAL_EXECUTIVE_POSITIONS = [
+      'President',
+      'Vice',
+      'Secretary',
+      'Assistant',
+      'Financial secretary',
+      'Treasurer',
+      'Public Relations Officer',
+      'Assistant Organizer',
+      'Organizer'
+    ];
     let currentUser = null;
     let allTerms = [];
     let regions = [];
@@ -612,10 +650,10 @@
       selectedTerm = null;
     }
 
-    function confirmEndTerm() {
+    async function confirmEndTerm() {
       if (!selectedTerm) return;
       
-      if (confirm(`End term early for ${selectedTerm.positionTitle}?\n\nThis will mark the term as completed and require a new election.`)) {
+      if (await AMCAGDialog.confirm(`End term early for ${selectedTerm.positionTitle}?\n\nThis will mark the term as completed and require a new election.`)) {
         endTermEarly(selectedTerm.id);
       }
     }
@@ -692,6 +730,14 @@
         return;
       }
 
+      const allowedPositions = level === 'regional'
+        ? REGIONAL_EXECUTIVE_POSITIONS
+        : NATIONAL_EXECUTIVE_POSITIONS;
+      if (!allowedPositions.includes(positionTitle)) {
+        UIModule.showAlert('Please use one of the official executive position titles.', 'error');
+        return;
+      }
+
       try {
         UIModule.showLoader('Adding term...');
         
@@ -744,7 +790,7 @@
       }
     });
 
-    function signOut() {
+    async function signOut() {
       AuthModule.signOut();
     }
 
@@ -790,6 +836,6 @@
       }
     };
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

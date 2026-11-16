@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Membership | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #f3f6f4; font-family: 'Inter', Arial, sans-serif; margin: 0; color: #1a2433; }
+    .vf-wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+    .vf-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .vf-brand img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+    .vf-brand strong { color: #0b5d3b; font-size: 1.05rem; line-height: 1.2; }
+    .vf-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(11,93,59,.12); overflow: hidden; }
+    .vf-banner { padding: 18px 22px; color: #fff; font-weight: 700; font-size: 1.15rem; display: flex; align-items: center; gap: 10px; }
+    .vf-banner.valid { background: #0b7a4a; }
+    .vf-banner.warn { background: #b26a00; }
+    .vf-banner.bad { background: #b3261e; }
+    .vf-body { padding: 22px; }
+    .vf-person { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
+    .vf-photo { width: 92px; height: 108px; border-radius: 10px; object-fit: cover; object-position: center 15%; background: #e6ece8; border: 2px solid #0b5d3b; flex: none; }
+    .vf-name { font-size: 1.2rem; font-weight: 700; }
+    .vf-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #edf1ee; font-size: .95rem; }
+    .vf-row:last-child { border-bottom: 0; }
+    .vf-row span:first-child { color: #5a6778; }
+    .vf-row span:last-child { font-weight: 600; text-align: right; }
+    .vf-note { font-size: .82rem; color: #5a6778; margin-top: 16px; line-height: 1.5; }
+    .vf-msg { padding: 28px 22px; text-align: center; color: #5a6778; }
+  </style>
+</head>
+<body>
+  <div class="vf-wrap">
+    <div class="vf-brand">
+      <img src="/images/logo.jpg" alt="AMCAG logo">
+      <strong>Association of Medicine Counter Assistants of Ghana<br><span style="font-weight:500;color:#5a6778;font-size:.85rem">Membership verification</span></strong>
+    </div>
+    <div class="vf-card" id="result">
+      <div class="vf-msg">Checking membership...</div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script>
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+      });
+    }
+
+    function formatMonthYear(iso) {
+      if (!iso) return 'Not set';
+      var d = new Date(iso);
+      return isNaN(d.getTime()) ? 'Not set' : d.toLocaleDateString('en-GB', {month: 'long', year: 'numeric'});
+    }
+
+    function safePhotoUrl(url) {
+      return /^https:\/\//i.test(url || '') ? url : '';
+    }
+
+    var STATES = {
+      valid:     {cls: 'valid', icon: '✔', text: 'Valid AMCAG Member'},
+      expired:   {cls: 'warn',  icon: '!', text: 'Membership Expired'},
+      inactive:  {cls: 'warn',  icon: '!', text: 'Membership Not Active'},
+      suspended: {cls: 'bad',   icon: '✖', text: 'Membership Suspended'},
+      not_found: {cls: 'bad',   icon: '✖', text: 'Membership Not Found'}
+    };
+
+    function render(data) {
+      var s = STATES[data.state] || STATES.not_found;
+      var html = '<div class="vf-banner ' + s.cls + '"><span>' + s.icon + '</span><span>' + s.text + '</span></div><div class="vf-body">';
+
+      if (data.state === 'not_found') {
+        html += '<p style="margin:0">No member matches this ID. The card may be invalid or altered.</p>';
+      } else if (data.detailsHidden) {
+        html += '<div class="vf-row"><span>Membership No.</span><span>' + esc(data.memberId) + '</span></div>' +
+          '<p class="vf-note">To see full details, scan the QR code printed on the member\'s ID card.</p>';
+      } else {
+        var photo = safePhotoUrl(data.photoUrl);
+        html += '<div class="vf-person">' +
+          (photo ? '<img class="vf-photo" src="' + esc(photo) + '" alt="Member photo">' : '<div class="vf-photo"></div>') +
+          '<div><div class="vf-name">' + esc(data.name) + '</div><div style="color:#5a6778">' + esc(data.region) + ' Region</div></div></div>' +
+          '<div class="vf-row"><span>Membership No.</span><span>' + esc(data.memberId) + '</span></div>' +
+          '<div class="vf-row"><span>Member since</span><span>' + esc(data.memberSince || '-') + '</span></div>' +
+          '<div class="vf-row"><span>Valid until</span><span>' + esc(formatMonthYear(data.validUntil)) + '</span></div>' +
+          '<p class="vf-note">Compare the photo and name with the person presenting the card. This result is live from the AMCAG membership records.</p>';
+      }
+      html += '</div>';
+      document.getElementById('result').innerHTML = html;
+    }
+
+    (async function () {
+      var params = new URLSearchParams(window.location.search);
+      var memberId = params.get('id') || '';
+      var token = params.get('t') || '';
+      if (!memberId) {
+        render({state: 'not_found'});
+        return;
+      }
+      try {
+        await window.FirebaseModule.whenReady();
+        var fn = firebase.functions().httpsCallable('verifyMembership');
+        var res = await fn({memberId: memberId, token: token});
+        render(res.data || {state: 'not_found'});
+      } catch (error) {
+        console.error('Verification failed:', error);
+        document.getElementById('result').innerHTML =
+          '<div class="vf-msg">Unable to verify right now. Please try again in a moment.</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

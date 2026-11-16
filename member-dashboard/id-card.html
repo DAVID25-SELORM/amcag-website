@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member ID Card | AMCAG Member Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Cards are laid out at 856 x 540 px (credit-card ratio) and scaled to fit. */
+    .card-slot { position: relative; width: 100%; margin-bottom: 20px; }
+    .idc { position: absolute; top: 0; left: 0; width: 856px; height: 540px; transform-origin: top left;
+      border-radius: 28px; overflow: hidden; font-family: 'Inter', Arial, sans-serif; color: #12301f;
+      box-shadow: 0 8px 28px rgba(11,93,59,.25); background: #fff; }
+    .idc-bg { position: absolute; inset: 0; background:
+      radial-gradient(circle at 85% 18%, #d9f2e3 0, rgba(217,242,227,0) 45%),
+      linear-gradient(135deg, #ffffff 0%, #f1faf5 60%, #dcf3e6 100%); }
+    .idc-curve { position: absolute; right: -140px; top: 120px; width: 380px; height: 380px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(12,122,67,.10), rgba(12,122,67,0) 70%); }
+    .idc-foot { position: absolute; left: 0; right: 0; bottom: 0; height: 54px;
+      background: linear-gradient(90deg, #0a5a31, #0c7a43); display: flex; align-items: center; justify-content: center; }
+    .idc-foot::before { content: ''; position: absolute; left: 0; right: 0; top: -6px; height: 6px;
+      background: linear-gradient(90deg, #d4a017, #f3d36b 50%, #d4a017); }
+    .idc-foot span { color: #fff; font-weight: 700; font-style: italic; font-size: 24px; letter-spacing: .3px; }
+
+    .idc-logo { position: absolute; left: 54px; top: 22px; width: 150px; height: 150px; border-radius: 50%;
+      background: #fff url('/images/logo.jpg') center/cover no-repeat; border: 5px solid #0b6b3a; }
+    .idc-title { position: absolute; left: 225px; top: 22px; width: 420px; height: 150px; display: flex; flex-direction: column; justify-content: center; font-family: 'Poppins', Arial, sans-serif;
+      font-weight: 800; font-size: 29px; line-height: 1.02; color: #0b5d3b; text-transform: uppercase; }
+    .idc-title small { display: block; font-family: 'Inter', Arial, sans-serif; font-style: italic; font-weight: 600;
+      font-size: 19px; text-transform: none; color: #12301f; margin-top: 8px; }
+    .idc-qr-box { position: absolute; z-index: 3; right: 26px; top: 20px; width: 170px; padding: 10px 0 12px; text-align: center; color: #fff; font-weight: 600;
+      font-size: 15px; line-height: 1.15; background: linear-gradient(160deg, #0c7a43, #0a5a31); border-radius: 18px; }
+    .idc-qr { background: #fff; border-radius: 12px; padding: 8px; width: 138px; height: 138px; margin: 0 auto 8px; box-sizing: content-box; }
+    .idc-qr svg { width: 100%; height: 100%; display: block; }
+
+    .idc-photo { position: absolute; left: 34px; top: 200px; width: 190px; height: 232px; border-radius: 16px;
+      border: 4px solid #0b6b3a; background: #e3ece7 center 12%/cover no-repeat; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: 800; color: #0b6b3a; }
+    .idc-band { position: absolute; left: 255px; top: 196px; width: 390px; height: 40px; border-radius: 10px 10px 0 0;
+      background: #0b6b3a; color: #fff; font-weight: 800; font-size: 26px; letter-spacing: .5px; text-align: center; line-height: 40px; }
+    .idc-rows { position: absolute; left: 255px; top: 240px; width: 390px; }
+    .idc-row { display: flex; font-size: 16px; padding: 4px 0; border-bottom: 1px solid rgba(11,107,58,.12); }
+    .idc-row .k { width: 172px; white-space: nowrap; color: #0b6b3a; font-weight: 500; }
+    .idc-row .c { width: 14px; }
+    .idc-row .v { font-weight: 700; flex: 1; letter-spacing: 0; word-break: break-word; }
+
+    /* Back */
+    .idb-name { position: absolute; left: 40px; top: 40px; width: 330px; }
+    .idb-name .big { font-family: 'Poppins', Arial, sans-serif; font-weight: 800; font-size: 76px; color: #0b6b3a; line-height: 1; }
+    .idb-name .small { font-weight: 700; font-size: 23px; color: #12301f; line-height: 1.2; margin-top: 6px; }
+    .idb-divider { position: absolute; left: 380px; top: 38px; width: 3px; height: 150px; background: #0b6b3a; opacity: .7; }
+    .idb-verify { position: absolute; left: 400px; top: 38px; width: 250px; text-align: center; }
+    .idb-pill { background: #0b6b3a; color: #fff; border-radius: 40px; font-weight: 800; font-size: 17px; padding: 10px 0; white-space: nowrap; }
+    .idb-verify p { margin: 12px 0 8px; font-weight: 600; font-size: 17px; }
+    .idb-url { background: #0b7a43; color: #fff; border-radius: 40px; font-weight: 700; font-size: 14px; padding: 9px 8px; white-space: nowrap; overflow: hidden; }
+    .idb-qr { position: absolute; right: 30px; top: 30px; background: #fff; border: 4px solid #0b6b3a; border-radius: 16px; padding: 8px; width: 140px; height: 140px; box-sizing: content-box; }
+    .idb-qr svg { width: 100%; height: 100%; display: block; }
+    .idb-checks { position: absolute; left: 44px; top: 232px; font-size: 22px; font-weight: 600; }
+    .idb-checks div { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .idb-checks i { width: 34px; height: 34px; border-radius: 50%; background: #0b7a43; color: #fff; font-style: normal; text-align: center; line-height: 34px; font-size: 20px; flex: none; }
+    .idb-sign { position: absolute; left: 470px; top: 330px; width: 200px; text-align: center; font-weight: 700; color: #0b6b3a; font-size: 22px; }
+    .idb-sign .line { border-top: 2px solid #12301f; margin-bottom: 6px; }
+    .idb-exp { position: absolute; left: 672px; top: 235px; border-left: 3px solid #0b6b3a; padding-left: 14px; }
+    .idb-exp .k { color: #0b6b3a; font-weight: 700; font-size: 20px; }
+    .idb-exp .v { font-weight: 800; font-size: 22px; line-height: 1.1; white-space: nowrap; }
+    .idb-flag { position: absolute; right: -70px; bottom: 38px; width: 340px; height: 84px; transform: rotate(-9deg);
+      background: linear-gradient(180deg, #ce1126 0 33%, #fcd116 33% 66%, #006b3f 66% 100%); opacity: .95; }
+    .idb-star { position: absolute; right: 64px; bottom: 92px; width: 30px; height: 30px; background: #000;
+      clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+
+    .id-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+    #idMessage { display: none; }
+
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      /* Remove everything except the card from layout (not just hide it), so no blank second page is produced */
+      html, body { height: auto !important; min-height: 0 !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+      .navbar, .dashboard-sidebar, .dashboard-header, .id-actions, #idMessage, footer, .mobile-menu-toggle, .sidebar-overlay,
+      #amcag-bell, [class*="notification-bell"], [id*="bell"] { display: none !important; }
+      .dashboard-container, .dashboard-content, #cardSection { display: block !important; position: static !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; width: auto !important; max-width: none !important; }
+      #printArea { position: static !important; max-width: none !important; page-break-inside: avoid; break-inside: avoid; }
+      .card-slot { page-break-inside: avoid; break-inside: avoid; }
+      .card-slot:last-child { margin-bottom: 0 !important; }
+      .card-slot { width: 85.6mm !important; height: 54mm !important; margin: 0 0 8mm 0; }
+      .idc { box-shadow: none; transform: scale(0.37785) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG Member</span>
+      </a>
+      <div class="navbar-actions">
+        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item"><span>📊</span> Dashboard</a>
+        <a href="/profile.html" class="dashboard-nav-item"><span>👤</span> My Profile</a>
+        <a href="/member-dashboard/id-card.html" class="dashboard-nav-item active"><span>🪪</span> My ID Card</a>
+        <a href="/member-dashboard/dues-payment.html" class="dashboard-nav-item"><span>💰</span> Pay Dues</a>
+        <a href="/certificates.html" class="dashboard-nav-item"><span>📜</span> Certificates</a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Member ID Card</h1>
+          <p class="dashboard-subtitle">Your official AMCAG membership card, generated from your membership record</p>
+        </div>
+      </div>
+
+      <div class="alert alert-info" id="idMessage"></div>
+
+      <div id="cardSection" style="display:none">
+        <div class="id-actions">
+          <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+        <div style="max-width: 856px" id="printArea">
+          <div class="card-slot" id="slotFront">
+            <div class="idc" id="cardFront">
+              <div class="idc-bg"></div>
+              <div class="idc-curve"></div>
+              <div class="idc-logo"></div>
+              <div class="idc-title">Association of Medicine Counter Assistants of Ghana (AMCAG)<small>Better Health, Long Life</small></div>
+              <div class="idc-qr-box">
+                <div class="idc-qr" id="qrFront"></div>
+                Scan to Verify<br>Membership
+              </div>
+              <div class="idc-photo" id="idPhoto"></div>
+              <div class="idc-band">MEMBER ID CARD</div>
+              <div class="idc-rows" id="idRows"></div>
+              <div class="idc-foot"><span>Better Health, Long Life</span></div>
+            </div>
+          </div>
+
+          <div class="card-slot" id="slotBack">
+            <div class="idc" id="cardBack">
+              <div class="idc-bg"></div>
+              <div class="idb-flag"></div><div class="idb-star"></div>
+              <div class="idb-name"><div class="big">AMCAG</div><div class="small">Association of Medicine Counter Assistants of Ghana</div></div>
+              <div class="idb-divider"></div>
+              <div class="idb-verify">
+                <div class="idb-pill">MEMBER VERIFICATION</div>
+                <p>Scan the QR code or visit:</p>
+                <div class="idb-url" id="idbUrl"></div>
+              </div>
+              <div class="idb-qr" id="qrBack"></div>
+              <div class="idb-checks">
+                <div><i>✓</i> Valid Member of AMCAG</div>
+                <div><i>✓</i> Committed to Professional Excellence</div>
+                <div><i>✓</i> Serving for Better Health in Ghana</div>
+              </div>
+              <div class="idb-sign"><div style="height:50px"></div><div class="line"></div>National PRO</div>
+              <div class="idb-exp"><div class="k">Expires:</div><div class="v" id="idExpiry">-</div></div>
+              <div class="idc-foot" style="z-index:2"><span style="font-style:normal;font-size:21px;letter-spacing:1px">AMCAG &nbsp;|&nbsp; BETTER HEALTH, LONG LIFE</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-secondary" style="font-size:.85rem;max-width:856px">
+          Scanning the QR code opens a live verification page that checks your membership status in the AMCAG database.
+          If your details are wrong, update your profile or contact your regional secretary.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/suspension-check.js"></script>
+  <script src="/js/qrcode.js"></script>
+  <script>
+    function signOut() { AuthModule.signOut(); }
+
+    function showMessage(text, type) {
+      var el = document.getElementById('idMessage');
+      el.className = 'alert alert-' + (type || 'info');
+      el.textContent = text;
+      el.style.display = 'block';
+    }
+
+    function toDate(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      var d = new Date(value);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function maskGhanaCard(value) {
+      var v = String(value || '').replace(/\s+/g, '');
+      if (v.length < 8) return '';
+      return v.slice(0, 4) + ' ***** ' + v.slice(-4);
+    }
+
+    function qrSvg(text) {
+      var qr = qrcode(0, 'M');
+      qr.addData(text);
+      qr.make();
+      return qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    }
+
+    // Fit each 856px-wide card into its slot (screen only; print CSS sets mm sizes).
+    function fitCards() {
+      ['Front', 'Back'].forEach(function (side) {
+        var slot = document.getElementById('slot' + side);
+        var card = document.getElementById('card' + side);
+        var scale = Math.min(1, slot.clientWidth / 856);
+        card.style.transform = 'scale(' + scale + ')';
+        slot.style.height = Math.round(540 * scale) + 'px';
+      });
+    }
+    window.addEventListener('resize', fitCards);
+
+    function addRow(container, label, value) {
+      var row = document.createElement('div');
+      row.className = 'idc-row';
+      [['k', label], ['c', ':'], ['v', value]].forEach(function (pair) {
+        var span = document.createElement('span');
+        span.className = pair[0];
+        span.textContent = pair[1];
+        row.appendChild(span);
+      });
+      container.appendChild(row);
+    }
+
+    async function loadCard(authUser) {
+      var db = firebase.firestore();
+      var params = new URLSearchParams(window.location.search);
+      var targetUid = params.get('uid') || authUser.uid;
+
+      var snap = await db.collection('users').doc(targetUid).get();
+      if (!snap.exists) { showMessage('Member record not found.', 'warning'); return; }
+      var u = snap.data();
+
+      if (u.status !== 'active') {
+        showMessage('Your membership is not active yet, so an ID card is not available.', 'warning');
+        return;
+      }
+      var isSelf = targetUid === authUser.uid;
+      if (!isSelf) {
+        document.querySelector('.dashboard-title').textContent = (u.fullName || 'Member') + "'s ID Card";
+        document.querySelector('.dashboard-subtitle').innerHTML = '<a href="/member-dashboard/member-cards.html" style="font-weight:700">← Back to Member ID Cards</a>';
+        document.title = (u.fullName || 'Member') + ' | ID Card | AMCAG';
+      }
+      var tokenRes;
+      try {
+        tokenRes = await firebase.functions().httpsCallable('issueIdCardToken')({ uid: targetUid });
+      } catch (err) {
+        if (String(err && err.message).indexOf('REGISTRATION_FEE_UNPAID') >= 0) {
+          var el = document.getElementById('idMessage');
+          el.className = 'alert alert-warning';
+          el.innerHTML = isSelf
+            ? 'Your ID card unlocks once your one-time registration fee is paid. <a href="/member-dashboard/registration-fee.html" style="font-weight:700;text-decoration:underline">Pay registration fee</a>'
+            : 'This member has not paid the registration fee yet, so no ID card is available.';
+          el.style.display = 'block';
+          return;
+        }
+        throw err;
+      }
+      var token = tokenRes.data.token;
+      u.memberId = tokenRes.data.memberId || u.memberId;
+      var verifyUrl = window.location.origin + '/verify?id=' + encodeURIComponent(u.memberId) + '&t=' + encodeURIComponent(token);
+
+      // Photo
+      var photoEl = document.getElementById('idPhoto');
+      var photoUrl = u.profilePictureUrl || u.photoURL || u.photoUrl || '';
+      if (/^https:\/\//i.test(photoUrl)) {
+        photoEl.style.backgroundImage = 'url("' + photoUrl.replace(/"/g, '%22') + '")';
+      } else {
+        photoEl.textContent = (u.fullName || '?').trim().charAt(0).toUpperCase();
+      }
+
+      // Details (all from the membership record; optional rows are hidden when empty)
+      var rows = document.getElementById('idRows');
+      var since = toDate(u.registrationDate) || toDate(u.approvedAt) || toDate(u.createdAt);
+      addRow(rows, 'Member Name', (u.fullName || '').toUpperCase());
+      addRow(rows, 'Membership No.', u.memberId);
+      if (u.pharmacyCouncilPin) addRow(rows, 'Pharmacy Council PIN', u.pharmacyCouncilPin);
+      var masked = maskGhanaCard(u.ghanaCard);
+      if (masked) addRow(rows, 'Ghana Card No.', masked);
+      addRow(rows, 'Region', u.region || '-');
+      addRow(rows, 'Member Since', since ? String(since.getFullYear()) : '-');
+
+      var renewal = tokenRes.data.cardExpiresAt ? new Date(tokenRes.data.cardExpiresAt) : null;
+      document.getElementById('idExpiry').textContent = renewal
+        ? renewal.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '-';
+      if (renewal && renewal.getTime() < Date.now()) {
+        var expEl = document.getElementById('idMessage');
+        expEl.className = 'alert alert-warning';
+        expEl.innerHTML = 'This ID card expired on ' + renewal.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '. Please ask your regional or national executive to renew it.';
+        expEl.style.display = 'block';
+      }
+
+      document.getElementById('qrFront').innerHTML = qrSvg(verifyUrl);
+      document.getElementById('qrBack').innerHTML = qrSvg(verifyUrl);
+      document.getElementById('idbUrl').textContent = window.location.host + '/verify';
+
+      document.getElementById('cardSection').style.display = 'block';
+      fitCards();
+    }
+
+    AuthModule.onAuthStateChanged(async function (user) {
+      if (!user) { window.location.href = '/membership.html'; return; }
+      try {
+        await SuspensionCheckModule.initMemberDashboardCheck();
+        await loadCard(user);
+      } catch (error) {
+        console.error('ID card error:', error);
+        showMessage(error.message || 'Unable to load your ID card.', 'error');
+      }
+    });
+  </script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
+</body>
+</html>

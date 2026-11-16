@@ -5,20 +5,34 @@
       ".write": false
     },
     "regional-chats": {
-      ".read": "auth != null",
       "$region": {
-        ".read": "auth != null",
+        ".read": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && (root.child('user-roles').child(auth.uid).child('regions').child($region).val() === true || root.child('user-roles').child(auth.uid).child('oversight').val() === true)",
         "messages": {
           "$messageId": {
-            ".write": "auth != null && !data.exists() && newData.child('senderId').val() === auth.uid",
-            ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists())",
+            ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && root.child('user-roles').child(auth.uid).child('regions').child($region).val() === true && !data.exists() && newData.child('senderId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists() || newData.child('hidden').val() === true || newData.child('deleted').val() === true) && (!newData.child('text').exists() || (newData.child('text').isString() && newData.child('text').val().length <= 2000))",
             "senderId": {
               ".validate": "newData.val() === auth.uid"
             },
+            "timestamp": {
+              ".validate": "newData.val() === now"
+            },
             "readBy": {
               "$uid": {
-                ".write": "auth != null && $uid === auth.uid"
+                ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && root.child('user-roles').child(auth.uid).child('regions').child($region).val() === true && $uid === auth.uid"
               }
+            },
+            "reactions": {
+              "$emoji": {
+                ".validate": "$emoji === '👍' || $emoji === '❤️' || $emoji === '😂' || $emoji === '🙏' || $emoji === '😮' || $emoji === '🎉'",
+                "$uid": {
+                  ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && root.child('user-roles').child(auth.uid).child('regions').child($region).val() === true && $uid === auth.uid",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            },
+            "senderRole": {
+              ".validate": "newData.val() === root.child('user-roles').child(auth.uid).child('role').val()"
             }
           }
         }
@@ -26,18 +40,33 @@
     },
     "regional-announcements": {
       "$region": {
-        ".read": "auth != null",
+        ".read": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && (root.child('user-roles').child(auth.uid).child('regions').child($region).val() === true || root.child('user-roles').child(auth.uid).child('oversight').val() === true)",
         "posts": {
           "$postId": {
-            ".write": "auth != null && auth.token.executive_role === true && !data.exists() && newData.child('authorId').val() === auth.uid",
-            ".validate": "newData.hasChildren(['authorId', 'authorName', 'authorRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists())",
+            ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && ((root.child('user-roles').child(auth.uid).child('regions').child($region).val() === true && (root.child('user-roles').child(auth.uid).child('role').val() === 'regional_executive' || root.child('user-roles').child(auth.uid).child('role').val() === 'national_executive' || root.child('user-roles').child(auth.uid).child('role').val() === 'super_admin')) || (root.child('user-roles').child(auth.uid).child('oversight').val() === true && (root.child('user-roles').child(auth.uid).child('role').val() === 'national_executive' || root.child('user-roles').child(auth.uid).child('role').val() === 'super_admin'))) && !data.exists() && newData.child('authorId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['authorId', 'authorName', 'authorRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists() || newData.child('hidden').val() === true || newData.child('deleted').val() === true) && (!newData.child('text').exists() || (newData.child('text').isString() && newData.child('text').val().length <= 2000))",
             "authorId": {
               ".validate": "newData.val() === auth.uid"
             },
+            "timestamp": {
+              ".validate": "newData.val() === now"
+            },
             "readBy": {
               "$uid": {
-                ".write": "auth != null && $uid === auth.uid"
+                ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && (root.child('user-roles').child(auth.uid).child('regions').child($region).val() === true || root.child('user-roles').child(auth.uid).child('oversight').val() === true) && $uid === auth.uid"
               }
+            },
+            "reactions": {
+              "$emoji": {
+                ".validate": "$emoji === '👍' || $emoji === '❤️' || $emoji === '😂' || $emoji === '🙏' || $emoji === '😮' || $emoji === '🎉'",
+                "$uid": {
+                  ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && (root.child('user-roles').child(auth.uid).child('regions').child($region).val() === true || root.child('user-roles').child(auth.uid).child('oversight').val() === true) && $uid === auth.uid",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            },
+            "authorRole": {
+              ".validate": "newData.val() === root.child('user-roles').child(auth.uid).child('role').val()"
             }
           }
         }
@@ -48,17 +77,73 @@
       "messages": {
         "$messageId": {
           ".write": "auth != null && auth.token.executive_role === true && !data.exists() && newData.child('senderId').val() === auth.uid",
-          ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists())",
+          ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists() || newData.child('hidden').val() === true || newData.child('deleted').val() === true) && (!newData.child('text').exists() || (newData.child('text').isString() && newData.child('text').val().length <= 2000))",
           "senderId": {
             ".validate": "newData.val() === auth.uid"
           },
+          "timestamp": {
+            ".validate": "newData.val() === now"
+          },
           "readBy": {
             "$uid": {
-              ".write": "auth != null && $uid === auth.uid"
+              ".write": "auth != null && auth.token.executive_role === true && $uid === auth.uid"
+            }
+          },
+          "reactions": {
+            "$emoji": {
+              ".validate": "$emoji === '👍' || $emoji === '❤️' || $emoji === '😂' || $emoji === '🙏' || $emoji === '😮' || $emoji === '🎉'",
+              "$uid": {
+                ".write": "auth != null && auth.token.executive_role === true && $uid === auth.uid",
+                ".validate": "newData.val() === true"
+              }
+            }
+          },
+          "senderRole": {
+            ".validate": "newData.val() === root.child('user-roles').child(auth.uid).child('role').val()"
+          }
+        }
+      }
+    },
+    "chat-rooms": {
+      "$roomId": {
+        ".read": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && (root.child('chat-rooms').child($roomId).child('meta').child('members').child(auth.uid).val() === true || root.child('user-roles').child(auth.uid).child('oversight').val() === true)",
+        "meta": {
+          ".write": false
+        },
+        "messages": {
+          "$messageId": {
+            ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && root.child('chat-rooms').child($roomId).child('meta').child('members').child(auth.uid).val() === true && !data.exists() && newData.child('senderId').val() === auth.uid",
+            ".validate": "newData.hasChildren(['senderId', 'senderName', 'senderRole', 'timestamp']) && (newData.child('text').exists() || newData.child('fileUrl').exists() || newData.child('hidden').val() === true || newData.child('deleted').val() === true) && (!newData.child('text').exists() || (newData.child('text').isString() && newData.child('text').val().length <= 2000))",
+            "senderId": {
+              ".validate": "newData.val() === auth.uid"
+            },
+            "timestamp": {
+              ".validate": "newData.val() === now"
+            },
+            "readBy": {
+              "$uid": {
+                ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && root.child('chat-rooms').child($roomId).child('meta').child('members').child(auth.uid).val() === true && $uid === auth.uid"
+              }
+            },
+            "reactions": {
+              "$emoji": {
+                ".validate": "$emoji === '👍' || $emoji === '❤️' || $emoji === '😂' || $emoji === '🙏' || $emoji === '😮' || $emoji === '🎉'",
+                "$uid": {
+                  ".write": "auth != null && auth.token.email_verified === true && root.child('user-roles').child(auth.uid).child('active').val() === true && root.child('chat-rooms').child($roomId).child('meta').child('members').child(auth.uid).val() === true && $uid === auth.uid",
+                  ".validate": "newData.val() === true"
+                }
+              }
+            },
+            "senderRole": {
+              ".validate": "newData.val() === root.child('user-roles').child(auth.uid).child('role').val()"
             }
           }
         }
       }
+    },
+    "community-chat": {
+      ".read": false,
+      ".write": false
     }
   }
 }

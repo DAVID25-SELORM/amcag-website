@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration Status | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #f3f6f4; font-family: 'Inter', Arial, sans-serif; margin: 0; color: #1a2433; }
+    .pa-wrap { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+    .pa-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .pa-brand img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+    .pa-brand strong { color: #0b5d3b; line-height: 1.2; }
+    .pa-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(11,93,59,.12); overflow: hidden; }
+    .pa-banner { padding: 18px 22px; color: #fff; font-weight: 700; font-size: 1.15rem; background: #b26a00; }
+    .pa-banner.ok { background: #0b7a4a; }
+    .pa-banner.bad { background: #b3261e; }
+    .pa-body { padding: 22px; line-height: 1.55; }
+    .pa-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #edf1ee; font-size: .95rem; }
+    .pa-row span:first-child { color: #5a6778; }
+    .pa-row span:last-child { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+    .pa-steps { margin: 18px 0 6px; padding-left: 20px; color: #33415c; }
+    .pa-steps li { margin-bottom: 6px; }
+    .pa-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+    .pa-btn { border: 0; border-radius: 8px; padding: 11px 20px; font: 600 .95rem 'Inter', Arial, sans-serif; cursor: pointer; text-decoration: none; display: inline-block; }
+    .pa-btn.primary { background: #0b5d3b; color: #fff; }
+    .pa-btn.ghost { background: #eef2ef; color: #1a2433; }
+    .pa-note { font-size: .82rem; color: #5a6778; margin-top: 16px; }
+    .pa-msg { padding: 28px 22px; text-align: center; color: #5a6778; }
+  </style>
+</head>
+<body>
+  <div class="pa-wrap">
+    <div class="pa-brand">
+      <img src="/images/logo.jpg" alt="AMCAG logo">
+      <strong>Association of Medicine Counter Assistants of Ghana<br><span style="font-weight:500;color:#5a6778;font-size:.85rem">Membership registration</span></strong>
+    </div>
+    <div class="pa-card" id="card"><div class="pa-msg">Loading your registration...</div></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script>
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+      });
+    }
+
+    function dashboardFor(role) {
+      if (role === 'super_admin' || role === 'national_executive') return '/national/dashboard.html';
+      if (role === 'regional_executive') return '/region-dashboard/index.html';
+      return '/member-dashboard.html';
+    }
+
+    function fmtDate(ts) {
+      try {
+        var d = ts && ts.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+        return d && !isNaN(d.getTime()) ? d.toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'}) : '';
+      } catch (e) { return ''; }
+    }
+
+    function signOut() { AuthModule.signOut(); }
+
+    function render(p) {
+      var status = String(p.status || '').toLowerCase();
+      var html;
+      if (status === 'active' || status === 'approved') {
+        html = '<div class="pa-banner ok">Your membership is approved</div><div class="pa-body">' +
+          '<p>Welcome to AMCAG' + (p.fullName ? ', ' + esc(p.fullName.split(' ')[0]) : '') + '!' +
+          (p.memberId ? ' Your Member ID is <strong>' + esc(p.memberId) + '</strong>.' : '') + '</p>' +
+          '<div class="pa-actions"><a class="pa-btn primary" href="' + dashboardFor(p.role) + '">Go to my dashboard</a></div></div>';
+      } else if (status === 'rejected') {
+        html = '<div class="pa-banner bad">Application not approved</div><div class="pa-body">' +
+          '<p>Thank you for applying. We could not approve your application at this time.</p>' +
+          '<div class="pa-row"><span>Reason</span><span>' + esc(p.rejectionReason || 'Not specified') + '</span></div>' +
+          '<p class="pa-note">If you believe this is a mistake or can provide the missing information, please contact your regional AMCAG executives.</p>' +
+          '<div class="pa-actions"><a class="pa-btn ghost" href="/contact.html">Contact AMCAG</a>' +
+          '<button class="pa-btn ghost" type="button" onclick="signOut()">Sign out</button></div></div>';
+      } else {
+        html = '<div class="pa-banner">Registration received. Awaiting approval</div><div class="pa-body">' +
+          '<p>Thank you' + (p.fullName ? ', <strong>' + esc(p.fullName) + '</strong>' : '') + '. Your registration has been submitted successfully.</p>' +
+          '<div class="pa-row"><span>Status</span><span>Pending approval</span></div>' +
+          (p.region ? '<div class="pa-row"><span>Region</span><span>' + esc(p.region) + '</span></div>' : '') +
+          (fmtDate(p.registrationDate) ? '<div class="pa-row"><span>Submitted</span><span>' + esc(fmtDate(p.registrationDate)) + '</span></div>' : '') +
+          '<div class="pa-row"><span>Email</span><span>' + esc(p.email) + '</span></div>' +
+          '<ol class="pa-steps"><li>An AMCAG executive reviews your details.</li>' +
+          '<li>You receive an email at the address above once a decision is made.</li>' +
+          '<li>After approval you can sign in and use your member dashboard.</li></ol>' +
+          '<p class="pa-note">You can close this page. This screen updates by itself as soon as you are approved.</p>' +
+          '<div class="pa-actions"><a class="pa-btn ghost" href="/contact.html">Contact AMCAG</a>' +
+          '<button class="pa-btn ghost" type="button" onclick="signOut()">Sign out</button></div></div>';
+      }
+      document.getElementById('card').innerHTML = html;
+    }
+
+    AuthModule.onAuthStateChanged(function (user) {
+      if (!user) { window.location.href = '/membership.html'; return; }
+      // Live view of the user's own record: flips to "approved" without a refresh.
+      firebase.firestore().collection('users').doc(user.uid).onSnapshot(function (snap) {
+        if (!snap.exists) { window.location.href = '/membership.html'; return; }
+        render(snap.data());
+      }, function (err) {
+        console.error('Registration status unavailable:', err);
+        document.getElementById('card').innerHTML = '<div class="pa-msg">Unable to load your status right now. Please refresh in a moment.</div>';
+      });
+    });
+  </script>
+</body>
+</html>

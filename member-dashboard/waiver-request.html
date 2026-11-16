@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Request Dues Waiver | AMCAG Member Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -221,8 +221,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
   <script src="/js/suspension-check.js"></script>
 
   <script>
@@ -242,6 +245,25 @@
       const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                      'July', 'August', 'September', 'October', 'November', 'December'];
       return months[month - 1];
+    }
+
+    function toDateValue(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function getBillingStartDate() {
+      const date =
+        toDateValue(memberData?.joiningDate) ||
+        toDateValue(memberData?.approvalDate) ||
+        toDateValue(memberData?.approvedAt) ||
+        toDateValue(memberData?.registrationDate) ||
+        toDateValue(memberData?.createdAt) ||
+        new Date();
+
+      return new Date(date.getFullYear(), date.getMonth(), 1);
     }
 
     // Load member data and calculate overdue
@@ -271,27 +293,24 @@
         // Get waiver requests
         const requestsSnapshot = await db.collection('waiver_requests')
           .where('memberUid', '==', uid)
-          .orderBy('createdAt', 'desc')
           .get();
 
         waiverRequests = requestsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })).sort((a, b) => (toDateValue(b.createdAt)?.getTime() || 0) - (toDateValue(a.createdAt)?.getTime() || 0));
 
         // Calculate overdue months
         const now = new Date();
         const currentMonth = now.getMonth() + 1;
         const currentYear = now.getFullYear();
 
-        const regDate = memberData.registrationDate ? 
-          memberData.registrationDate.toDate() : 
-          new Date();
+        const regDate = getBillingStartDate();
 
         // Build set of paid/waived months
         const paidMonths = new Set();
         payments.forEach(payment => {
-          if (payment.status === 'paid' || payment.status === 'waived') {
+          if (['paid', 'waived'].includes(String(payment.status || '').toLowerCase())) {
             paidMonths.add(`${payment.year}-${payment.month}`);
           }
         });
@@ -393,8 +412,8 @@
       }
 
       tbody.innerHTML = waiverRequests.map(request => {
-        const requestDate = request.createdAt ? 
-          new Date(request.createdAt.toDate()).toLocaleDateString() : 
+        const requestDate = toDateValue(request.createdAt) ? 
+          toDateValue(request.createdAt).toLocaleDateString() : 
           'N/A';
         
         const monthsText = request.months.map(m => `${getMonthName(m.month)} ${m.year}`).join(', ');
@@ -429,8 +448,8 @@
 
     // View request details
     function viewRequestDetails(request) {
-      const requestDate = request.createdAt ? 
-        new Date(request.createdAt.toDate()).toLocaleDateString() : 
+      const requestDate = toDateValue(request.createdAt) ? 
+        toDateValue(request.createdAt).toLocaleDateString() : 
         'N/A';
       
       const monthsText = request.months.map(m => `${getMonthName(m.month)} ${m.year}`).join(', ');
@@ -458,8 +477,8 @@
         document.getElementById('modalReviewSection').style.display = 'block';
         document.getElementById('modalReviewedBy').textContent = request.reviewedByName || 'Unknown';
         
-        const reviewDate = request.reviewedAt ? 
-          new Date(request.reviewedAt.toDate()).toLocaleDateString() : 
+        const reviewDate = toDateValue(request.reviewedAt) ? 
+          toDateValue(request.reviewedAt).toLocaleDateString() : 
           'N/A';
         document.getElementById('modalReviewDate').textContent = reviewDate;
         document.getElementById('modalReviewNotes').textContent = request.reviewNotes || 'No notes provided';
@@ -533,7 +552,7 @@
 
       const finalReason = reasonCategory === 'other' ? otherReasonText : reasonCategory;
 
-      if (!confirm(`Submit waiver request for ${selectedMonths.length} month(s)?\n\nThis will be sent to your Regional Financial Secretary for review.`)) {
+      if (!await AMCAGDialog.confirm(`Submit waiver request for ${selectedMonths.length} month(s)?\n\nThis will be sent to your Regional Financial Secretary for review.`)) {
         return;
       }
 
@@ -620,6 +639,6 @@
       }
     };
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
 </body>
 </html>

@@ -22,7 +22,7 @@ try {
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://amcag-website-default-rtdb.firebaseio.com",
+  databaseURL: "https://amcag-af624-default-rtdb.firebaseio.com",
 });
 
 const auth = admin.auth();

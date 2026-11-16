@@ -6,7 +6,7 @@
   <title>My Profile | AMCAG Member Portal</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -34,10 +34,10 @@
         <a href="/certificates.html" class="dashboard-nav-item">
           <span>📜</span> Certificates
         </a>
-        <a href="/dues.html" class="dashboard-nav-item">
+        <a href="/member-dashboard/dues-payment.html" class="dashboard-nav-item">
           <span>💳</span> Dues Payment
         </a>
-        <a href="/payments.html" class="dashboard-nav-item">
+        <a href="/member-dashboard/my-donations.html" class="dashboard-nav-item">
           <span>💰</span> Payment History
         </a>
       </nav>
@@ -48,10 +48,21 @@
         <h1 class="dashboard-title">My Profile</h1>
         <p class="dashboard-subtitle">Manage your personal information and account settings</p>
       </div>
+      <div id="profile-incomplete-alert" class="alert alert-warning mb-4" style="display: none;">
+        Profile information is incomplete. Please update your profile.
+      </div>
 
       <div class="grid grid-2 gap-6">
         <div class="card">
           <h3 class="card-title mb-4">Profile Information</h3>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: var(--space-4);">
+            <div id="profile-photo-preview" style="width: 96px; height: 96px; border-radius: 50%; background: var(--color-primary-95); background-size: cover; background-position: center 15%; display: flex; align-items: center; justify-content: center; color: var(--color-primary); font-weight: 700; font-size: var(--text-xl); flex: 0 0 auto;">--</div>
+            <div style="display: grid; gap: 0.5rem; min-width: 0;">
+              <label class="form-label" for="profilePhoto">Profile Picture</label>
+              <input type="file" class="form-input" id="profilePhoto" accept="image/*">
+              <small style="color: var(--color-on-surface-variant, #5a6778);">Choose a photo, then click Update Profile to save it.</small>
+            </div>
+          </div>
           <form id="profile-form">
             <div class="form-group">
               <label class="form-label">Full Name</label>
@@ -69,22 +80,22 @@
               <label class="form-label">Region</label>
               <select class="form-input" id="region" required>
                 <option value="">Select Region</option>
-                <option value="greater-accra">Greater Accra</option>
-                <option value="ashanti">Ashanti</option>
-                <option value="central">Central</option>
-                <option value="eastern">Eastern</option>
-                <option value="northern">Northern</option>
-                <option value="western">Western</option>
-                <option value="volta">Volta</option>
-                <option value="upper-east">Upper East</option>
-                <option value="upper-west">Upper West</option>
-                <option value="bono">Bono</option>
-                <option value="bono-east">Bono East</option>
-                <option value="ahafo">Ahafo</option>
-                <option value="western-north">Western North</option>
-                <option value="savannah">Savannah</option>
-                <option value="north-east">North East</option>
-                <option value="oti">Oti</option>
+                <option value="Greater Accra">Greater Accra</option>
+                <option value="Ashanti">Ashanti</option>
+                <option value="Central">Central</option>
+                <option value="Eastern">Eastern</option>
+                <option value="Northern">Northern</option>
+                <option value="Western">Western</option>
+                <option value="Volta">Volta</option>
+                <option value="Upper East">Upper East</option>
+                <option value="Upper West">Upper West</option>
+                <option value="Bono">Bono</option>
+                <option value="Bono East">Bono East</option>
+                <option value="Ahafo">Ahafo</option>
+                <option value="Western North">Western North</option>
+                <option value="Savannah">Savannah</option>
+                <option value="North East">North East</option>
+                <option value="Oti">Oti</option>
               </select>
             </div>
             <div class="form-group">
@@ -131,25 +142,95 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/password-toggle.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     function signOut() {
       AuthModule.signOut();
     }
 
+    function getDisplayRegionValue(region) {
+      const select = document.getElementById('region');
+      const raw = String(region || '').trim();
+      if (!raw) return '';
+      const directMatch = Array.from(select.options).find((option) => option.value === raw);
+      if (directMatch) return directMatch.value;
+      const slug = (v) => String(v).toLowerCase().trim().replace(/[\s_]+/g, '-');
+      const normalizedMatch = Array.from(select.options).find((option) => option.value && slug(option.value) === slug(raw));
+      return normalizedMatch ? normalizedMatch.value : raw;
+    }
+
+    function getProfilePhotoUrl(profile) {
+      return profile?.profilePictureUrl || profile?.photoURL || profile?.photoUrl || '';
+    }
+
+    function renderProfilePhoto(profile) {
+      const preview = document.getElementById('profile-photo-preview');
+      if (!preview) return;
+
+      const fullName = String(profile?.fullName || '').trim();
+      const initials = fullName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase() || 'MP';
+      const photoUrl = getProfilePhotoUrl(profile);
+
+      preview.textContent = photoUrl ? '' : initials;
+      preview.style.backgroundImage = photoUrl ? `url("${photoUrl}")` : '';
+    }
+
+    function validateProfilePhoto(file) {
+      if (!file) {
+        throw new Error('Please select a profile picture first.');
+      }
+
+      if (!file.type || !file.type.startsWith('image/')) {
+        throw new Error('Please upload a valid image file.');
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Profile picture must be 5MB or smaller.');
+      }
+    }
+
+    function setPhotoUploadState(isUploading) {
+      const button = document.getElementById('uploadPhotoBtn');
+      const input = document.getElementById('profilePhoto');
+      if (button) {
+        button.disabled = isUploading;
+        button.textContent = isUploading ? 'Uploading...' : 'Upload Photo';
+      }
+      if (input) {
+        input.disabled = isUploading;
+      }
+    }
+
     async function loadProfile(user) {
       try {
-        const profile = await APIModule.Members.getById(user.uid);
+        const profile = await APIModule.Members.getById(user.uid) || user.profile || {};
+        const incompleteAlert = document.getElementById('profile-incomplete-alert');
+        if (incompleteAlert) {
+          incompleteAlert.style.display = profile.fullName || profile.phone || profile.region ? 'none' : 'block';
+        }
         document.getElementById('fullName').value = profile.fullName || '';
-        document.getElementById('email').value = profile.email || '';
+        document.getElementById('email').value = profile.email || user.email || '';
         document.getElementById('phone').value = profile.phone || '';
-        document.getElementById('region').value = profile.region || '';
+        document.getElementById('region').value = getDisplayRegionValue(profile.region);
         document.getElementById('address').value = profile.address || '';
+        renderProfilePhoto(profile);
         
         // Set employment status
         const isEmployed = profile.employmentStatus === 'Employed';
@@ -160,25 +241,77 @@
           document.getElementById('workplace-group').style.display = 'block';
         }
       } catch (error) {
-        UIModule.showAlert('Error loading profile', 'error');
+        const incompleteAlert = document.getElementById('profile-incomplete-alert');
+        if (incompleteAlert) {
+          incompleteAlert.style.display = 'block';
+        }
+        document.getElementById('email').value = user.email || '';
+        renderProfilePhoto(user.profile || {});
+        UIModule.showAlert('Profile information is incomplete. Please update your profile.', 'warning');
       }
+    }
+
+    document.getElementById('profilePhoto').addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      try {
+        validateProfilePhoto(file);
+        const preview = document.getElementById('profile-photo-preview');
+        preview.textContent = '';
+        preview.style.backgroundImage = `url("${URL.createObjectURL(file)}")`;
+      } catch (error) {
+        event.target.value = '';
+        UIModule.showAlert(error.message, 'error');
+      }
+    });
+
+    // Uploads the chosen photo (if any) and returns its download URL, or null when none was chosen.
+    async function uploadSelectedPhoto() {
+      const file = document.getElementById('profilePhoto').files[0];
+      if (!file) return null;
+      const currentUser = AuthModule.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('Please sign in again before uploading a profile picture.');
+      }
+      validateProfilePhoto(file);
+      const profileStorageRef = window.FirebaseModule.storageRefs?.profiles?.();
+      if (!profileStorageRef) {
+        throw new Error('Profile picture upload is not available. Please refresh and try again.');
+      }
+      const extension = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const photoRef = profileStorageRef.child(currentUser.uid + '/profile-photo-' + Date.now() + '.' + extension);
+      const snapshot = await photoRef.put(file, {
+        contentType: file.type,
+        customMetadata: { uploadedBy: currentUser.uid }
+      });
+      return snapshot.ref.getDownloadURL();
     }
 
     document.getElementById('profile-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       UIModule.showLoader('Updating profile...');
       try {
+        const photoUrl = await uploadSelectedPhoto();
         const isEmployed = document.getElementById('currentlyEmployed').checked;
         const workplace = document.getElementById('workplace').value.trim();
         
-        await AuthModule.updateProfile({
+        const result = await AuthModule.updateProfile({
           fullName: document.getElementById('fullName').value,
           phone: document.getElementById('phone').value,
           region: document.getElementById('region').value,
           address: document.getElementById('address').value.trim(),
           employmentStatus: isEmployed ? 'Employed' : 'Not Employed',
-          currentWorkplace: isEmployed && workplace ? workplace : 'N/A'
+          currentWorkplace: isEmployed && workplace ? workplace : 'N/A',
+          ...(photoUrl ? { profilePictureUrl: photoUrl, photoURL: photoUrl } : {})
         });
+        if (!result.success) {
+          throw new Error(result.error || 'Unable to update profile');
+        }
+        if (photoUrl) {
+          renderProfilePhoto({ ...(AuthModule.getCurrentUser()?.profile || {}), profilePictureUrl: photoUrl, photoURL: photoUrl });
+          document.getElementById('profilePhoto').value = '';
+        }
         UIModule.hideLoader();
         UIModule.showAlert('Profile updated successfully', 'success');
       } catch (error) {
@@ -224,7 +357,10 @@
       }
     });
 
+    let profileAuthReady = false;
+
     AuthModule.onAuthStateChanged((user) => {
+      profileAuthReady = true;
       if (!user) {
         window.location.href = '/membership.html';
       } else {
@@ -232,6 +368,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
   <title>Regional Permissions | AMCAG National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -150,6 +150,10 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     const ghanaRegions = [
@@ -167,6 +171,9 @@
 
     // Wait for Firebase to be initialized before doing anything
     function waitForFirebaseInit() {
+      if (window.FirebaseModule && typeof window.FirebaseModule.whenReady === 'function') {
+        return window.FirebaseModule.whenReady(15000);
+      }
       return new Promise((resolve) => {
         const checkInterval = setInterval(() => {
           if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
@@ -186,8 +193,14 @@
     }
 
     // Initialize everything after Firebase is ready
-    waitForFirebaseInit().then(() => {
+    waitForFirebaseInit().then((ready) => {
       console.log('Starting page initialization...');
+      if (ready === false) {
+        UIModule.showAlert('Firebase could not initialize. Check your connection and refresh.', 'error');
+        document.getElementById('regionsTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">Firebase is not ready. Please refresh the page.</td></tr>';
+        document.getElementById('executivesTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">Firebase is not ready. Please refresh the page.</td></tr>';
+        return;
+      }
       
       // Initialize Cloud Functions
       firebase.auth().onAuthStateChanged(user => {
@@ -211,8 +224,7 @@
       try {
         // Wait for Firebase to be initialized
         if (!firebase || !firebase.apps || firebase.apps.length === 0) {
-          console.log('Firebase not ready, waiting...');
-          setTimeout(loadRegions, 500);
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">Firebase is still loading. Please refresh if this continues.</td></tr>';
           return;
         }
         
@@ -303,7 +315,7 @@
     async function toggleRegion(regionName, enable) {
       const action = enable ? 'enable' : 'disable';
       
-      if (!confirm(`${enable ? 'Enable' : 'Disable'} member approval for ${regionName}?`)) {
+      if (!await AMCAGDialog.confirm(`${enable ? 'Enable' : 'Disable'} member approval for ${regionName}?`)) {
         return;
       }
 
@@ -334,7 +346,7 @@
 
     // Enable all regions
     async function enableAllRegions() {
-      if (!confirm('Enable member approval for ALL regions?')) return;
+      if (!await AMCAGDialog.confirm('Enable member approval for ALL regions?')) return;
 
       try {
         UIModule.showLoader('Enabling all regions...');
@@ -361,7 +373,7 @@
 
     // Disable all regions
     async function disableAllRegions() {
-      if (!confirm('Disable member approval for ALL regions? This will require national approval for all new members.')) return;
+      if (!await AMCAGDialog.confirm('Disable member approval for ALL regions? This will require national approval for all new members.')) return;
 
       try {
         UIModule.showLoader('Disabling all regions...');
@@ -393,8 +405,7 @@
       try {
         // Wait for Firebase to be initialized
         if (!firebase || !firebase.apps || firebase.apps.length === 0) {
-          console.log('Firebase not ready for executives, waiting...');
-          setTimeout(loadExecutives, 500);
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">Firebase is still loading. Please refresh if this continues.</td></tr>';
           return;
         }
         
@@ -504,6 +515,6 @@
       });
     }
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

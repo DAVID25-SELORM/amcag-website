@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -17,7 +17,7 @@
         <img src="/images/logo.jpg" alt="AMCAG Logo">
         <span>AMCAG</span>
       </a>
-      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <button class="navbar-toggle" onclick="return window.AMCAGToggleNavbar ? window.AMCAGToggleNavbar(this,event) : (function(btn,e){if(e){e.preventDefault();e.stopPropagation();}var nav=btn.closest('.navbar');var menu=nav&&nav.querySelector('.navbar-menu');if(!menu)return false;var open=!menu.classList.contains('active');menu.classList.toggle('active',open);btn.classList.toggle('active',open);btn.setAttribute('aria-expanded',String(open));if(nav)nav.classList.toggle('menu-open',open);document.body.classList.toggle('navbar-menu-open',open);document.body.style.overflow=open?'hidden':'';return false;})(this,event)"><span></span><span></span><span></span></button>
       <ul class="navbar-menu">
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><a href="/about.html" class="navbar-link">About</a></li>
@@ -51,21 +51,21 @@
       <div class="grid grid-3 gap-6" id="leadership-grid">
         <div class="card text-center">
           <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-primary-40); border-radius: var(--radius-full);"></div>
-          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National President</h3>
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">President</h3>
           <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Leadership & Strategy</p>
           <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Leading AMCAG's strategic vision and representing members at the national level.</p>
         </div>
 
         <div class="card text-center">
           <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-secondary-50); border-radius: var(--radius-full);"></div>
-          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">General Secretary</h3>
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">Secretary</h3>
           <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Administration & Records</p>
           <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Managing administrative operations and maintaining organizational records.</p>
         </div>
 
         <div class="card text-center">
           <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-success); border-radius: var(--radius-full);"></div>
-          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National Treasurer</h3>
+          <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">Treasurer</h3>
           <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Finance & Accountability</p>
           <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Overseeing financial operations and ensuring transparent accountability.</p>
         </div>
@@ -75,16 +75,71 @@
 
   <footer class="footer">
     <div class="container">
-      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p>
+        <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p></div>
     </div>
   </footer>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="/js/firebase.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/firebase.js?v=20260602-authdomain1"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
   <script>
+    const positionTitleAliases = {
+      'national president': 'President',
+      'vice president': 'Vice',
+      'general secretary': 'Secretary',
+      'chief financial officer': 'Financial secretary',
+      'national treasurer': 'Treasurer',
+      'regional chairperson': 'President'
+    };
+
+    function getOfficialPositionTitle(position) {
+      const raw = String(position || '').trim();
+      return positionTitleAliases[raw.toLowerCase()] || raw;
+    }
+
+    function normalizeText(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[-_]+/g, ' ')
+        .replace(/\s+/g, ' ');
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function getLeaderName(leader = {}) {
+      return leader.fullName || leader.name || leader.displayName || leader.memberName || '';
+    }
+
+    function getLeaderPhoto(leader = {}) {
+      return leader.profilePhoto || leader.photoUrl || leader.photoURL || leader.photo || '';
+    }
+
+    function isPublicLeader(leader = {}) {
+      const status = normalizeText(leader.status || leader.approvalStatus || 'active');
+      return !status || ['active', 'approved', 'current'].includes(status);
+    }
+
+    function sortLeaders(a, b) {
+      const aOrder = Number(a.order || a.priority || 999);
+      const bOrder = Number(b.order || b.priority || 999);
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return getOfficialPositionTitle(a.position || a.title).localeCompare(getOfficialPositionTitle(b.position || b.title));
+    }
+
     // Helper: Calculate days between dates
     function daysBetween(date1, date2) {
       const oneDay = 24 * 60 * 60 * 1000;
@@ -110,25 +165,14 @@
       const leadershipGrid = document.getElementById('leadership-grid');
       
       try {
+        await window.FirebaseModule?.whenReady?.();
         const db = FirebaseModule.db();
-        let snapshot;
-        
-        try {
-          snapshot = await db.collection('leadership')
-            .where('level', '==', 'national')
-            .orderBy('order', 'asc')
-            .get();
-        } catch (queryError) {
-          console.warn('Leadership query failed, trying without orderBy:', queryError);
-          try {
-            snapshot = await db.collection('leadership')
-              .where('level', '==', 'national')
-              .get();
-          } catch (whereError) {
-            console.warn('Leadership query with where failed, using all:', whereError);
-            snapshot = await db.collection('leadership').get();
-          }
-        }
+        const snapshot = await db.collection('leadership').get();
+        const leaders = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((leader) => normalizeText(leader.level || leader.leadershipLevel) === 'national')
+          .filter(isPublicLeader)
+          .sort(sortLeaders);
         
         // Load active terms for national positions
         let termsMap = {};
@@ -140,28 +184,29 @@
           termsSnapshot.docs.forEach(doc => {
             const term = doc.data();
             termsMap[term.positionTitle] = term;
+            termsMap[getOfficialPositionTitle(term.positionTitle)] = term;
           });
         } catch (termsError) {
           console.warn('Could not load terms:', termsError);
         }
         
-        if (snapshot.empty) {
+        if (!leaders.length) {
           leadershipGrid.innerHTML = `
             <div class="card text-center">
               <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-primary-40); border-radius: var(--radius-full);"></div>
-              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National President</h3>
+              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">President</h3>
               <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Leadership & Strategy</p>
               <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Leading AMCAG's strategic vision and representing members at the national level.</p>
             </div>
             <div class="card text-center">
               <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-secondary-50); border-radius: var(--radius-full);"></div>
-              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">General Secretary</h3>
+              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">Secretary</h3>
               <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Administration & Records</p>
               <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Managing administrative operations and maintaining organizational records.</p>
             </div>
             <div class="card text-center">
               <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-success); border-radius: var(--radius-full);"></div>
-              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National Treasurer</h3>
+              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">Treasurer</h3>
               <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Finance & Accountability</p>
               <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Overseeing financial operations and ensuring transparent accountability.</p>
             </div>
@@ -171,13 +216,13 @@
         
         const colors = ['var(--color-primary-40)', 'var(--color-secondary-50)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-error)'];
         
-        leadershipGrid.innerHTML = snapshot.docs.map((doc, index) => {
-          const data = doc.data();
-          const photoUrl = data.photoUrl || '';
+        leadershipGrid.innerHTML = leaders.map((data, index) => {
+          const positionTitle = getOfficialPositionTitle(data.position || 'Position');
+          const photoUrl = getLeaderPhoto(data);
           const bgStyle = photoUrl ? `background-image: url('${photoUrl}'); background-size: cover; background-position: center;` : `background: ${colors[index % colors.length]};`;
           
           // Check if we have term information for this position
-          const term = termsMap[data.position];
+          const term = termsMap[positionTitle] || termsMap[data.position];
           let termInfo = '';
           
           if (term && term.termEndDate) {
@@ -192,11 +237,11 @@
           return `
             <div class="card text-center">
               <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); ${bgStyle} border-radius: var(--radius-full);"></div>
-              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">${data.position || 'Position'}</h3>
-              ${data.name ? `<p style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${data.name}</p>` : ''}
-              ${term && term.incumbentName && !data.name ? `<p style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${term.incumbentName}</p>` : ''}
-              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">${data.responsibility || ''}</p>
-              <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">${data.description || ''}</p>
+              <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">${escapeHtml(positionTitle)}</h3>
+              ${getLeaderName(data) ? `<p style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${escapeHtml(getLeaderName(data))}</p>` : ''}
+              ${term && term.incumbentName && !getLeaderName(data) ? `<p style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${escapeHtml(term.incumbentName)}</p>` : ''}
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">${escapeHtml(data.responsibility || data.title || '')}</p>
+              <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">${escapeHtml(data.description || data.bio || '')}</p>
               ${termInfo}
             </div>
           `;
@@ -204,24 +249,24 @@
         
       } catch (error) {
         console.error('Error loading leadership:', error);
-        console.log('Showing sample leadership placeholders due to error');
+        console.log('Showing default leadership placeholders due to error');
         // Show default placeholders on error
         leadershipGrid.innerHTML = `
           <div class="card text-center">
             <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-primary-40); border-radius: var(--radius-full);"></div>
-            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National President</h3>
+            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">President</h3>
             <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Leadership & Strategy</p>
             <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Leading AMCAG's strategic vision and representing members at the national level.</p>
           </div>
           <div class="card text-center">
             <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-secondary-50); border-radius: var(--radius-full);"></div>
-            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">General Secretary</h3>
+            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">Secretary</h3>
             <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Administration & Records</p>
             <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Managing administrative operations and maintaining organizational records.</p>
           </div>
           <div class="card text-center">
             <div style="width: 150px; height: 150px; margin: 0 auto var(--space-3); background: var(--color-success); border-radius: var(--radius-full);"></div>
-            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">National Treasurer</h3>
+            <h3 style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold); margin-bottom: var(--space-1);">Treasurer</h3>
             <p style="color: var(--text-secondary); margin-bottom: var(--space-3);">Finance & Accountability</p>
             <p style="color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">Overseeing financial operations and ensuring transparent accountability.</p>
           </div>
@@ -230,6 +275,6 @@
     }
     loadLeadership();
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

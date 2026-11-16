@@ -6,8 +6,8 @@
   <title>Make a Donation | AMCAG Member Portal</title>
   <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
 </head>
 <body class="dashboard-layout">
   <nav class="navbar">
@@ -238,8 +238,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
   <script src="/js/suspension-check.js"></script>
 
   <script>
@@ -307,25 +310,20 @@
       
       try {
         const db = firebase.firestore();
-        let snapshot;
-        
-        // Try with orderBy first
-        try {
-          snapshot = await db.collection('donation_campaigns')
-            .where('status', '==', 'active')
-            .orderBy('createdAt', 'desc')
-            .get();
-        } catch (indexError) {
-          // If index doesn't exist, try without orderBy
-          console.warn('Index not found, loading without order:', indexError);
-          snapshot = await db.collection('donation_campaigns')
-            .where('status', '==', 'active')
-            .get();
-        }
+        const snapshot = await db.collection('donation_campaigns')
+          .where('status', '==', 'active')
+          .get();
+
+        const campaigns = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => {
+            const ad = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+            const bd = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+            return bd - ad;
+          });
 
         const select = document.getElementById('campaignSelect');
 
-        if (snapshot.empty) {
+        if (campaigns.length === 0) {
           container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-secondary);">
               <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
@@ -338,23 +336,23 @@
         }
 
         // Populate dropdown
-        snapshot.forEach(doc => {
-          const campaign = doc.data();
+        campaigns.forEach(campaign => {
           const option = document.createElement('option');
-          option.value = doc.id;
+          option.value = campaign.id;
           option.textContent = campaign.title;
           select.appendChild(option);
         });
 
         // Display campaign cards
-        container.innerHTML = snapshot.docs.map(doc => {
-          const campaign = { id: doc.id, ...doc.data() };
+        const escC = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        container.innerHTML = campaigns.map(campaign => {
           const progress = campaign.targetAmount ? (campaign.currentAmount / campaign.targetAmount * 100).toFixed(1) : 0;
 
           return `
             <div class="card" style="cursor: pointer;" onclick="document.getElementById('campaignSelect').value='${campaign.id}'; updateSummary();">
-              <h4 style="margin-bottom: 0.5rem;">${campaign.title}</h4>
-              <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">${campaign.description}</p>
+              ${/^https:\/\//.test(campaign.imageUrl || '') ? '<img src="' + escC(campaign.imageUrl) + '" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:1rem;">' : ''}
+              <h4 style="margin-bottom: 0.5rem;">${escC(campaign.title)}</h4>
+              <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">${escC(campaign.description)}</p>
               ${campaign.targetAmount ? `
                 <div style="margin-bottom: 0.5rem;">
                   <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.25rem;">
@@ -386,8 +384,8 @@
       try {
         const db = firebase.firestore();
         const snapshot = await db.collection('donations')
-          .where('donorUid', '==', currentUser.uid)
-          .where('status', '==', 'received')
+          .where('donorId', '==', currentUser.uid)
+          .where('status', 'in', ['confirmed', 'distributed'])
           .get();
 
         let totalMonetary = 0;
@@ -420,7 +418,7 @@
       const type = document.querySelector('input[name="donationType"]:checked').value;
       const formData = {
         type,
-        campaign: document.getElementById('campaignSelect').value || null,
+        campaignId: document.getElementById('campaignSelect').value || null,
         purpose: document.getElementById('donationPurpose').value || null,
         visibility: document.getElementById('visibility').value
       };
@@ -470,7 +468,7 @@
           UIModule.showAlert(
             `✅ Donation submitted successfully!\n\n` +
             `Donation ID: ${result.data.donationId}\n` +
-            `Status: Pledged\n\n` +
+            `Status: Pending\n\n` +
             `${type === 'monetary' ? 'Please complete payment and your donation will be confirmed.' : 'Please deliver items to your regional office for confirmation.'}`,
             'success'
           );
@@ -520,6 +518,6 @@
       document.querySelector('label[onclick^="selectDonationType"]').style.background = 'var(--color-primary-95)';
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
 </body>
 </html>

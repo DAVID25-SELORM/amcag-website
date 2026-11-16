@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Question Results | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .r-card{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(11,93,59,.12);padding:20px;margin-bottom:18px;overflow-x:auto}
+    .r-table{width:100%;border-collapse:collapse;font-size:.92rem}
+    .r-table th,.r-table td{padding:9px 10px;border-bottom:1px solid #edf1ee;text-align:left;white-space:nowrap}
+    .r-table th{color:#5a6778;font-weight:600;font-size:.8rem;text-transform:uppercase}
+    .r-ok{color:#0b7a4a;font-weight:700}.r-no{color:#b3261e;font-weight:700}
+    .r-controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:end}
+    .r-controls label{font-size:.8rem;color:#5a6778;display:block;margin-bottom:4px}
+    .r-controls select{padding:8px 10px;border:1px solid #cfd8d2;border-radius:8px;font-family:inherit}
+  </style>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo"><img src="/images/logo.jpg" alt="AMCAG Logo"><span>AMCAG Member</span></a>
+      <div class="navbar-actions"><button class="btn btn-sm" onclick="signOut()">Sign Out</button></div>
+    </div>
+  </nav>
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item"><span>📊</span> Dashboard</a>
+        <a href="/member-dashboard/daily-question.html" class="dashboard-nav-item" id="navQ"><span>❓</span> Question of the Day</a>
+        <a href="/member-dashboard/question-results.html" class="dashboard-nav-item" id="navR" style="display:none"><span>📈</span> Question Results</a>
+      </nav>
+    </aside>
+    <main class="dashboard-content">
+      <div class="dashboard-header"><div><h1 class="dashboard-title">Question Results</h1><p class="dashboard-subtitle" id="scope">Loading...</p></div></div>
+      <div id="err" style="display:none" class="r-card"></div>
+      <div id="content" style="display:none">
+        <div class="r-controls">
+          <div><label>Day</label><select id="daySel"></select></div>
+          <div id="regionWrap"><label>Region</label><select id="regionSel"><option value="">All regions</option></select></div>
+        </div>
+        <div class="r-card" id="summary"></div>
+        <div class="r-card"><table class="r-table"><thead><tr><th>Member</th><th>Member ID</th><th>Region</th><th>Answer</th><th>Result</th><th>Time</th></tr></thead><tbody id="rows"></tbody></table></div>
+      </div>
+
+    </main>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script>
+    function signOut() { AuthModule.signOut(); }
+    function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+    var LETTERS=['A','B','C','D'];
+    function call(name,data){return firebase.functions().httpsCallable(name)(data||{}).then(function(r){return r.data;});}
+
+    var REGIONS=['Greater Accra','Ashanti','Western','Western North','Central','Eastern','Volta','Oti','Northern','Savannah','North East','Upper East','Upper West','Bono','Bono East','Ahafo'];
+    var state={dayNo:null,region:''};
+    function dayLabel(n){return new Date(n*86400000).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
+    async function load(){
+      try{
+        var d=await call('getQuestionResults',{dayNo:state.dayNo,region:state.region||null});
+        state.dayNo=d.dayNo;
+        document.getElementById('content').style.display='';
+        document.getElementById('scope').textContent=d.lockedRegion?('Answers from members in '+d.region+' Region'):(d.region?('Answers from '+d.region+' Region'):'Answers from all regions');
+        var sel=document.getElementById('daySel');
+        var nums={};nums[d.today]=1;d.days.forEach(function(x){nums[x.dayNo]=1;});
+        var list=Object.keys(nums).map(Number).sort(function(a,b){return b-a;});
+        sel.innerHTML=list.map(function(n){return '<option value="'+n+'"'+(n===d.dayNo?' selected':'')+'>'+dayLabel(n)+(n===d.today?' (today)':'')+'</option>';}).join('');
+        var rs=document.getElementById('regionSel');
+        if(d.lockedRegion){document.getElementById('regionWrap').style.display='none';}
+        else if(rs.options.length===1){REGIONS.forEach(function(r){var o=document.createElement('option');o.value=r;o.textContent=r;rs.appendChild(o);});}
+        rs.value=state.region;
+        var day=d.days.filter(function(x){return x.dayNo===d.dayNo;})[0];
+        var total=day?day.total:0,ok=day?day.correct:0;
+        document.getElementById('summary').innerHTML='<div style="font-size:.8rem;color:#0b5d3b;font-weight:700;text-transform:uppercase">'+esc(d.question.topic)+'</div>'+
+          '<div style="font-weight:600;margin:6px 0">'+esc(d.question.question)+'</div>'+
+          '<div>Correct answer: <strong>'+esc(d.question.correctText)+'</strong></div>'+
+          '<div style="margin-top:8px"><strong>'+total+'</strong> answered &middot; <strong>'+ok+'</strong> correct'+(total?(' ('+Math.round(ok*100/total)+'%)'):'')+'</div>';
+        document.getElementById('rows').innerHTML=d.answers.length?d.answers.map(function(a){
+          return '<tr><td>'+esc(a.memberName)+'</td><td>'+esc(a.memberId)+'</td><td>'+esc(a.region)+'</td><td>'+esc(a.choiceText)+'</td><td class="'+(a.correct?'r-ok':'r-no')+'">'+(a.correct?'Correct':'Wrong')+'</td><td>'+(a.answeredAt?new Date(a.answeredAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'')+'</td></tr>';
+        }).join(''):'<tr><td colspan="6" style="color:#5a6778">No answers for this day yet.</td></tr>';
+      }catch(e){
+        var box=document.getElementById('err');box.style.display='';
+        box.textContent=e.code==='functions/permission-denied'?'You do not have access to question results.':(e.message||'Unable to load results.');
+        document.getElementById('scope').textContent='';
+      }
+    }
+    document.getElementById('daySel').addEventListener('change',function(e){state.dayNo=Number(e.target.value);load();});
+    document.getElementById('regionSel').addEventListener('change',function(e){state.region=e.target.value;load();});
+    AuthModule.onAuthStateChanged(function(user){
+      if(!user){ window.location.href='/membership.html'; return; }
+            load();
+    });
+  </script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
+</body>
+</html>

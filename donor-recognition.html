@@ -6,6 +6,7 @@
   <title>Donor Recognition | AMCAG</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
 </head>
 <body>
   <nav class="navbar">
@@ -196,14 +197,20 @@
       </div>
       <div class="footer-bottom">
         <p>&copy; 2026 AMCAG. All rights reserved.</p>
+        <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p>
       </div>
     </div>
   </footer>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
   <script src="/js/firebase.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 
   <script>
     let allDonors = [];
@@ -218,56 +225,34 @@
       bronze: { min: 0, max: 99, icon: '🥉', name: 'Bronze', color: '#CD7F32' }
     };
 
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    // Donations are private, so a server function returns only what is safe to show publicly.
     async function loadDonorData() {
       try {
         await waitForFirebase();
-        const db = firebase.firestore();
-        
-        // Load donations with public/members_only visibility
-        const snapshot = await db.collection('donations')
-          .where('visibility', 'in', ['public', 'members_only'])
-          .where('status', 'in', ['received', 'allocated', 'distributed'])
-          .get();
+        const result = await firebase.functions().httpsCallable('getDonorRecognition')();
+        const data = result.data || {};
 
-        const donations = snapshot.docs.map(doc => doc.data());
-
-        // Aggregate by donor
-        const donorMap = {};
-        donations.forEach(d => {
-          if (d.anonymous) return; // Skip anonymous donations
-          
-          const key = d.donorUid;
-          if (!donorMap[key]) {
-            donorMap[key] = {
-              name: d.donorName,
-              total: 0,
-              donationCount: 0,
-              hasMaterial: false
-            };
-          }
-          
-          if (d.type === 'monetary') {
-            donorMap[key].total += d.amount || 0;
-          } else {
-            donorMap[key].hasMaterial = true;
-          }
-          donorMap[key].donationCount += 1;
-        });
-
-        allDonors = Object.values(donorMap).map(donor => ({
-          ...donor,
-          tier: getDonorTier(donor.total)
-        })).sort((a, b) => b.total - a.total);
-
+        allDonors = (data.donors || []).map(donor => ({ ...donor, tier: getDonorTier(donor.total) }));
         filteredDonors = [...allDonors];
 
-        // Load statistics
-        loadStatistics(donations);
-        loadDistributions();
-        renderDonors();
+        const stats = data.stats || {};
+        document.getElementById('totalRaised').textContent = 'GHS ' + Number(stats.totalRaised || 0).toLocaleString();
+        document.getElementById('totalDonors').textContent = stats.totalDonors || 0;
+        document.getElementById('totalBeneficiaries').textContent = stats.totalBeneficiaries || 0;
+        document.getElementById('totalDistributions').textContent = stats.totalDistributions || 0;
 
+        renderStories(data.stories || []);
+        renderDonors();
       } catch (error) {
         console.error('Error loading donor data:', error);
+        const grid = document.getElementById('donorsGrid');
+        if (grid) grid.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-secondary);">We could not load the donor list right now. Please try again shortly.</div>';
+        const gallery = document.getElementById('distributionsGallery');
+        if (gallery) gallery.innerHTML = '';
       }
     }
 
@@ -280,81 +265,23 @@
       return 'bronze';
     }
 
-    async function loadStatistics(donations) {
-      const totalRaised = donations
-        .filter(d => d.type === 'monetary')
-        .reduce((sum, d) => sum + (d.amount || 0), 0);
-      
-      const totalDonors = new Set(donations.map(d => d.donorUid)).size;
-
-      const db = firebase.firestore();
-      const distSnapshot = await db.collection('donations')
-        .where('status', '==', 'distributed')
-        .get();
-      
-      const distributions = distSnapshot.docs.map(doc => doc.data());
-      const totalBeneficiaries = distributions.reduce((sum, d) => 
-        sum + (d.distribution?.beneficiaries || 0), 0);
-
-      document.getElementById('totalRaised').textContent = `GHS ${totalRaised.toLocaleString()}`;
-      document.getElementById('totalDonors').textContent = totalDonors;
-      document.getElementById('totalBeneficiaries').textContent = totalBeneficiaries;
-      document.getElementById('totalDistributions').textContent = distributions.length;
-    }
-
-    async function loadDistributions() {
-      try {
-        const db = firebase.firestore();
-        const snapshot = await db.collection('donations')
-          .where('status', '==', 'distributed')
-          .orderBy('distribution.distributedAt', 'desc')
-          .limit(6)
-          .get();
-
-        const distributions = snapshot.docs.map(doc => doc.data());
-        const container = document.getElementById('distributionsGallery');
-
-        if (distributions.length === 0) {
-          container.innerHTML = `
-            <div style="text-align: center; padding: 2rem; color: var(--text-secondary); grid-column: 1 / -1;">
-              No distributions yet
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = distributions.map(d => {
-          const dist = d.distribution;
-          const date = new Date(dist.distributedAt.toDate()).toLocaleDateString();
-          const hasPhoto = dist.photoUrls && dist.photoUrls.length > 0;
-          
-          return `
-            <div class="card">
-              ${hasPhoto ? `
-                <img src="${dist.photoUrls[0]}" alt="Distribution" style="width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius-md) var(--radius-md) 0 0; margin: -1.5rem -1.5rem 1rem -1.5rem;">
-              ` : `
-                <div style="width: 100%; height: 150px; background: linear-gradient(135deg, var(--color-primary-95) 0%, var(--color-secondary-95) 100%); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; font-size: 3rem;">
-                  📦
-                </div>
-              `}
-              <h4 style="margin-bottom: 0.5rem;">${dist.location}</h4>
-              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                👥 ${dist.beneficiaries} beneficiaries
-              </div>
-              <div style="font-size: 0.875rem; color: var(--text-secondary);">
-                📅 ${date}
-              </div>
-              ${dist.notes ? `
-                <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">
-                  ${dist.notes}
-                </p>
-              ` : ''}
-            </div>
-          `;
-        }).join('');
-      } catch (error) {
-        console.error('Error loading distributions:', error);
+    function renderStories(stories) {
+      const container = document.getElementById('distributionsGallery');
+      if (!stories.length) {
+        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary); grid-column: 1 / -1;">No distributions yet</div>';
+        return;
       }
+      container.innerHTML = stories.map(story => {
+        const date = story.at ? new Date(story.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        const photo = String(story.photoUrl || '').indexOf('https://') === 0
+          ? '<img src="' + esc(story.photoUrl) + '" alt="Distribution" style="width: 100%; height: 200px; object-fit: cover; border-radius: var(--radius-md) var(--radius-md) 0 0; margin: -1.5rem -1.5rem 1rem -1.5rem;">'
+          : '<div style="width: 100%; height: 150px; background: linear-gradient(135deg, var(--color-primary-95) 0%, var(--color-secondary-95) 100%); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; font-size: 3rem;">📦</div>';
+        return '<div class="card">' + photo +
+          '<h4 style="margin-bottom: 0.5rem;">' + esc(story.beneficiary || 'Community distribution') + '</h4>' +
+          (story.beneficiaryType ? '<div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">👥 ' + esc(story.beneficiaryType) + '</div>' : '') +
+          (date ? '<div style="font-size: 0.875rem; color: var(--text-secondary);">📅 ' + esc(date) + '</div>' : '') +
+          (story.impact ? '<p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">' + esc(story.impact) + '</p>' : '') + '</div>';
+      }).join('');
     }
 
     function switchTab(filter) {
@@ -391,7 +318,7 @@
             return `
               <div class="card text-center" style="border-top: 3px solid ${tierConfig.color};">
                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">${tierConfig.icon}</div>
-                <h4 style="margin-bottom: 0.25rem;">${donor.name}</h4>
+                <h4 style="margin-bottom: 0.25rem;">${esc(donor.name)}</h4>
                 <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
                   ${tierConfig.name} Donor
                 </div>

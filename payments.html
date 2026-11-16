@@ -6,7 +6,7 @@
   <title>Payment History | AMCAG Member Portal</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -34,7 +34,7 @@
         <a href="/certificates.html" class="dashboard-nav-item">
           <span>📜</span> Certificates
         </a>
-        <a href="/dues.html" class="dashboard-nav-item">
+        <a href="/member-dashboard/dues-payment.html" class="dashboard-nav-item">
           <span>💳</span> Dues Payment
         </a>
         <a href="/payments.html" class="dashboard-nav-item active">
@@ -50,21 +50,21 @@
           <p class="dashboard-subtitle">View all your payment transactions</p>
         </div>
         <div>
-          <button class="btn btn-outline">Export PDF</button>
+          <button class="btn btn-outline" onclick="window.print()">Export PDF</button>
         </div>
       </div>
 
       <div class="grid grid-3 gap-4 mb-6">
         <div class="stat-card">
-          <div class="stat-value">GHS 1,240</div>
+          <div class="stat-value" id="total-paid">GHS 0.00</div>
           <div class="stat-label">Total Paid</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">8</div>
+          <div class="stat-value" id="transaction-count">0</div>
           <div class="stat-label">Transactions</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">GHS 150</div>
+          <div class="stat-value" id="pending-total">GHS 0.00</div>
           <div class="stat-label">Pending</div>
         </div>
       </div>
@@ -75,12 +75,13 @@
           <div class="flex gap-2">
             <select class="form-input" style="width: auto;" id="filterType">
               <option value="">All Types</option>
-              <option value="dues">Dues</option>
-              <option value="contribution">Contributions</option>
-              <option value="event">Events</option>
+              <option value="monthly_dues">Dues</option>
+              <option value="donation">Donations</option>
+              <option value="agm_registration">AGM Registration</option>
             </select>
             <select class="form-input" style="width: auto;" id="filterStatus">
               <option value="">All Status</option>
+              <option value="paid">Paid</option>
               <option value="completed">Completed</option>
               <option value="pending">Pending</option>
               <option value="failed">Failed</option>
@@ -103,59 +104,12 @@
             </thead>
             <tbody id="payments-table">
               <tr>
-                <td>#PAY-2025-001</td>
-                <td><span class="badge badge-primary">Dues</span></td>
-                <td>Annual Membership Dues 2025</td>
-                <td>GHS 150.00</td>
-                <td>Jan 15, 2025</td>
-                <td><span class="badge badge-success">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline">Receipt</button>
-                </td>
-              </tr>
-              <tr>
-                <td>#PAY-2024-087</td>
-                <td><span class="badge badge-secondary">Contribution</span></td>
-                <td>Building Fund Contribution</td>
-                <td>GHS 200.00</td>
-                <td>Nov 20, 2024</td>
-                <td><span class="badge badge-success">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline">Receipt</button>
-                </td>
-              </tr>
-              <tr>
-                <td>#PAY-2024-045</td>
-                <td><span class="badge badge-accent">Event</span></td>
-                <td>AGM Registration Fee</td>
-                <td>GHS 50.00</td>
-                <td>Oct 10, 2024</td>
-                <td><span class="badge badge-success">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline">Receipt</button>
-                </td>
-              </tr>
-              <tr>
-                <td>#PAY-2024-012</td>
-                <td><span class="badge badge-primary">Dues</span></td>
-                <td>Annual Membership Dues 2024</td>
-                <td>GHS 120.00</td>
-                <td>Feb 20, 2024</td>
-                <td><span class="badge badge-success">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline">Receipt</button>
-                </td>
+                <td colspan="7" style="text-align: center; padding: 2rem;">Loading payment history...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="pagination">
-          <button class="pagination-btn" disabled>Previous</button>
-          <button class="pagination-btn active">1</button>
-          <button class="pagination-btn">2</button>
-          <button class="pagination-btn">Next</button>
-        </div>
       </div>
     </main>
   </div>
@@ -164,24 +118,121 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
 
   <script>
     function signOut() {
       AuthModule.signOut();
     }
 
+    let allPayments = [];
+
+    function toDateValue(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatCurrency(amount) {
+      return `GHS ${Number(amount || 0).toFixed(2)}`;
+    }
+
+    function formatDate(value) {
+      const date = toDateValue(value);
+      return date ? date.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '-';
+    }
+
+    function paymentLabel(payment) {
+      const type = String(payment.type || '').toLowerCase();
+      if (type === 'monthly_dues') return 'Dues';
+      if (type === 'agm_registration') return 'AGM Registration';
+      if (type === 'donation') return 'Donation';
+      return payment.type || 'Payment';
+    }
+
+    function paymentDescription(payment) {
+      if (payment.description) return payment.description;
+      if (payment.type === 'monthly_dues' && payment.month && payment.year) {
+        return `${paymentLabel(payment)} - ${payment.month}/${payment.year}`;
+      }
+      return paymentLabel(payment);
+    }
+
+    function statusClass(status) {
+      const normalized = String(status || '').toLowerCase();
+      if (['paid', 'completed', 'waived'].includes(normalized)) return 'success';
+      if (['failed', 'rejected', 'cancelled'].includes(normalized)) return 'error';
+      return 'warning';
+    }
+
+    function renderPayments() {
+      const typeFilter = document.getElementById('filterType').value;
+      const statusFilter = document.getElementById('filterStatus').value;
+      const table = document.getElementById('payments-table');
+
+      const filtered = allPayments.filter(payment => {
+        if (typeFilter && payment.type !== typeFilter) return false;
+        if (statusFilter && String(payment.status || '').toLowerCase() !== statusFilter) return false;
+        return true;
+      });
+
+      const settled = allPayments.filter(payment => ['paid', 'completed', 'waived'].includes(String(payment.status || '').toLowerCase()));
+      const pending = allPayments.filter(payment => String(payment.status || '').toLowerCase() === 'pending');
+      document.getElementById('total-paid').textContent = formatCurrency(settled.reduce((sum, payment) => sum + Number(payment.amount || 0), 0));
+      document.getElementById('transaction-count').textContent = String(allPayments.length);
+      document.getElementById('pending-total').textContent = formatCurrency(pending.reduce((sum, payment) => sum + Number(payment.amount || 0), 0));
+
+      if (!filtered.length) {
+        table.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No payment records found.</td></tr>';
+        return;
+      }
+
+      table.innerHTML = filtered.map(payment => `
+        <tr>
+          <td>${escapeHtml(payment.reference || payment.transactionId || payment.id)}</td>
+          <td><span class="badge badge-primary">${escapeHtml(paymentLabel(payment))}</span></td>
+          <td>${escapeHtml(paymentDescription(payment))}</td>
+          <td>${formatCurrency(payment.amount)}</td>
+          <td>${formatDate(payment.paymentDate || payment.createdAt)}</td>
+          <td><span class="badge badge-${statusClass(payment.status)}">${escapeHtml(payment.status || 'pending')}</span></td>
+          <td>
+            ${['paid', 'completed', 'waived'].includes(String(payment.status || '').toLowerCase()) ?
+              `<a class="btn btn-sm btn-outline" href="/payment-receipt.html?id=${encodeURIComponent(payment.id)}">Receipt</a>` :
+              '<span style="color: var(--text-secondary); font-size: var(--text-sm);">Pending</span>'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
     async function loadPayments(user) {
       try {
-        const payments = await APIModule.Payments.getAll({ memberId: user.uid });
-        // Render payments dynamically here
+        allPayments = await APIModule.Payments.getAll({ uid: user.uid });
+        renderPayments();
       } catch (error) {
+        document.getElementById('payments-table').innerHTML =
+          '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Unable to load payment records.</td></tr>';
         UIModule.showAlert('Error loading payments', 'error');
       }
     }
+
+    document.getElementById('filterType').addEventListener('change', renderPayments);
+    document.getElementById('filterStatus').addEventListener('change', renderPayments);
 
     AuthModule.onAuthStateChanged((user) => {
       if (!user) {
@@ -191,6 +242,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

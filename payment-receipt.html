@@ -215,7 +215,7 @@
       </div>
       
       <div class="receipt-info-item">
-        <div class="receipt-label">Payment Period</div>
+        <div class="receipt-label">Payment For</div>
         <div class="receipt-value" id="payment-period">-</div>
       </div>
       
@@ -239,6 +239,7 @@
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   
   <!-- App Modules -->
@@ -319,59 +320,7 @@
     }
 
     function getSamplePayment(txnId) {
-      const samples = {
-        'TXN-2026-00453': {
-          transactionId: 'TXN-2026-00453',
-          memberName: 'Kwame Mensah',
-          memberId: 'AMCAG-2025-001',
-          type: 'Membership Dues',
-          amount: 50,
-          method: 'Mobile Money',
-          paymentDate: '2026-03-01',
-          status: 'completed'
-        },
-        'TXN-2026-00452': {
-          transactionId: 'TXN-2026-00452',
-          memberName: 'Akosua Boateng',
-          memberId: 'AMCAG-2025-002',
-          type: 'Event Registration',
-          amount: 120,
-          method: 'Bank Transfer',
-          paymentDate: '2026-02-28',
-          status: 'completed'
-        },
-        'TXN-2026-00451': {
-          transactionId: 'TXN-2026-00451',
-          memberName: 'Kofi Asante',
-          memberId: 'AMCAG-2025-003',
-          type: 'Membership Dues',
-          amount: 50,
-          method: 'Mobile Money',
-          paymentDate: '2026-02-28',
-          status: 'pending'
-        },
-        'TXN-2026-00450': {
-          transactionId: 'TXN-2026-00450',
-          memberName: 'Ama Owusu',
-          memberId: 'AMCAG-2025-004',
-          type: 'Donation',
-          amount: 500,
-          method: 'Bank Transfer',
-          paymentDate: '2026-02-27',
-          status: 'completed'
-        },
-        'TXN-2026-00449': {
-          transactionId: 'TXN-2026-00449',
-          memberName: 'Yaw Mohammed',
-          memberId: 'AMCAG-2025-005',
-          type: 'Membership Dues',
-          amount: 50,
-          method: 'Mobile Money',
-          paymentDate: '2026-02-27',
-          status: 'failed'
-        }
-      };
-      return samples[txnId] || null;
+      return null;
     }
 
     function formatStatus(status) {
@@ -394,11 +343,19 @@
         region: rawPayment?.region || rawPayment?.leadershipRegion || '-',
         paymentMethod: rawPayment?.paymentMethod || rawPayment?.method || '-',
         paymentDate: rawPayment?.paymentDate || rawPayment?.createdAt || null,
-        paymentPeriod: (rawPayment?.month && rawPayment?.year) ? `${getMonthName(rawPayment.month)} ${rawPayment.year}` : '-',
-        transactionRef: rawPayment?.paystackReference || rawPayment?.transferReference || rawPayment?.reference || rawPayment?.transactionId || txnId,
+        paymentPeriod: describePaymentFor(rawPayment),
+        transactionRef: rawPayment?.hubtelTransactionId || rawPayment?.hubtelReference || rawPayment?.paystackReference || rawPayment?.transferReference || rawPayment?.reference || rawPayment?.transactionId || txnId,
         amount: Number.isFinite(amount) ? amount : 0,
         status: rawPayment?.status || 'pending'
       };
+    }
+
+    function describePaymentFor(p) {
+      const type = String((p && p.type) || '').toLowerCase();
+      const labels = { registration_fee: 'Registration fee', monthly_dues: 'Monthly dues', dues: 'Membership dues', agm_registration: 'AGM registration', event: 'Event payment', donation: 'Donation' };
+      const base = labels[type] || (type ? type.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()) : '');
+      const period = (p && p.month && p.year) ? getMonthName(p.month) + ' ' + p.year : '';
+      return [base, period].filter(Boolean).join(' - ') || '-';
     }
 
     function populateReceipt(payment) {
@@ -431,31 +388,42 @@
       return false;
     }
 
-    async function fetchPaymentFromFirestore(txnId) {
-      try {
-        const db = firebase.firestore();
-
-        // Try direct document ID first
-        const byDocId = await db.collection('payments').doc(txnId).get();
-        if (byDocId.exists) {
-          return { id: byDocId.id, ...byDocId.data() };
+    function waitForSignIn(timeoutMs = 8000) {
+      return new Promise((resolve) => {
+        let done = false;
+        const finish = (user) => { if (!done) { done = true; resolve(user || null); } };
+        try {
+          const unsub = firebase.auth().onAuthStateChanged((user) => { unsub(); finish(user); });
+        } catch (error) {
+          console.warn('Auth unavailable:', error);
+          finish(null);
         }
+        setTimeout(() => finish(null), timeoutMs);
+      });
+    }
 
-        // Fallback: query by stored transactionId field
-        const byTransactionId = await db.collection('payments')
-          .where('transactionId', '==', txnId)
-          .limit(1)
-          .get();
-        if (!byTransactionId.empty) {
-          const doc = byTransactionId.docs[0];
-          return { id: doc.id, ...doc.data() };
+    // Returns { payment, error }. error is a Firestore error code such as permission-denied, or null.
+    async function fetchPaymentFromFirestore(txnId, user) {
+      const db = firebase.firestore();
+      let lastError = null;
+      const attempt = async (fn) => {
+        try { return await fn(); } catch (error) { lastError = error; return null; }
+      };
+      const fromQuery = (snap) => (snap && !snap.empty ? { id: snap.docs[0].id, ...snap.docs[0].data() } : null);
+
+      const byDocId = await attempt(() => db.collection('payments').doc(txnId).get());
+      if (byDocId && byDocId.exists) return { payment: { id: byDocId.id, ...byDocId.data() }, error: null };
+
+      // Look up by the stored reference fields. Members may only query their own payments, so try that first.
+      for (const field of ['transactionId', 'reference']) {
+        if (user) {
+          const own = fromQuery(await attempt(() => db.collection('payments').where('uid', '==', user.uid).where(field, '==', txnId).limit(1).get()));
+          if (own) return { payment: own, error: null };
         }
-
-        return null;
-      } catch (error) {
-        console.error('Error loading receipt from Firestore:', error);
-        return null;
+        const any = fromQuery(await attempt(() => db.collection('payments').where(field, '==', txnId).limit(1).get()));
+        if (any) return { payment: any, error: null };
       }
+      return { payment: null, error: lastError && lastError.code ? lastError.code : null };
     }
 
     // Load payment data
@@ -470,24 +438,36 @@
       const cachedPayment = getCachedReceipt(paymentId);
       if (cachedPayment) {
         populateReceipt(cachedPayment);
-        showReceiptMessage('Showing cached receipt details while checking live records...', 'info');
+        showReceiptMessage('Showing saved receipt details while checking live records...', 'info');
       }
 
       const firebaseReady = await waitForFirebaseReady();
       if (!firebaseReady) {
         if (!cachedPayment) {
-          const sample = getSamplePayment(paymentId);
-          if (sample) {
-            populateReceipt(sample);
-            showReceiptMessage('Live data unavailable. Showing local sample receipt.', 'warning');
-          } else {
-            showReceiptMessage('Unable to connect to live payment records. Please try again shortly.', 'error');
-          }
+          showReceiptMessage('Unable to connect to live payment records. Please try again shortly.', 'error');
         }
         return;
       }
 
-      const firestorePayment = await fetchPaymentFromFirestore(paymentId);
+      // Receipts are private, so the reader must be signed in before the records can be read.
+      const user = await waitForSignIn();
+      if (!user) {
+        if (!cachedPayment) {
+          showReceiptMessage('Please sign in to view this receipt. Open AMCAG, sign in, then open the receipt again.', 'warning');
+          const box = document.getElementById('receipt-message');
+          box.innerHTML = '';
+          box.appendChild(document.createTextNode('Please sign in to view this receipt. '));
+          const link = document.createElement('a');
+          link.href = '/membership.html';
+          link.textContent = 'Sign in';
+          link.style.fontWeight = '700';
+          box.appendChild(link);
+          box.appendChild(document.createTextNode(', then open the receipt again.'));
+        }
+        return;
+      }
+
+      const { payment: firestorePayment, error } = await fetchPaymentFromFirestore(paymentId, user);
       if (firestorePayment) {
         setCachedReceipt(paymentId, firestorePayment);
         populateReceipt(firestorePayment);
@@ -495,23 +475,22 @@
         return;
       }
 
-      if (!cachedPayment) {
-        const sample = getSamplePayment(paymentId);
-        if (sample) {
-          populateReceipt(sample);
-          showReceiptMessage('Payment was not found in Firestore. Showing local sample data.', 'warning');
-          return;
-        }
-        showReceiptMessage(`Payment ${paymentId} not found.`, 'error');
-      } else {
-        showReceiptMessage('Live record not found. Showing cached receipt details.', 'warning');
+      if (error === 'permission-denied') {
+        showReceiptMessage('You do not have permission to view this receipt. Sign in with the account that made the payment, or ask an AMCAG executive.', 'error');
+        return;
       }
+      if (cachedPayment) {
+        showReceiptMessage('Live record could not be loaded. Showing saved receipt details.', 'warning');
+        return;
+      }
+      showReceiptMessage('We could not find payment ' + paymentId + '. Check the link, or contact AMCAG with this number.', 'error');
     }
-    
+
     function formatPaymentMethod(method) {
       const normalized = String(method || '').toLowerCase().replace(/\s+/g, '_');
       const methods = {
-        paystack: 'Paystack (Card/MoMo)',
+        hubtel: 'Hubtel',
+        paystack: 'Legacy Online Payment',
         bank_transfer: 'Bank Transfer',
         bank: 'Bank Transfer',
         cash: 'Cash',

@@ -58,14 +58,14 @@
     <div class="completion-card">
       <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-bottom: 1rem;">
         <div>
-          <h1 style="margin: 0; font-size: var(--text-3xl); font-family: var(--font-display);">Complete Your Leader Profile</h1>
+          <h1 id="profileCompletionTitle" style="margin: 0; font-size: var(--text-3xl); font-family: var(--font-display);">Complete Your Profile</h1>
           <p style="margin: 0.35rem 0 0; color: var(--text-secondary);">This is required before continuing to your dashboard.</p>
         </div>
         <button class="btn btn-outline btn-sm" type="button" onclick="signOut()">Sign Out</button>
       </div>
 
-      <div class="completion-note">
-        Your account has been marked as a leader account. Please complete the required details to activate dashboard access.
+      <div class="completion-note" id="profileCompletionNote">
+        Please complete the required details before continuing.
       </div>
 
       <form id="completeProfileForm">
@@ -147,6 +147,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
   <script>
     const ghanaRegions = [
       'Nationwide',
@@ -177,6 +179,23 @@
       return '/member-dashboard.html';
     }
 
+    function applyProfileCompletionCopy(role) {
+      const normalizedRole = String(role || 'member').toLowerCase();
+      const isLeader = ['super_admin', 'national_executive', 'regional_executive'].includes(normalizedRole);
+      const title = document.getElementById('profileCompletionTitle');
+      const note = document.getElementById('profileCompletionNote');
+
+      if (title) {
+        title.textContent = isLeader ? 'Complete Your Leader Profile' : 'Complete Your Membership Profile';
+      }
+
+      if (note) {
+        note.textContent = isLeader
+          ? 'Your account has been marked as a leader account. Complete the required details to activate dashboard access.'
+          : 'Your verified account is missing a completed membership record. Complete these details to submit your registration for approval.';
+      }
+    }
+
     function normalizeDateInput(dateValue) {
       if (!dateValue) return '';
       if (typeof dateValue.toDate === 'function') {
@@ -191,6 +210,15 @@
       const region = String(regionValue || '').trim();
       if (!region) return '';
       return region;
+    }
+
+    function slugifyRegion(regionName) {
+      return String(regionName || '')
+        .toLowerCase()
+        .trim()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
     }
 
     function loadRegionOptions(selectedRegion) {
@@ -230,12 +258,43 @@
 
       const userDoc = await db.collection('users').doc(uid).get();
       if (!userDoc.exists) {
-        UIModule.showAlert('User profile not found. Please contact support.', 'error');
-        signOut();
-        return;
+        if (!currentAuthUser?.emailVerified) {
+          UIModule.showAlert('Please verify your email before completing your profile.', 'warning');
+          signOut();
+          return;
+        }
+
+        const bootstrapProfile = {
+          uid,
+          email: currentAuthUser.email,
+          role: 'member',
+          fullName: currentAuthUser.displayName || '',
+          phone: '',
+          region: '',
+          status: 'pending',
+          mustCompleteProfile: true,
+          emailVerified: true,
+          emailVerifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          registrationDate: firebase.firestore.FieldValue.serverTimestamp(),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await db.collection('users').doc(uid).set(bootstrapProfile);
+        await db.collection('members').doc(uid).set({
+          ...bootstrapProfile,
+          memberId: null,
+          membershipType: 'regular',
+          joiningDate: null,
+          approvalStatus: 'pending_approval'
+        });
+
+        currentProfile = bootstrapProfile;
+      } else {
+        currentProfile = userDoc.data() || {};
       }
 
-      currentProfile = userDoc.data() || {};
+      applyProfileCompletionCopy(currentProfile.role);
 
       if (currentProfile.mustResetPassword === true) {
         window.location.href = '/change-password.html';
@@ -304,14 +363,51 @@
       }, { merge: true });
     }
 
+    async function syncMemberRegionRecord(updates) {
+      const region = normalizeRegionValue(updates.region);
+      const email = String(currentAuthUser?.email || currentProfile?.email || '').trim().toLowerCase();
+
+      if (!currentAuthUser?.uid || !region || !email) {
+        console.warn('[Complete Profile] Regional member sync skipped: missing uid, region, or email');
+        return;
+      }
+
+      const db = window.FirebaseModule.db();
+      if (!db) return;
+
+      await db.collection('regions').doc(region).collection('members').doc(currentAuthUser.uid).set({
+        uid: currentAuthUser.uid,
+        memberId: currentProfile.memberId || null,
+        fullName: updates.fullName || '',
+        email,
+        phone: updates.phone || '',
+        region,
+        regionId: slugifyRegion(region),
+        status: currentProfile.status || 'pending',
+        approvalStatus: currentProfile.approvalStatus || 'pending_approval',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      await db.collection('publicRegionMembers').doc(slugifyRegion(region)).collection('members').doc(currentAuthUser.uid).set({
+        uid: currentAuthUser.uid,
+        region,
+        regionId: slugifyRegion(region),
+        status: currentProfile.status || 'pending',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+
+    // Pre-populate regions immediately so the dropdown is always usable,
+    // regardless of how long Firebase takes to respond.
+    loadRegionOptions('');
+
     document.getElementById('cp-employed').addEventListener('change', syncWorkplaceVisibility);
 
     document.getElementById('completeProfileForm').addEventListener('submit', async (event) => {
       event.preventDefault();
 
       if (!currentAuthUser || !currentProfile) {
-        UIModule.showAlert('Session expired. Please log in again.', 'error');
-        signOut();
+        UIModule.showAlert('Still loading your profile — please wait a moment and try again.', 'warning');
         return;
       }
 
@@ -333,14 +429,23 @@
         return;
       }
 
-      const phoneRegex = /^\+233\s?\d{2}\s?\d{3}\s?\d{4}$/;
-      if (!phoneRegex.test(phone)) {
-        UIModule.showAlert('Use Ghana phone format: +233 24 123 4567', 'error');
+      function normalizeGhanaPhone(raw) {
+        const digits = raw.replace(/[\s\-()]/g, '');
+        if (/^\+233\d{9}$/.test(digits)) return digits;
+        if (/^233\d{9}$/.test(digits)) return '+' + digits;
+        if (/^0\d{9}$/.test(digits)) return '+233' + digits.slice(1);
+        return null;
+      }
+
+      const normalizedPhone = normalizeGhanaPhone(phone);
+      if (!normalizedPhone) {
+        UIModule.showAlert('Enter a valid Ghana phone number, e.g. 0241234567 or +233241234567', 'error');
         return;
       }
 
-      if (!phoneRegex.test(nextOfKinContact)) {
-        UIModule.showAlert('Use valid Next of Kin contact format: +233 24 123 4567', 'error');
+      const normalizedNextKinContact = normalizeGhanaPhone(nextOfKinContact);
+      if (!normalizedNextKinContact) {
+        UIModule.showAlert('Enter a valid Ghana phone number for Next of Kin, e.g. 0241234567', 'error');
         return;
       }
 
@@ -359,7 +464,7 @@
         const db = window.FirebaseModule.db();
         const updates = {
           fullName,
-          phone,
+          phone: normalizedPhone,
           region,
           gender,
           dateOfBirth,
@@ -369,7 +474,7 @@
           currentWorkplace: employed ? workplace : 'N/A',
           nextOfKin: {
             name: nextOfKinName,
-            contact: nextOfKinContact
+            contact: normalizedNextKinContact
           },
           mustCompleteProfile: false,
           profileCompletionStatus: 'completed',
@@ -379,22 +484,36 @@
 
         await db.collection('users').doc(currentAuthUser.uid).set(updates, { merge: true });
 
-        try {
-          await db.collection('members').doc(currentAuthUser.uid).set({
-            fullName,
-            phone,
-            region,
-            address,
-            employmentStatus: employed ? 'Employed' : 'Not Employed',
-            currentWorkplace: employed ? workplace : 'N/A',
-            nextOfKin: {
-              name: nextOfKinName,
-              contact: nextOfKinContact
-            },
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-        } catch (syncError) {
-          console.warn('Members profile sync skipped:', syncError);
+        // Only sync to the members collection for regular members.
+        // Executives are not stored there, and the Firestore create rule enforces role == 'member'.
+        if (!currentProfile.role || currentProfile.role === 'member') {
+          try {
+            await db.collection('members').doc(currentAuthUser.uid).set({
+              uid: currentAuthUser.uid,
+              email: currentProfile.email || currentAuthUser.email,
+              role: 'member',
+              status: currentProfile.status || 'pending',
+              fullName,
+              phone: normalizedPhone,
+              region,
+              gender,
+              dateOfBirth,
+              maritalStatus,
+              address,
+              employmentStatus: employed ? 'Employed' : 'Not Employed',
+              currentWorkplace: employed ? workplace : 'N/A',
+              nextOfKin: {
+                name: nextOfKinName,
+                contact: normalizedNextKinContact
+              },
+              mustCompleteProfile: false,
+              profileCompletionStatus: 'completed',
+              profileCompletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+          } catch (syncError) {
+            console.warn('Members profile sync skipped:', syncError);
+          }
         }
 
         try {
@@ -403,10 +522,30 @@
           console.warn('Regional executive sync skipped:', execSyncError);
         }
 
+        try {
+          await syncMemberRegionRecord(updates);
+        } catch (regionSyncError) {
+          console.warn('Regional member sync skipped:', regionSyncError);
+        }
+
         UIModule.hideLoader();
+        const completedRole = String(currentProfile.role || 'member').toLowerCase();
+        const completedStatus = String(currentProfile.status || '').toLowerCase();
+
+        if (completedRole === 'member' && !['active', 'approved'].includes(completedStatus)) {
+          UIModule.showAlert('Registration submitted successfully. Please wait for administrator approval before signing in.', 'success');
+          setTimeout(async () => {
+            await window.FirebaseModule.auth().signOut();
+            window.location.href = '/membership.html';
+          }, 1200);
+          return;
+        }
+
         UIModule.showAlert('Profile completed successfully. Redirecting...', 'success');
+        // Use the saved role from currentProfile — role is not changed during profile completion.
+        const savedRole = currentProfile.role;
         setTimeout(() => {
-          window.location.href = getDashboardForRole(currentProfile.role);
+          window.location.href = getDashboardForRole(savedRole);
         }, 900);
       } catch (error) {
         UIModule.hideLoader();
@@ -432,7 +571,7 @@
         try {
           await loadCurrentProfile(user.uid);
         } catch (error) {
-          console.error('Failed to load leader profile completion state:', error);
+          console.error('Failed to load profile completion state:', error);
           UIModule.showAlert('Unable to load profile data. Please refresh.', 'error');
         }
       });

@@ -7,14 +7,143 @@ const axios = require("axios");
 
 admin.initializeApp();
 
-// Paystack Configuration
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "";
+// Hubtel payment API configuration
+const HUBTEL_API_ID = String(process.env.HUBTEL_API_ID || "").trim();
+const HUBTEL_API_KEY = String(process.env.HUBTEL_API_KEY || "").trim();
+const NATIONAL_HUBTEL_API_ID = String(process.env.NATIONAL_HUBTEL_API_ID || HUBTEL_API_ID).trim();
+const NATIONAL_HUBTEL_API_KEY = String(process.env.NATIONAL_HUBTEL_API_KEY || HUBTEL_API_KEY).trim();
+// A separate Greater Accra merchant account is optional. Until it is configured,
+// use the national Hubtel account for members in that region as well.
+const GREATER_ACCRA_HUBTEL_API_ID = String(process.env.GREATER_ACCRA_HUBTEL_API_ID || NATIONAL_HUBTEL_API_ID).trim();
+const GREATER_ACCRA_HUBTEL_API_KEY = String(process.env.GREATER_ACCRA_HUBTEL_API_KEY || NATIONAL_HUBTEL_API_KEY).trim();
+const HUBTEL_WEBHOOK_SECRET = String(process.env.HUBTEL_WEBHOOK_SECRET || "").trim();
+// Static egress IP (34.9.123.89) via Cloud NAT: Hubtel only accepts whitelisted IPs for Receive Money and status checks
+const HUBTEL_STATIC_EGRESS = {
+  vpcConnector: "amcag-connector",
+  vpcConnectorEgressSettings: "ALL_TRAFFIC"
+};
 
-function ensurePaystackKeyConfigured() {
-  if (!PAYSTACK_SECRET_KEY) {
+const HUBTEL_SECRET_NAMES = [
+  "NATIONAL_HUBTEL_API_ID",
+  "NATIONAL_HUBTEL_API_KEY",
+  "HUBTEL_WEBHOOK_SECRET"
+];
+
+const DEFAULT_FEE_SETTINGS = Object.freeze({
+  monthlyDues: 10.00,
+  registrationFee: 60.00,
+  currency: "GHS"
+});
+
+async function getFeeSettings(db) {
+  const snap = await db.collection('system_settings').doc('fees').get();
+  const data = snap.exists ? (snap.data() || {}) : {};
+  const monthlyDues = Number(data.monthlyDues);
+  const registrationFee = Number(data.registrationFee);
+  return {
+    monthlyDues: Number.isFinite(monthlyDues) && monthlyDues > 0 ? Number(monthlyDues.toFixed(2)) : DEFAULT_FEE_SETTINGS.monthlyDues,
+    registrationFee: Number.isFinite(registrationFee) && registrationFee > 0 ? Number(registrationFee.toFixed(2)) : DEFAULT_FEE_SETTINGS.registrationFee,
+    currency: DEFAULT_FEE_SETTINGS.currency,
+    updatedAt: data.updatedAt || null,
+    updatedBy: data.updatedBy || null
+  };
+}
+
+function canManageFeeSettings(profile = {}) {
+  return profile.role === 'super_admin' ||
+    profile.role === 'national_president' ||
+    (profile.role === 'national_executive' &&
+      (profile.canManageFeeSettings === true || profile.permissions?.canManageFeeSettings === true));
+}
+
+exports.getFeeSettings = functions.https.onCall(async (request) => {
+  if (!request.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  const db = admin.firestore();
+  const settings = await getFeeSettings(db);
+  return {success: true, settings};
+});
+
+exports.updateFeeSettings = functions.https.onCall(async (request) => {
+  if (!request.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  const db = admin.firestore();
+  const actorRef = db.collection('users').doc(request.auth.uid);
+  const actorSnap = await actorRef.get();
+  const actor = actorSnap.exists ? (actorSnap.data() || {}) : {};
+  if (!canManageFeeSettings(actor)) {
+    throw new functions.https.HttpsError('permission-denied', 'You are not authorized to change AMCAG fees');
+  }
+
+  const monthlyDues = Number(request.data?.monthlyDues);
+  const registrationFee = Number(request.data?.registrationFee);
+  if (!Number.isFinite(monthlyDues) || monthlyDues <= 0 || monthlyDues > 100000 ||
+      !Number.isFinite(registrationFee) || registrationFee <= 0 || registrationFee > 100000) {
+    throw new functions.https.HttpsError('invalid-argument', 'Enter valid positive fee amounts');
+  }
+
+  const current = await getFeeSettings(db);
+  const now = admin.firestore.Timestamp.now();
+  await db.collection('system_settings').doc('fees').set({
+    monthlyDues: Number(monthlyDues.toFixed(2)),
+    registrationFee: Number(registrationFee.toFixed(2)),
+    currency: 'GHS',
+    updatedAt: now,
+    updatedBy: request.auth.uid,
+    updatedByName: actor.fullName || actor.email || request.auth.uid
+  }, {merge: true});
+  await db.collection('audit_logs').add({
+    action: 'fee_settings_updated',
+    performedBy: request.auth.uid,
+    performedByName: actor.fullName || actor.email || request.auth.uid,
+    performedByRole: actor.role || null,
+    details: {before: current, after: {monthlyDues, registrationFee, currency: 'GHS'}},
+    timestamp: now
+  });
+  return {success: true, settings: await getFeeSettings(db)};
+});
+
+const PAYMENT_ACCOUNTS = {
+  national: {
+    scope: "national",
+    owner: "AMCAG National",
+    hubtelApiId: NATIONAL_HUBTEL_API_ID,
+    hubtelApiKey: NATIONAL_HUBTEL_API_KEY
+  },
+  greater_accra: {
+    scope: "greater_accra",
+    owner: "AMCAG Greater Accra",
+    hubtelApiId: GREATER_ACCRA_HUBTEL_API_ID,
+    hubtelApiKey: GREATER_ACCRA_HUBTEL_API_KEY
+  }
+};
+
+function normalizePaymentRegion(region) {
+  return String(region || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function resolvePaymentAccount({type, region}) {
+  const normalizedType = String(type || "").trim().toLowerCase();
+  const normalizedRegion = normalizePaymentRegion(region);
+
+  if (normalizedType === "agm_registration" || normalizedType === "registration_fee") {
+    return PAYMENT_ACCOUNTS.national;
+  }
+
+  if (normalizedRegion === "greater accra") {
+    return PAYMENT_ACCOUNTS.greater_accra;
+  }
+
+  return PAYMENT_ACCOUNTS.national;
+}
+
+function ensureHubtelCredentialsConfigured(paymentAccount = PAYMENT_ACCOUNTS.national) {
+  if (!paymentAccount.hubtelApiId || !paymentAccount.hubtelApiKey) {
     throw new functions.https.HttpsError(
       "failed-precondition",
-      "Paystack secret key is not configured."
+      `${paymentAccount.owner} Hubtel API credentials are not configured.`
     );
   }
 }
@@ -428,7 +557,7 @@ exports.onSecurityEventCreated = onDocumentCreated(
         
         const notificationPromises = admins.docs.map(adminDoc => {
           return db.collection('notifications').add({
-            userId: adminDoc.id,
+            uid: adminDoc.id, userId: adminDoc.id,
             type: 'security_alert_critical',
             title: '🚨 CRITICAL SECURITY ALERT',
             message: `Admin ${eventData.actorEmail || eventData.actorUid} has performed ${recentEvents.size} password resets in ${settings.criticalSpikeWindowMinutes} minutes. Review immediately in Security Command Center.`,
@@ -1061,15 +1190,68 @@ exports.toggleRegionalApproval = functions.https.onCall(async (data, context) =>
   }
 });
 
+// ===== HUBTEL DIRECT RECEIVE MONEY HELPERS =====
+const HUBTEL_MOMO_CHANNELS = new Set(['mtn-gh', 'vodafone-gh', 'tigo-gh']);
+
+function hubtelCallbackUrl() {
+  return `https://us-central1-amcag-af624.cloudfunctions.net/hubtelWebhook?secret=${encodeURIComponent(HUBTEL_WEBHOOK_SECRET)}`;
+}
+
+function normalizeGhanaMsisdn(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (/^233\d{9}$/.test(digits)) return digits;
+  if (/^0\d{9}$/.test(digits)) return `233${digits.slice(1)}`;
+  if (/^\d{9}$/.test(digits)) return `233${digits}`;
+  return '';
+}
+
+async function sendHubtelReceiveMoney({paymentAccount, msisdn, channel, amount, description, clientReference, name, email}) {
+  const basicAuth = Buffer.from(
+    `${paymentAccount.hubtelApiId}:${paymentAccount.hubtelApiKey}`, 'utf8'
+  ).toString('base64');
+  const response = await axios.post(
+    `https://rmp.hubtel.com/merchantaccount/merchants/${encodeURIComponent(paymentAccount.hubtelApiId)}/receive/mobilemoney`,
+    {
+      CustomerName: name || '',
+      CustomerMsisdn: msisdn,
+      CustomerEmail: email || '',
+      Channel: channel,
+      Amount: Number(Number(amount).toFixed(2)),
+      PrimaryCallbackUrl: hubtelCallbackUrl(),
+      Description: description,
+      ClientReference: clientReference
+    },
+    {
+      headers: {Authorization: `Basic ${basicAuth}`, 'Content-Type': 'application/json'},
+      timeout: 30000
+    }
+  );
+  return response.data || {};
+}
+
 // ===== PROCESS DUES PAYMENT =====
-exports.processDuesPayment = functions.https.onCall(async (data, context) => {
+exports.processDuesPayment = functions.https.onCall({
+  secrets: HUBTEL_SECRET_NAMES,
+  ...HUBTEL_STATIC_EGRESS
+}, async (request) => {
+  const data = request.data || {};
+  const context = request;
   // Authentication check
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { months, paymentMethod, amount, notes, paystackReference, transferReference } = data;
-  const memberUid = context.auth.uid;
+  const { months, paymentMethod, amount, notes, transferReference } = data;
+  const channel = String(data.channel || '').trim();
+  const requestedPaymentPhone = String(data.paymentPhone || '').trim();
+  const isHubtel = paymentMethod === 'hubtel';
+  // For Hubtel, the reference is generated server-side (max 36 chars, unique per transaction)
+  const hubtelClientReference = isHubtel ? `DUES-${crypto.randomBytes(8).toString('hex')}` : (data.hubtelClientReference || null);
+  const hubtelTransactionId = isHubtel ? null : (data.hubtelTransactionId || null);
+  let hubtelMsisdn = '';
+  const actorUid = context.auth.uid;
+  const requestedMemberUid = String(data.memberUid || '').trim();
+  const memberUid = requestedMemberUid || actorUid;
 
   if (!months || !Array.isArray(months) || months.length === 0) {
     throw new functions.https.HttpsError('invalid-argument', 'Months array is required');
@@ -1079,7 +1261,29 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('invalid-argument', 'Payment method and amount are required');
   }
 
-  const MONTHLY_DUES_AMOUNT = 50.00;
+  const db = admin.firestore();
+  if (memberUid !== actorUid) {
+    if (!isHubtel) {
+      throw new functions.https.HttpsError('invalid-argument', 'Executive payment requests must use Hubtel mobile money');
+    }
+    const actorSnap = await db.collection('users').doc(actorUid).get();
+    const actor = actorSnap.exists ? (actorSnap.data() || {}) : {};
+    const canRequestForOthers = actor.role === 'super_admin' ||
+      actor.role === 'national_executive' ||
+      (actor.role === 'regional_executive' && actor.permissions?.canManagePayments === true);
+    if (!canRequestForOthers) {
+      throw new functions.https.HttpsError('permission-denied', 'You are not authorized to request payments for members');
+    }
+    if (actor.role === 'regional_executive') {
+      const targetSnap = await db.collection('users').doc(memberUid).get();
+      const target = targetSnap.exists ? (targetSnap.data() || {}) : {};
+      if (!targetSnap.exists || String(target.region || '') !== String(actor.region || '')) {
+        throw new functions.https.HttpsError('permission-denied', 'Regional executives may only request payments for members in their region');
+      }
+    }
+  }
+  const feeSettings = await getFeeSettings(db);
+  const MONTHLY_DUES_AMOUNT = feeSettings.monthlyDues;
   const expectedAmount = months.length * MONTHLY_DUES_AMOUNT;
 
   if (Math.abs(amount - expectedAmount) > 0.01) {
@@ -1087,7 +1291,6 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const db = admin.firestore();
     
     // Get member details
     const memberDoc = await db.collection('users').doc(memberUid).get();
@@ -1101,74 +1304,35 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('permission-denied', 'Only active members can pay dues');
     }
 
+    const paymentAccount = resolvePaymentAccount({
+      type: 'monthly_dues',
+      region: member.region
+    });
     const now = admin.firestore.Timestamp.now();
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
     const monthKey = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
 
-    // Verify Paystack payment if applicable
-    let paystackVerification = null;
-    if (paymentMethod === 'paystack' && paystackReference) {
-      try {
-        ensurePaystackKeyConfigured();
+    if (isHubtel) {
+      ensureHubtelCredentialsConfigured(paymentAccount);
 
-        const response = await axios.get(
-          `https://api.paystack.co/transaction/verify/${paystackReference}`,
-          {
-            headers: {
-              Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`
-            }
-          }
-        );
+      if (!HUBTEL_MOMO_CHANNELS.has(channel)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Select a valid mobile money network');
+      }
+      // Members may use a one-time alternate Ghana number without changing
+      // the phone number saved on their profile.
+      hubtelMsisdn = normalizeGhanaMsisdn(requestedPaymentPhone || member.phone);
+      if (!hubtelMsisdn) {
+        throw new functions.https.HttpsError('failed-precondition', 'Enter a valid Ghana mobile number before paying online');
+      }
+    } else if (hubtelTransactionId) {
+      const existingPayment = await db.collection('payments')
+        .where('hubtelTransactionId', '==', hubtelTransactionId)
+        .get();
 
-        if (!response.data || !response.data.data) {
-          throw new Error('Invalid Paystack response');
-        }
-
-        const transaction = response.data.data;
-
-        // Verify transaction details
-        if (transaction.status !== 'success') {
-          throw new functions.https.HttpsError('failed-precondition', 'Payment was not successful');
-        }
-
-        // Verify amount (Paystack returns in kobo/pesewas)
-        const paidAmount = transaction.amount / 100;
-        if (Math.abs(paidAmount - amount) > 0.01) {
-          throw new functions.https.HttpsError('invalid-argument', 
-            `Payment amount mismatch. Expected GHS ${amount.toFixed(2)}, got GHS ${paidAmount.toFixed(2)}`);
-        }
-
-        // Verify currency
-        if (transaction.currency !== 'GHS') {
-          throw new functions.https.HttpsError('invalid-argument', 'Invalid currency');
-        }
-
-        // Check if reference was already used
-        const existingPayment = await db.collection('payments')
-          .where('paystackReference', '==', paystackReference)
-          .get();
-
-        if (!existingPayment.empty) {
-          throw new functions.https.HttpsError('already-exists', 'This payment reference has already been used');
-        }
-
-        paystackVerification = {
-          verified: true,
-          reference: paystackReference,
-          transactionId: transaction.id,
-          channel: transaction.channel,
-          paidAt: transaction.paid_at,
-          authorizationCode: transaction.authorization?.authorization_code || null
-        };
-
-      } catch (error) {
-        console.error('Paystack verification error:', error);
-        if (error instanceof functions.https.HttpsError) {
-          throw error;
-        }
-        throw new functions.https.HttpsError('internal', 'Payment verification failed: ' + error.message);
+      if (!existingPayment.empty) {
+        throw new functions.https.HttpsError('already-exists', 'This Hubtel transaction has already been recorded');
       }
     }
 
@@ -1199,12 +1363,43 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError('already-exists', 
           `Payment for ${month}/${year} already exists`);
       }
+
+      if (isHubtel) {
+        // Avoid duplicate mobile money prompts while a recent request is still awaiting approval
+        const inFlight = await db.collection('payments')
+          .where('uid', '==', memberUid)
+          .where('type', '==', 'monthly_dues')
+          .where('month', '==', month)
+          .where('year', '==', year)
+          .where('status', '==', 'awaiting_payment')
+          .get();
+        const recent = inFlight.docs.some(d => {
+          const created = d.data().createdAt;
+          return created && (Date.now() - created.toMillis()) < 10 * 60 * 1000;
+        });
+        if (recent) {
+          throw new functions.https.HttpsError('already-exists',
+            `A mobile money prompt for ${month}/${year} is still pending. Approve it on your phone or wait a few minutes.`);
+        }
+      }
     }
 
     // Get registration date to validate sequential payment
-    const regDate = member.registrationDate ? 
-      member.registrationDate.toDate() : 
-      new Date();
+    const configuredMonth = String(member.duesStartMonth || '');
+    const toBillingDate = value => {
+      if (!value) return null;
+      const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    };
+    const fallbackDate = toBillingDate(member.joiningDate) || toBillingDate(member.approvalDate) ||
+      toBillingDate(member.approvedAt) || toBillingDate(member.registrationDate) ||
+      toBillingDate(member.createdAt) || currentDate;
+    const parts = /^\d{4}-(0[1-9]|1[0-2])$/.test(configuredMonth) ? configuredMonth.split('-').map(Number) : null;
+    const regDate = parts ? new Date(parts[0], parts[1] - 1, 1) :
+      new Date(fallbackDate.getFullYear(), fallbackDate.getMonth(), 1);
+    if (months.some(item => new Date(item.year, item.month - 1, 1) < regDate)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Selected month is before the dues start month');
+    }
 
     // Get all paid months
     const allPaymentsSnapshot = await db.collection('payments')
@@ -1260,7 +1455,9 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
             'Cannot skip months. Must pay consecutively.');
         }
 
-        expectedDate.setMonth(expectedDate.getMonth() + 1);
+        do {
+          expectedDate.setMonth(expectedDate.getMonth() + 1);
+        } while (paidMonths.has(monthKey(expectedDate.getFullYear(), expectedDate.getMonth() + 1)));
       }
     }
 
@@ -1269,7 +1466,7 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
     const paymentIds = [];
     
     // Determine payment status
-    const paymentStatus = paymentMethod === 'paystack' && paystackVerification ? 'paid' : 'pending';
+    const paymentStatus = isHubtel ? 'awaiting_payment' : 'pending';
 
     for (const monthData of months) {
       const { month, year } = monthData;
@@ -1279,28 +1476,36 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
 
       const paymentData = {
         uid: memberUid,
+        requestedBy: actorUid,
         memberName: member.fullName || 'Unknown',
         memberId: member.memberId || null,
         region: member.region || null,
+        paymentAccountScope: paymentAccount.scope,
+        paymentAccountOwner: paymentAccount.owner,
         type: 'monthly_dues',
         month: month,
         year: year,
         amount: MONTHLY_DUES_AMOUNT,
         paymentMethod: paymentMethod,
+        paymentProvider: paymentMethod === 'hubtel' ? 'hubtel' : 'manual',
         notes: notes || null,
         status: paymentStatus,
         createdAt: now
       };
 
-      // Add Paystack verification data if applicable
-      if (paystackVerification) {
-        paymentData.paystackReference = paystackVerification.reference;
-        paymentData.paystackTransactionId = paystackVerification.transactionId;
-        paymentData.paystackChannel = paystackVerification.channel;
-        paymentData.paystackPaidAt = paystackVerification.paidAt;
-        paymentData.paymentDate = now;
-        paymentData.processedAt = now;
-        paymentData.verified = true;
+      if (hubtelTransactionId) {
+        paymentData.hubtelTransactionId = hubtelTransactionId;
+      }
+
+      if (hubtelClientReference) {
+        paymentData.hubtelClientReference = hubtelClientReference;
+      }
+
+      if (isHubtel) {
+        paymentData.hubtelChannel = channel;
+        paymentData.hubtelMsisdn = `***${hubtelMsisdn.slice(-4)}`;
+        paymentData.requiresApproval = false;
+        paymentData.approvalStatus = 'awaiting_payment';
       }
 
       // Add transfer reference for bank transfers
@@ -1321,15 +1526,19 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
     const auditRef = db.collection('audit_logs').doc();
     batch.set(auditRef, {
       action: paymentStatus === 'paid' ? 'dues_payment_processed' : 'dues_payment_requested',
-      performedBy: memberUid,
-      performedByName: member.fullName || member.email,
-      performedByRole: member.role || 'member',
+      performedBy: actorUid,
+      performedByName: memberUid === actorUid ? (member.fullName || member.email) : (context.auth.token?.email || actorUid),
+      performedByRole: memberUid === actorUid ? (member.role || 'member') : 'executive_payment_requester',
       details: {
+        targetMemberUid: memberUid,
         monthsCount: months.length,
         totalAmount: amount,
         paymentMethod: paymentMethod,
         paymentStatus: paymentStatus,
-        paystackVerified: paystackVerification ? true : false,
+        paymentAccountScope: paymentAccount.scope,
+        paymentAccountOwner: paymentAccount.owner,
+        hubtelTransactionId: hubtelTransactionId || null,
+        hubtelClientReference: hubtelClientReference || null,
         months: months.map(m => `${m.month}/${m.year}`).join(', ')
       },
       timestamp: now
@@ -1393,11 +1602,64 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
 
     await batch.commit();
 
+    if (isHubtel) {
+      try {
+        const hubtelResponse = await sendHubtelReceiveMoney({
+          paymentAccount,
+          msisdn: hubtelMsisdn,
+          channel,
+          amount,
+          description: `AMCAG Dues ${months.length} month(s)`,
+          clientReference: hubtelClientReference,
+          name: member.fullName,
+          email: member.email
+        });
+        const code = String(hubtelResponse.ResponseCode || '');
+        const hubtelData = hubtelResponse.Data || {};
+        if (code !== '0001' && code !== '0000') {
+          throw new Error(hubtelResponse.Message || `Hubtel responded with code ${code || 'unknown'}`);
+        }
+        const txId = hubtelData.TransactionId || null;
+        if (txId) {
+          const followUp = db.batch();
+          paymentIds.forEach(id => followUp.update(db.collection('payments').doc(id), {hubtelTransactionId: txId}));
+          await followUp.commit();
+        }
+        return {
+          success: true,
+          pending: true,
+          message: 'Approve the mobile money prompt on your phone to complete payment.',
+          paymentIds,
+          clientReference: hubtelClientReference,
+          totalAmount: amount
+        };
+      } catch (hubtelError) {
+        console.error('Hubtel receive money failed:', hubtelError.response?.data || hubtelError.message);
+        const failBatch = db.batch();
+        paymentIds.forEach(id => failBatch.update(db.collection('payments').doc(id), {
+          status: 'failed',
+          hubtelCallbackStatus: 'request_failed',
+          updatedAt: admin.firestore.Timestamp.now()
+        }));
+        await failBatch.commit();
+        const apiMessage = hubtelError.response?.data?.Message || hubtelError.response?.data?.message;
+        const httpStatus = hubtelError.response?.status;
+        throw new functions.https.HttpsError(
+          'internal',
+          httpStatus === 403
+            ? 'Hubtel rejected the request (server IP not whitelisted). Please use another payment method.'
+            : (apiMessage || 'Could not start the mobile money payment. Please try again.')
+        );
+      }
+    }
+
     return { 
       success: true,
       message: `Payment processed successfully for ${months.length} month(s)`,
       paymentIds: paymentIds,
-      totalAmount: amount
+      totalAmount: amount,
+      paymentAccountScope: paymentAccount.scope,
+      paymentAccountOwner: paymentAccount.owner
     };
 
   } catch (error) {
@@ -1406,51 +1668,400 @@ exports.processDuesPayment = functions.https.onCall(async (data, context) => {
   }
 });
 
-// ===== PAYSTACK WEBHOOK HANDLER =====
-exports.paystackWebhook = functions.https.onRequest(async (req, res) => {
-  if (!PAYSTACK_SECRET_KEY) {
-    console.error("Paystack webhook called without PAYSTACK_SECRET_KEY configured");
-    return res.status(500).send("Paystack is not configured");
+// ===== INITIATE HUBTEL ONLINE CHECKOUT =====
+exports.initiateHubtelCheckout = functions.https.onCall({
+  secrets: HUBTEL_SECRET_NAMES
+}, async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const hash = crypto.createHmac('sha512', PAYSTACK_SECRET_KEY)
-    .update(JSON.stringify(req.body))
-    .digest('hex');
-
-  if (hash !== req.headers['x-paystack-signature']) {
-    console.error('Invalid Paystack signature');
-    return res.status(400).send('Invalid signature');
+  const registrationId = String(request.data?.registrationId || '').trim();
+  if (!registrationId) {
+    throw new functions.https.HttpsError('invalid-argument', 'AGM registration ID is required');
   }
 
-  const event = req.body;
+  const db = admin.firestore();
+  const registrationRef = db.collection('agmRegistrations').doc(registrationId);
+  const registrationDoc = await registrationRef.get();
+  if (!registrationDoc.exists) {
+    throw new functions.https.HttpsError('not-found', 'AGM registration was not found');
+  }
+
+  const registration = registrationDoc.data() || {};
+  if (registration.memberUid !== request.auth.uid) {
+    throw new functions.https.HttpsError('permission-denied', 'This registration belongs to another member');
+  }
+  if (String(registration.paymentStatus || '').toLowerCase() === 'paid') {
+    throw new functions.https.HttpsError('failed-precondition', 'This AGM registration is already paid');
+  }
+
+  const paymentAccount = resolvePaymentAccount({
+    type: 'agm_registration',
+    region: registration.region
+  });
+  ensureHubtelCredentialsConfigured(paymentAccount);
+
+  const clientReference = String(registration.paymentReference || `AGM2026-${registrationId}`).trim();
+  const callbackUrl = `https://us-central1-amcag-af624.cloudfunctions.net/hubtelWebhook?secret=${encodeURIComponent(HUBTEL_WEBHOOK_SECRET)}`;
+  const returnUrl = `https://amcag-af624.web.app/member-dashboard/agm-registration?payment=returned&reference=${encodeURIComponent(clientReference)}`;
+  const cancellationUrl = `https://amcag-af624.web.app/member-dashboard/agm-registration?payment=cancelled&reference=${encodeURIComponent(clientReference)}`;
+  const checkoutRequest = {
+    totalAmount: Number(registration.registrationFee || (await getFeeSettings(db)).registrationFee),
+    description: 'AMCAG AGM 2026 Registration',
+    callbackUrl,
+    returnUrl,
+    cancellationUrl,
+    merchantAccountNumber: paymentAccount.hubtelApiId,
+    clientReference,
+    payeeName: registration.fullName || '',
+    payeeMobileNumber: registration.phone || '',
+    payeeEmail: registration.email || request.auth.token.email || ''
+  };
 
   try {
-    if (event.event === 'charge.success') {
-      const { reference, amount, currency, channel, paid_at } = event.data;
-      
-      const db = admin.firestore();
-      
-      // Check if payment already processed
-      const existingPayment = await db.collection('payments')
-        .where('paystackReference', '==', reference)
-        .get();
-
-      if (!existingPayment.empty) {
-        console.log('Payment already processed:', reference);
-        return res.status(200).send('OK');
+    const basicAuth = Buffer.from(
+      `${paymentAccount.hubtelApiId}:${paymentAccount.hubtelApiKey}`,
+      'utf8'
+    ).toString('base64');
+    const response = await axios.post(
+      'https://payproxyapi.hubtel.com/items/initiate',
+      checkoutRequest,
+      {
+        headers: {
+          Authorization: `Basic ${basicAuth}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
       }
+    );
 
-      // This is a fallback in case the client-side verification didn't work
-      console.log('Webhook processing payment:', reference);
-      
-      // You could add additional logic here to handle webhook-only payments
-      // For now, we rely on client-side verification
+    const payload = response.data || {};
+    const responseData = payload.data || payload.Data || payload;
+    const checkoutUrl = responseData.checkoutUrl || responseData.CheckoutUrl ||
+      responseData.checkoutDirectUrl || responseData.CheckoutDirectUrl || '';
+    if (!checkoutUrl) {
+      console.error('Hubtel checkout response did not include a checkout URL:', payload);
+      throw new Error('Hubtel did not return a checkout URL');
     }
 
+    await registrationRef.set({
+      paymentMethod: 'hubtel_online_checkout',
+      paymentProvider: 'hubtel',
+      paymentAccountScope: paymentAccount.scope,
+      paymentAccountOwner: paymentAccount.owner,
+      hubtelClientReference: clientReference,
+      hubtelCheckoutInitiatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, {merge: true});
+
+    return {success: true, checkoutUrl, clientReference};
+  } catch (error) {
+    const hubtelMessage = error.response?.data?.message || error.response?.data?.Message || error.message;
+    console.error('Hubtel checkout initiation failed:', error.response?.data || error);
+    if (error.response?.status === 401) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        `${paymentAccount.owner} Hubtel credentials were rejected. Confirm that the programmable key is active and enabled for Online Checkout.`
+      );
+    }
+    throw new functions.https.HttpsError('internal', hubtelMessage || 'Unable to initiate Hubtel checkout');
+  }
+});
+
+// ===== HUBTEL PAYMENT CALLBACK HANDLER =====
+exports.hubtelWebhook = functions.https.onRequest({
+  secrets: ["HUBTEL_WEBHOOK_SECRET"]
+}, async (req, res) => {
+  if (req.method !== 'POST' || !HUBTEL_WEBHOOK_SECRET) {
+    return res.status(401).send('Unauthorized');
+  }
+  const suppliedSecret = String(
+    req.get('x-amcag-webhook-secret') || req.get('x-hubtel-webhook-secret') || req.query?.secret || ''
+  ).trim();
+  const expected = Buffer.from(HUBTEL_WEBHOOK_SECRET);
+  const supplied = Buffer.from(suppliedSecret);
+  if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {
+    return res.status(401).send('Unauthorized');
+  }
+  const payload = req.body || {};
+  const data = payload.Data || payload.data || payload;
+  const transactionId = data.TransactionId || data.transactionId || data.HubtelTransactionId || data.hubtelTransactionId ||
+    data.SalesInvoiceId || data.salesInvoiceId || data.CheckoutId || data.checkoutId || '';
+  const clientReference = data.ClientReference || data.clientReference || data.CustomerReference || data.customerReference || '';
+  const responseCode = String(payload.ResponseCode || payload.responseCode || '');
+  let status = String(data.Status || data.status || payload.Status || payload.status || '').toLowerCase();
+  // Direct Receive Money callbacks carry only ResponseCode/Message (0000 = success)
+  if (!status && responseCode) {
+    status = responseCode === '0000' ? 'success' : (responseCode === '0001' ? 'pending' : 'failed');
+  }
+  const successStatuses = new Set(['success', 'successful', 'paid', 'completed']);
+
+  // Keep every raw callback (success or failure) for reconciliation and Hubtel UAT samples
+  try {
+    await admin.firestore().collection('hubtel_callbacks').add({
+      type: 'callback',
+      clientReference: clientReference || null,
+      status: status || null,
+      payload,
+      receivedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (logError) {
+    console.error('Failed to store Hubtel callback:', logError);
+  }
+
+  try {
+    if (!successStatuses.has(status)) {
+      console.log('Hubtel callback is not successful:', status || 'unknown');
+      if (clientReference && ['failed', 'failure', 'cancelled'].includes(status)) {
+        const awaiting = await admin.firestore().collection('payments')
+          .where('hubtelClientReference', '==', clientReference)
+          .where('status', '==', 'awaiting_payment')
+          .get();
+        if (!awaiting.empty) {
+          const failBatch = admin.firestore().batch();
+          awaiting.docs.forEach(doc => failBatch.update(doc.ref, {
+            status: 'failed',
+            hubtelCallbackStatus: status,
+            hubtelTransactionId: transactionId || null,
+            updatedAt: admin.firestore.Timestamp.now()
+          }));
+          await failBatch.commit();
+        }
+      }
+      return res.status(200).send('OK');
+    }
+
+    if (!transactionId && !clientReference) {
+      console.warn('Hubtel callback missing transaction identifier:', payload);
+      return res.status(200).send('OK');
+    }
+
+    const db = admin.firestore();
+    const snapshots = [];
+
+    if (transactionId) {
+      snapshots.push(await db.collection('payments')
+        .where('hubtelTransactionId', '==', transactionId)
+        .get());
+    }
+
+    if (clientReference) {
+      snapshots.push(await db.collection('payments')
+        .where('hubtelClientReference', '==', clientReference)
+        .get());
+    }
+
+    const docsById = new Map();
+    snapshots.forEach(snapshot => {
+      snapshot.docs.forEach(doc => docsById.set(doc.id, doc));
+    });
+
+    const agmDocsById = new Map();
+    if (clientReference) {
+      const agmByReference = await db.collection('agmRegistrations')
+        .where('paymentReference', '==', clientReference)
+        .get();
+      agmByReference.docs.forEach(doc => agmDocsById.set(doc.id, doc));
+
+      const agmByHubtelReference = await db.collection('agmRegistrations')
+        .where('hubtelClientReference', '==', clientReference)
+        .get();
+      agmByHubtelReference.docs.forEach(doc => agmDocsById.set(doc.id, doc));
+    }
+
+    if (!docsById.size && !agmDocsById.size) {
+      console.warn('No pending payment matched Hubtel callback:', { transactionId, clientReference });
+      return res.status(200).send('OK');
+    }
+
+    const now = admin.firestore.Timestamp.now();
+    const batch = db.batch();
+
+    // Guard: callback amount must equal the total of the dues payments sharing this reference
+    let amountMismatch = false;
+    if (data.Amount !== undefined && clientReference) {
+      const sameRef = [...docsById.values()].map(d => d.data()).filter(p => p.hubtelClientReference === clientReference);
+      const expectedTotal = sameRef.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      if (sameRef.length && Math.abs(Number(data.Amount) - expectedTotal) > 0.01) {
+        amountMismatch = true;
+        console.warn('Hubtel callback amount mismatch:', {clientReference, callback: data.Amount, expected: expectedTotal});
+      }
+    }
+
+    docsById.forEach(doc => {
+      const payment = doc.data();
+      if (amountMismatch) return;
+      if (String(payment.status || '').toLowerCase() === 'paid') return;
+
+      batch.update(doc.ref, {
+        status: 'paid',
+        approvalStatus: 'approved',
+        requiresApproval: false,
+        paymentDate: now,
+        processedAt: now,
+        verified: true,
+        paymentProvider: 'hubtel',
+        hubtelTransactionId: transactionId || payment.hubtelTransactionId || null,
+        hubtelClientReference: clientReference || payment.hubtelClientReference || null,
+        hubtelCallbackStatus: status,
+        hubtelCallbackPayload: payload,
+        updatedAt: now
+      });
+    });
+
+    agmDocsById.forEach(doc => {
+      const registration = doc.data();
+      const updates = {
+        paymentStatus: 'paid',
+        paymentMethod: 'hubtel_online_checkout',
+        paymentProvider: 'hubtel',
+        hubtelTransactionId: transactionId || registration.hubtelTransactionId || null,
+        hubtelClientReference: clientReference || registration.hubtelClientReference || null,
+        hubtelCallbackStatus: status,
+        paidAt: now,
+        updatedAt: now
+      };
+      batch.update(doc.ref, updates);
+      if (registration.regionId) {
+        const regionalRef = db.collection('regions').doc(registration.regionId)
+          .collection('agmRegistrations').doc(doc.id);
+        batch.set(regionalRef, updates, {merge: true});
+      }
+    });
+
+    await batch.commit();
     res.status(200).send('OK');
   } catch (error) {
-    console.error('Webhook error:', error);
+    console.error('Hubtel webhook error:', error);
     res.status(500).send('Error');
+  }
+});
+
+// ===== HUBTEL TRANSACTION STATUS CHECK =====
+// Hubtel requires a status check when no final callback arrives within 5 minutes.
+// NOTE: api-txnstatus.hubtel.com only accepts whitelisted IPs (max 4). Cloud Functions need a
+// static egress IP (VPC connector + Cloud NAT) that is submitted to Hubtel for whitelisting.
+exports.checkHubtelTransactionStatus = functions.https.onCall({
+  secrets: HUBTEL_SECRET_NAMES,
+  ...HUBTEL_STATIC_EGRESS
+}, async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const clientReference = String(request.data?.clientReference || '').trim();
+  if (!clientReference || clientReference.length > 36) {
+    throw new functions.https.HttpsError('invalid-argument', 'A valid client reference is required');
+  }
+
+  const db = admin.firestore();
+  const userDoc = await db.collection('users').doc(request.auth.uid).get();
+  const role = userDoc.exists ? userDoc.data().role : '';
+  const isExecutive = ['super_admin', 'national_executive'].includes(role);
+
+  // Locate the target: an AGM registration or a set of dues payments
+  let regDoc = null;
+  for (const field of ['paymentReference', 'hubtelClientReference']) {
+    const snap = await db.collection('agmRegistrations').where(field, '==', clientReference).limit(1).get();
+    if (!snap.empty) { regDoc = snap.docs[0]; break; }
+  }
+  let paymentDocs = [];
+  if (!regDoc) {
+    const snap = await db.collection('payments').where('hubtelClientReference', '==', clientReference).get();
+    paymentDocs = snap.docs;
+  }
+  if (!regDoc && !paymentDocs.length) {
+    throw new functions.https.HttpsError('not-found', 'No payment matches this reference');
+  }
+
+  const registration = regDoc ? (regDoc.data() || {}) : null;
+  const ownerUid = registration ? registration.memberUid : paymentDocs[0].data().uid;
+  if (ownerUid !== request.auth.uid && !isExecutive) {
+    throw new functions.https.HttpsError('permission-denied', 'Not allowed to check this transaction');
+  }
+
+  const paymentAccount = registration
+    ? resolvePaymentAccount({type: 'agm_registration', region: registration.region})
+    : resolvePaymentAccount({
+      type: paymentDocs[0].data().type === 'registration_fee' ? 'registration_fee' : 'monthly_dues',
+      region: paymentDocs[0].data().region
+    });
+  ensureHubtelCredentialsConfigured(paymentAccount);
+  const basicAuth = Buffer.from(
+    `${paymentAccount.hubtelApiId}:${paymentAccount.hubtelApiKey}`, 'utf8'
+  ).toString('base64');
+
+  try {
+    const response = await axios.get(
+      `https://api-txnstatus.hubtel.com/transactions/${encodeURIComponent(paymentAccount.hubtelApiId)}/status`,
+      {
+        params: {clientReference},
+        headers: {Authorization: `Basic ${basicAuth}`},
+        timeout: 30000
+      }
+    );
+    const payload = response.data || {};
+    const data = payload.data || payload.Data || {};
+    const txStatus = String(data.status || data.Status || '').toLowerCase();
+
+    await db.collection('hubtel_callbacks').add({
+      type: 'status_check',
+      clientReference,
+      status: txStatus || null,
+      payload,
+      receivedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    const now = admin.firestore.Timestamp.now();
+    const txId = data.transactionId || data.TransactionId || null;
+    if (txStatus === 'paid') {
+      const batch = db.batch();
+      if (registration && String(registration.paymentStatus || '').toLowerCase() !== 'paid') {
+        const updates = {
+          paymentStatus: 'paid',
+          paymentMethod: 'hubtel_online_checkout',
+          paymentProvider: 'hubtel',
+          hubtelTransactionId: txId,
+          hubtelClientReference: clientReference,
+          hubtelCallbackStatus: 'paid',
+          paidAt: now,
+          updatedAt: now
+        };
+        batch.update(regDoc.ref, updates);
+        if (registration.regionId) {
+          batch.set(db.collection('regions').doc(registration.regionId)
+            .collection('agmRegistrations').doc(regDoc.id), updates, {merge: true});
+        }
+      }
+      paymentDocs.forEach(doc => {
+        const payment = doc.data();
+        if (String(payment.status || '').toLowerCase() === 'paid') return;
+        batch.update(doc.ref, {
+          status: 'paid',
+          approvalStatus: 'approved',
+          requiresApproval: false,
+          paymentDate: now,
+          processedAt: now,
+          verified: true,
+          paymentProvider: 'hubtel',
+          hubtelTransactionId: txId || payment.hubtelTransactionId || null,
+          hubtelCallbackStatus: 'paid',
+          updatedAt: now
+        });
+      });
+      await batch.commit();
+    }
+
+    return {success: true, status: txStatus || 'unknown', clientReference};
+  } catch (error) {
+    console.error('Hubtel status check failed:', error.response?.status, error.response?.data || error.message);
+    if (error.response?.status === 403) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Hubtel rejected the request: this server IP is not whitelisted for status checks.'
+      );
+    }
+    throw new functions.https.HttpsError('internal', 'Unable to check transaction status');
   }
 });
 
@@ -1666,7 +2277,7 @@ exports.waiveDuesPayment = functions.https.onCall(async (data, context) => {
     }
 
     const now = admin.firestore.Timestamp.now();
-    const MONTHLY_DUES_AMOUNT = 50.00;
+    const MONTHLY_DUES_AMOUNT = (await getFeeSettings(db)).monthlyDues;
 
     // Validate months and check if already exists
     for (const monthData of months) {
@@ -1793,7 +2404,7 @@ exports.sendMonthlyDuesReminders = onSchedule(
 
       let remindersCount = 0;
       let overdueCount = 0;
-      const MONTHLY_DUES_AMOUNT = 50.00;
+      const MONTHLY_DUES_AMOUNT = (await getFeeSettings(db)).monthlyDues;
 
       // Process members in batches
       for (const member of members) {
@@ -2229,7 +2840,7 @@ exports.reviewWaiverRequest = functions.https.onCall(async (data, context) => {
           region: request.region,
           year: monthData.year,
           month: monthData.month,
-          amount: 50.00,
+          amount: (await getFeeSettings(db)).monthlyDues,
           type: 'monthly_dues',
           status: 'waived',
           waivedBy: reviewerUid,
@@ -3195,11 +3806,27 @@ const EXECUTIVE_ROLES = new Set(['super_admin', 'national_executive', 'regional_
 async function syncRoleCustomClaim(uid, role) {
   const normalizedRole = String(role || 'member').toLowerCase();
   const isExecutive = EXECUTIVE_ROLES.has(normalizedRole);
+  const profileDoc = await admin.firestore().collection('users').doc(uid).get();
+  const profile = profileDoc.data() || {};
+  const rawRegion = String(profile.regionId || profile.region || profile.regionName || profile.assignedRegion || '').trim();
+  const regionKey = rawRegion.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const regionPaths = {};
+  if (rawRegion) regionPaths[rawRegion.replace(/[.#$\[\]/]/g, '-').replace(/\s+/g, ' ')] = true;
+  if (regionKey) regionPaths[regionKey] = true;
+  await admin.database().ref(`user-roles/${uid}`).set({
+    role: normalizedRole,
+    active: ['active', 'approved'].includes(String(profile.status || '').toLowerCase()),
+    regions: regionPaths,
+    oversight: chatIsOversight({...profile, role: normalizedRole})
+  });
   const userRecord = await admin.auth().getUser(uid);
   const existingClaims = userRecord.customClaims || {};
   await admin.auth().setCustomUserClaims(uid, {
     ...existingClaims,
     executive_role: isExecutive,
+    chat_region: regionKey,
+    chat_region_paths: regionPaths,
+    chat_oversight: chatIsOversight({...profile, role: normalizedRole}),
     role: normalizedRole
   });
 }
@@ -3243,14 +3870,19 @@ async function rebuildRegionCounts(db) {
     });
   });
 
+  const activeCounts = {};
   merged.forEach((record) => {
     const region = recordRegion(record);
     if (!region) return;
     counts[region] = (counts[region] || 0) + 1;
+    if (String(record.status || '').toLowerCase() === 'active') {
+      activeCounts[region] = (activeCounts[region] || 0) + 1;
+    }
   });
 
   await db.collection('publicStats').doc('regionCounts').set({
     counts,
+    activeCounts,
     memberOnly: true,
     source: 'usersMembersMerged',
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -3269,7 +3901,44 @@ exports.onUserCreated = onDocumentCreated('users/{uid}', async (event) => {
   try { await rebuildRegionCounts(db); } catch (err) {
     console.error('onUserCreated: failed to rebuild region counts:', err);
   }
+  if (data.status === 'pending' && data.role === 'member') {
+    try { await notifyApproversOfPendingMember(db, uid, data); } catch (err) {
+      console.error('onUserCreated: failed to notify approvers:', err);
+    }
+  }
 });
+
+// Tell everyone who can approve this member (super admin, national executives, and
+// regional approvers for the member's region) through the in-app bell.
+async function notifyApproversOfPendingMember(db, memberUid, member) {
+  const norm = (v) => String(v || '').trim().toLowerCase().replace(/[\s_-]+/g, '-');
+  const memberRegion = norm(member.region || member.regionName || member.assignedRegion || member.regionId);
+  const snap = await db.collection('users').where('role', 'in', ['super_admin', 'national_executive', 'regional_executive']).get();
+  const recipients = snap.docs.filter((doc) => {
+    const u = doc.data();
+    if (u.status && u.status !== 'active') return false;
+    if (u.role !== 'regional_executive') return true;
+    return u.canApproveMembership === true && memberRegion &&
+      norm(u.region || u.regionId || u.assignedRegion) === memberRegion;
+  });
+  if (!recipients.length) return;
+  const name = member.fullName || 'A new member';
+  const regionLabel = member.region || 'unknown region';
+  const batch = db.batch();
+  recipients.forEach((doc) => {
+    batch.set(db.collection('notifications').doc('pending_' + memberUid + '_' + doc.id), {
+      uid: doc.id,
+      type: 'new_member_pending',
+      title: 'New member awaiting approval',
+      message: name + ' (' + regionLabel + ') has registered and is waiting for approval.',
+      link: doc.data().role === 'regional_executive' ? '/region-dashboard/member-approval.html' : '/national/member-approval.html',
+      read: false,
+      status: 'unread',
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  });
+  await batch.commit();
+}
 
 const { onDocumentUpdated } = require('firebase-functions/v2/firestore');
 exports.onUserRoleChanged = onDocumentUpdated('users/{uid}', async (event) => {
@@ -3277,7 +3946,7 @@ exports.onUserRoleChanged = onDocumentUpdated('users/{uid}', async (event) => {
   const before = event.data.before.data() || {};
   const after = event.data.after.data() || {};
   const db = admin.firestore();
-  if (before.role !== after.role && after.role) {
+  if (before.role !== after.role || before.region !== after.region || before.regionId !== after.regionId || before.regionName !== after.regionName || before.assignedRegion !== after.assignedRegion || before.status !== after.status) {
     try { await syncRoleCustomClaim(uid, after.role); } catch (err) {
       console.error(`onUserRoleChanged: failed to set custom claim for ${uid}:`, err);
     }
@@ -3290,7 +3959,8 @@ exports.onUserRoleChanged = onDocumentUpdated('users/{uid}', async (event) => {
 });
 
 // Callable: one-time seed / admin refresh of publicStats/regionCounts
-exports.rebuildRegionStats = functions.https.onCall(async (data, context) => {
+exports.rebuildRegionStats = functions.https.onCall(async (request) => {
+  const context = request;
   if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
   const db = admin.firestore();
   const callerDoc = await db.collection('users').doc(context.auth.uid).get();
@@ -3318,7 +3988,8 @@ exports.syncUserClaims = functions.https.onCall(async (data, context) => {
 });
 
 // Callable: lets a signed-in user refresh their own RTDB role claim from Firestore.
-exports.refreshMyClaims = functions.https.onCall(async (data, context) => {
+exports.refreshMyClaims = functions.https.onCall(async (request) => {
+  const context = request;
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Must be signed in');
   }
@@ -3335,6 +4006,7 @@ exports.refreshMyClaims = functions.https.onCall(async (data, context) => {
   return {
     success: true,
     executiveRole: EXECUTIVE_ROLES.has(role),
+    oversight: chatIsOversight(userDoc.data()),
     role
   };
 });
@@ -3684,7 +4356,7 @@ exports.sendMeetingReminders = functions.scheduler.onSchedule('every 1 minutes',
                 </div>
 
                 <center>
-                  <a href="https://amcag-website.web.app/member-dashboard/meetings.html" class="btn">
+                  <a href="https://amcag-af624.web.app/member-dashboard/meetings.html" class="btn">
                     📹 Join Meeting Now
                   </a>
                 </center>
@@ -3734,4 +4406,1642 @@ exports.sendMeetingReminders = functions.scheduler.onSchedule('every 1 minutes',
     console.error('Error sending meeting reminders:', error);
     return null;
   }
+});
+
+// ============================================================================
+// DAILY QUESTION EMAILS
+// ============================================================================
+const dailyQuestions = require('./daily-questions');
+
+const UNSUBSCRIBE_BASE_URL = 'https://us-central1-amcag-af624.cloudfunctions.net/unsubscribeDailyQuestions';
+
+function createDailyQuestionTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    pool: true,
+    maxConnections: 3,
+    auth: {
+      user: process.env.EMAIL_USER || 'amcag2018@gmail.com',
+      pass: process.env.EMAIL_PASS || ''
+    }
+  });
+}
+
+async function ensureUnsubscribeToken(userDoc) {
+  const existing = userDoc.data().dailyQuestionsToken;
+  if (existing) return existing;
+  const token = crypto.randomBytes(16).toString('hex');
+  await userDoc.ref.update({dailyQuestionsToken: token});
+  return token;
+}
+
+// Every morning at 07:00 (Africa/Accra): today's question plus yesterday's answer.
+// Needs the EMAIL_PASS secret (Gmail app password for EMAIL_USER).
+exports.sendDailyQuestions = onSchedule(
+  {
+    schedule: '0 7 * * *',
+    timeZone: 'Africa/Accra',
+    memory: '512MiB',
+    timeoutSeconds: 540,
+    secrets: ['EMAIL_PASS']
+  },
+  async () => {
+    const db = admin.firestore();
+    const dayNo = dailyQuestions.dayNumber();
+    const today = dailyQuestions.questionForDay(dayNo);
+    const yesterday = dailyQuestions.questionForDay(dayNo - 1);
+    const cap = Number(process.env.DAILY_QUESTION_MAX || 400);
+    const transporter = createDailyQuestionTransporter();
+    const from = `AMCAG Question of the Day <${process.env.EMAIL_USER || 'amcag2018@gmail.com'}>`;
+
+    const snapshot = await db.collection('users').where('status', '==', 'active').get();
+    const recipients = snapshot.docs.filter((doc) => {
+      const u = doc.data();
+      return u.email && u.dailyQuestionsOptOut !== true;
+    });
+
+    let sent = 0;
+    let failed = 0;
+    const batch = recipients.slice(0, cap);
+
+    // In-app notification (bell) for every active member, independent of the email cap or opt-out.
+    try {
+      const FieldValue = admin.firestore.FieldValue;
+      for (let i = 0; i < snapshot.docs.length; i += 400) {
+        const wb = db.batch();
+        snapshot.docs.slice(i, i + 400).forEach((doc) => {
+          wb.set(db.collection('notifications').doc('dq_' + dayNo + '_' + doc.id), {
+            uid: doc.id,
+            type: 'daily_question',
+            title: 'Question of the Day',
+            message: today.topic + ': ' + today.question,
+            link: '/member-dashboard/daily-question.html',
+            read: false,
+            status: 'unread',
+            createdAt: FieldValue.serverTimestamp()
+          });
+        });
+        await wb.commit();
+      }
+    } catch (error) {
+      console.error('Daily question in-app notifications failed:', error.message);
+    }
+    if (recipients.length > cap) {
+      console.warn(`Daily questions: ${recipients.length} recipients, capped at ${cap} (Gmail daily limit).`);
+    }
+
+    for (let i = 0; i < batch.length; i += 5) {
+      const chunk = batch.slice(i, i + 5);
+      await Promise.all(chunk.map(async (doc) => {
+        try {
+          const user = doc.data();
+          const token = await ensureUnsubscribeToken(doc);
+          const unsubscribeUrl = `${UNSUBSCRIBE_BASE_URL}?uid=${encodeURIComponent(doc.id)}&token=${token}`;
+          const mail = dailyQuestions.buildDailyQuestionEmail({
+            name: user.fullName, today, yesterday, unsubscribeUrl
+          });
+          await transporter.sendMail({
+            from,
+            to: user.email,
+            subject: mail.subject,
+            html: mail.html,
+            text: mail.text,
+            headers: {'List-Unsubscribe': `<${unsubscribeUrl}>`}
+          });
+          sent++;
+        } catch (error) {
+          failed++;
+          console.error(`Daily question email failed for ${doc.id}:`, error.message);
+        }
+      }));
+    }
+
+    console.log(`Daily questions: question #${today.index + 1}, sent ${sent}, failed ${failed}, recipients ${recipients.length}`);
+  }
+);
+
+// One-click unsubscribe link used in each email.
+exports.unsubscribeDailyQuestions = functions.https.onRequest(async (req, res) => {
+  const uid = String(req.query.uid || '');
+  const token = String(req.query.token || '');
+  const page = (message) => res.status(200).send(
+    `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
+    `<body style="font-family:Segoe UI,Arial,sans-serif;max-width:520px;margin:60px auto;padding:0 20px;color:#1a2433">` +
+    `<h2 style="color:#0b5d3b">AMCAG</h2><p>${message}</p></body>`
+  );
+  try {
+    const doc = uid ? await admin.firestore().collection('users').doc(uid).get() : null;
+    const stored = doc && doc.exists ? String(doc.data().dailyQuestionsToken || '') : '';
+    const a = Buffer.from(stored);
+    const b = Buffer.from(token);
+    if (!stored || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return page('This unsubscribe link is not valid.');
+    }
+    await doc.ref.update({dailyQuestionsOptOut: true});
+    return page('You have been unsubscribed from the daily question emails.');
+  } catch (error) {
+    console.error('unsubscribeDailyQuestions error:', error);
+    return page('Something went wrong. Please try again later.');
+  }
+});
+
+// Admin test: sends today's question email to the signed-in super admin only.
+exports.sendTestDailyQuestion = functions.https.onCall({
+  secrets: ['EMAIL_PASS']
+}, async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const db = admin.firestore();
+  const callerDoc = await db.collection('users').doc(request.auth.uid).get();
+  if (!callerDoc.exists || callerDoc.data().role !== 'super_admin' || !callerDoc.data().email) {
+    throw new functions.https.HttpsError('permission-denied', 'Super admins only');
+  }
+  const dayNo = dailyQuestions.dayNumber();
+  const token = await ensureUnsubscribeToken(callerDoc);
+  const mail = dailyQuestions.buildDailyQuestionEmail({
+    name: callerDoc.data().fullName,
+    today: dailyQuestions.questionForDay(dayNo),
+    yesterday: dailyQuestions.questionForDay(dayNo - 1),
+    unsubscribeUrl: `${UNSUBSCRIBE_BASE_URL}?uid=${encodeURIComponent(request.auth.uid)}&token=${token}`
+  });
+  await createDailyQuestionTransporter().sendMail({
+    from: `AMCAG Question of the Day <${process.env.EMAIL_USER || 'amcag2018@gmail.com'}>`,
+    to: callerDoc.data().email,
+    subject: `[TEST] ${mail.subject}`,
+    html: mail.html,
+    text: mail.text
+  });
+  return {success: true};
+});
+
+// ============================================================================
+// MEMBER ID CARD: QR TOKEN + PUBLIC VERIFICATION
+// ============================================================================
+const MEMBER_ID_PATTERN = /^AMCAG-[A-Z]{2,4}-\d{4}-\d{3,6}$/i;
+
+// Returns the secret token embedded in a member's ID card QR code (created on first use).
+// A member can fetch their own; national executives / super admins can fetch any member's.
+// ID cards are valid for 3 years from the day the card was first issued (when the registration fee was paid),
+// and again from the renewal date after a renewal.
+const CARD_VALID_YEARS = 3;
+function tsToDate(v) { return v && typeof v.toDate === 'function' ? v.toDate() : null; }
+function addYears(date, years) { const d = new Date(date); d.setFullYear(d.getFullYear() + years); return d; }
+async function ensureCardExpiry(userRef, user) {
+  let issued = tsToDate(user.cardIssuedAt);
+  let expires = tsToDate(user.cardExpiresAt);
+  if (!issued || !expires) {
+    issued = tsToDate(user.registrationFeePaidAt) || new Date();
+    expires = addYears(issued, CARD_VALID_YEARS);
+    await userRef.update({
+      cardIssuedAt: admin.firestore.Timestamp.fromDate(issued),
+      cardExpiresAt: admin.firestore.Timestamp.fromDate(expires)
+    });
+  }
+  return {issued, expires};
+}
+
+exports.issueIdCardToken = functions.https.onCall(async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const db = admin.firestore();
+  const targetUid = String(request.data?.uid || request.auth.uid);
+
+  const userRef = db.collection('users').doc(targetUid);
+  const userDoc = await userRef.get();
+  if (!userDoc.exists) {
+    throw new functions.https.HttpsError('not-found', 'Member not found');
+  }
+  const user = userDoc.data();
+
+  if (targetUid !== request.auth.uid) {
+    // Only the super admin and selected executives may open other people's cards.
+    const callerDoc = await db.collection('users').doc(request.auth.uid).get();
+    const access = callerDoc.exists ? canViewQuestionAnswers(callerDoc.data()) : {allowed: false};
+    const regionOk = !access.region || normRegion(access.region) === normRegion(user.region);
+    if (!access.allowed || !regionOk) {
+      throw new functions.https.HttpsError('permission-denied', 'Not allowed to view this ID card');
+    }
+  }
+
+  if (user.status !== 'active') {
+    throw new functions.https.HttpsError('failed-precondition', 'Member is not active yet');
+  }
+  if (user.registrationFeePaid !== true) {
+    throw new functions.https.HttpsError('failed-precondition', 'REGISTRATION_FEE_UNPAID');
+  }
+  if (!user.memberId) {
+    // Executives and admin-created accounts are not approved through the member flow: give them an ID now.
+    const newId = await generateMembershipId(db, user);
+    await userRef.update({memberId: newId});
+    try {
+      const mirror = db.collection('members').doc(targetUid);
+      if ((await mirror.get()).exists) await mirror.update({memberId: newId});
+    } catch (e) { console.warn('members mirror memberId update skipped:', e.message); }
+    user.memberId = newId;
+  }
+
+  let token = user.cardToken;
+  if (!token) {
+    token = crypto.randomBytes(12).toString('hex');
+    await userRef.update({cardToken: token});
+  }
+  const expiry = await ensureCardExpiry(userRef, user);
+  return {success: true, memberId: user.memberId, token, cardIssuedAt: expiry.issued.toISOString(), cardExpiresAt: expiry.expires.toISOString(), cardExpired: expiry.expires.getTime() < Date.now()};
+});
+
+// Public verification used by the QR code. Without a valid token only the validity state
+// is returned; with the token printed in the QR code, basic card details are returned.
+exports.verifyMembership = functions.https.onCall(async (request) => {
+  const memberId = String(request.data?.memberId || '').trim().toUpperCase();
+  const token = String(request.data?.token || '').trim();
+  if (!MEMBER_ID_PATTERN.test(memberId)) {
+    return {state: 'not_found'};
+  }
+
+  const snap = await admin.firestore().collection('users')
+    .where('memberId', '==', memberId).limit(1).get();
+  if (snap.empty) {
+    return {state: 'not_found'};
+  }
+
+  const user = snap.docs[0].data();
+  let renewal = tsToDate(user.cardExpiresAt);
+  if (!renewal && user.registrationFeePaid === true) {
+    const base = tsToDate(user.registrationFeePaidAt);
+    if (base) renewal = addYears(base, CARD_VALID_YEARS);
+  }
+  const status = String(user.status || '').toLowerCase();
+
+  let state = 'valid';
+  if (status === 'suspended') state = 'suspended';
+  else if (status !== 'active' || user.registrationFeePaid !== true) state = 'inactive';
+  else if (renewal && renewal.getTime() < Date.now()) state = 'expired';
+
+  const stored = String(user.cardToken || '');
+  const a = Buffer.from(stored);
+  const b = Buffer.from(token);
+  const tokenOk = stored && a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!tokenOk) {
+    return {state, memberId, detailsHidden: true};
+  }
+
+  const sinceDate = ['registrationDate', 'approvedAt', 'createdAt']
+    .map((k) => user[k] && typeof user[k].toDate === 'function' ? user[k].toDate() : null)
+    .find(Boolean);
+
+  return {
+    state,
+    memberId,
+    name: user.fullName || '',
+    region: user.region || '',
+    memberSince: sinceDate ? sinceDate.getFullYear() : null,
+    validUntil: renewal ? renewal.toISOString() : null,
+    photoUrl: user.profilePictureUrl || user.photoURL || user.photoUrl || null
+  };
+});
+
+// ================================================================
+// Donation campaigns: who may create them and how regional ones get approved
+// Selected executives only (president, secretary, PRO). National ones go live at once;
+// regional ones wait for the national president, national PRO or super admin.
+// ================================================================
+const CAMPAIGN_APPROVER_PATTERN = /(^|[^a-z])(president|pro|public relations( officer)?)([^a-z]|$)/;
+const CAMPAIGN_APPROVER_EXCLUDE = /vice|assistant|deputy|organi[sz]er|treasurer|secretary/;
+
+function campaignAccess(profile) {
+  const view = canViewQuestionAnswers(profile);
+  if (!view.allowed) return {allowed: false};
+  const title = String(profile.executiveTitle || profile.title || '').toLowerCase().trim();
+  const approver = profile.role === 'super_admin' ||
+    (profile.role === 'national_executive' && CAMPAIGN_APPROVER_PATTERN.test(title) && !CAMPAIGN_APPROVER_EXCLUDE.test(title));
+  return {allowed: true, region: view.region || null, approver};
+}
+
+async function loadCampaignActor(request) {
+  if (!request.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  const snap = await admin.firestore().collection('users').doc(request.auth.uid).get();
+  const profile = snap.exists ? snap.data() : null;
+  const access = campaignAccess(profile);
+  if (!access.allowed) {
+    throw new functions.https.HttpsError('permission-denied', 'Only selected executives can manage campaigns');
+  }
+  return {profile, access};
+}
+
+async function notifyCampaignApprovers(db, campaign, campaignId) {
+  const snap = await db.collection('users').where('role', 'in', ['super_admin', 'national_executive']).get();
+  const batch = db.batch();
+  let count = 0;
+  snap.forEach((d) => {
+    if (!campaignAccess(d.data()).approver) return;
+    batch.set(db.collection('notifications').doc(), {
+      uid: d.id, type: 'campaign_pending', title: 'Campaign awaiting approval',
+      message: `${campaign.createdByName || 'A regional executive'} (${campaign.region || 'region'}) submitted "${campaign.title}" for approval.`,
+      link: '/national/campaigns.html', read: false, createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    count += 1;
+  });
+  if (count) await batch.commit();
+}
+
+exports.saveCampaign = functions.https.onCall(async (request) => {
+  const {profile, access} = await loadCampaignActor(request);
+  const db = admin.firestore();
+  const d = request.data || {};
+  const title = String(d.title || '').trim().slice(0, 120);
+  const description = String(d.description || '').trim().slice(0, 2000);
+  if (!title || !description) throw new functions.https.HttpsError('invalid-argument', 'Title and description are required');
+  const imageUrl = String(d.imageUrl || '').trim();
+  if (imageUrl && (!/^https:\/\//i.test(imageUrl) || imageUrl.length > 1500)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Image must be an https link or an uploaded file');
+  }
+  const target = d.targetAmount === '' || d.targetAmount == null ? null : Number(d.targetAmount);
+  if (target !== null && (!Number.isFinite(target) || target < 0)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Target amount is not valid');
+  }
+  let endDate = null;
+  if (d.endDate) {
+    const parsed = new Date(d.endDate);
+    if (Number.isNaN(parsed.getTime())) throw new functions.https.HttpsError('invalid-argument', 'End date is not valid');
+    endDate = admin.firestore.Timestamp.fromDate(parsed);
+  }
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const name = profile.fullName || profile.email || '';
+  const fields = {
+    title, description, targetAmount: target, endDate, imageUrl: imageUrl || null,
+    featured: d.featured === true, updatedAt: now, updatedBy: request.auth.uid, updatedByName: name
+  };
+
+  if (d.id) {
+    const ref = db.collection('donation_campaigns').doc(String(d.id));
+    const snap = await ref.get();
+    if (!snap.exists) throw new functions.https.HttpsError('not-found', 'Campaign not found');
+    const existing = snap.data();
+    if (access.region && normRegion(existing.region) !== normRegion(access.region)) {
+      throw new functions.https.HttpsError('permission-denied', 'You can only edit your own region\'s campaigns');
+    }
+    if (!['active', 'pending_approval', 'rejected'].includes(existing.status)) {
+      throw new functions.https.HttpsError('failed-precondition', 'This campaign has ended and cannot be edited');
+    }
+    // A regional edit of a live campaign needs approving again.
+    const needsReview = !!access.region && !access.approver;
+    if (needsReview) fields.status = 'pending_approval';
+    await ref.update(fields);
+    if (needsReview) await notifyCampaignApprovers(db, {...existing, ...fields, createdByName: name}, ref.id);
+    return {success: true, id: ref.id, status: needsReview ? 'pending_approval' : existing.status};
+  }
+
+  const regional = !!access.region;
+  const doc = {
+    ...fields,
+    status: regional ? 'pending_approval' : 'active',
+    region: access.region || null,
+    currentAmount: 0, donorCount: 0,
+    createdAt: now, createdBy: request.auth.uid, createdByName: name,
+    visibility: 'public'
+  };
+  const ref = await db.collection('donation_campaigns').add(doc);
+  if (regional) await notifyCampaignApprovers(db, doc, ref.id);
+  return {success: true, id: ref.id, status: doc.status};
+});
+
+exports.reviewCampaign = functions.https.onCall(async (request) => {
+  const {profile, access} = await loadCampaignActor(request);
+  if (!access.approver) {
+    throw new functions.https.HttpsError('permission-denied', 'Only the national president, national PRO or super admin can approve campaigns');
+  }
+  const db = admin.firestore();
+  const ref = db.collection('donation_campaigns').doc(String(request.data?.id || ''));
+  const snap = await ref.get();
+  if (!snap.exists) throw new functions.https.HttpsError('not-found', 'Campaign not found');
+  const c = snap.data();
+  if (c.status !== 'pending_approval') throw new functions.https.HttpsError('failed-precondition', 'This campaign is not waiting for approval');
+  const approve = request.data?.decision === 'approve';
+  const reason = String(request.data?.reason || '').trim().slice(0, 300);
+  await ref.update({
+    status: approve ? 'active' : 'rejected',
+    reviewedBy: request.auth.uid, reviewedByName: profile.fullName || profile.email || '',
+    reviewedAt: admin.firestore.FieldValue.serverTimestamp(),
+    reviewNote: reason || null
+  });
+  if (c.createdBy) {
+    await db.collection('notifications').add({
+      uid: c.createdBy, type: approve ? 'campaign_approved' : 'campaign_rejected',
+      title: approve ? 'Campaign approved' : 'Campaign not approved',
+      message: approve ? `"${c.title}" is now live on the donation page.` : `"${c.title}" was not approved${reason ? ': ' + reason : '.'}`,
+      link: '/national/campaigns.html', read: false, createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  return {success: true, status: approve ? 'active' : 'rejected'};
+});
+
+exports.setCampaignStatus = functions.https.onCall(async (request) => {
+  const {profile, access} = await loadCampaignActor(request);
+  const status = request.data?.status;
+  if (!['completed', 'cancelled'].includes(status)) throw new functions.https.HttpsError('invalid-argument', 'Invalid status');
+  const ref = admin.firestore().collection('donation_campaigns').doc(String(request.data?.id || ''));
+  const snap = await ref.get();
+  if (!snap.exists) throw new functions.https.HttpsError('not-found', 'Campaign not found');
+  const c = snap.data();
+  if (access.region && normRegion(c.region) !== normRegion(access.region)) {
+    throw new functions.https.HttpsError('permission-denied', 'You can only close your own region\'s campaigns');
+  }
+  if (c.status !== 'active') throw new functions.https.HttpsError('failed-precondition', 'Only active campaigns can be closed');
+  await ref.update({
+    status, endedAt: admin.firestore.FieldValue.serverTimestamp(),
+    closedBy: request.auth.uid, closedByName: profile.fullName || profile.email || '',
+    cancellationReason: status === 'cancelled' ? String(request.data?.reason || 'No reason provided').slice(0, 300) : null
+  });
+  return {success: true};
+});
+
+// Renews a member's ID card for another 3 years (from today). Fee recorders and the super admin only.
+exports.renewIdCard = functions.https.onCall(async (request) => {
+  if (!request.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  const db = admin.firestore();
+  const callerDoc = await db.collection('users').doc(request.auth.uid).get();
+  const access = canRecordFeePayments(callerDoc.exists ? callerDoc.data() : null);
+  if (!access.allowed) throw new functions.https.HttpsError('permission-denied', 'Not allowed to renew ID cards');
+  const memberUid = String(request.data?.memberUid || '');
+  const ref = db.collection('users').doc(memberUid);
+  const doc = await ref.get();
+  if (!doc.exists) throw new functions.https.HttpsError('not-found', 'Member not found');
+  const m = doc.data();
+  if (access.region && normRegion(access.region) !== normRegion(m.region)) {
+    throw new functions.https.HttpsError('permission-denied', 'This member is outside your region');
+  }
+  const issued = new Date();
+  const expires = addYears(issued, CARD_VALID_YEARS);
+  await ref.update({cardIssuedAt: admin.firestore.Timestamp.fromDate(issued), cardExpiresAt: admin.firestore.Timestamp.fromDate(expires)});
+  await db.collection('notifications').add({
+    uid: memberUid, type: 'id_card_renewed', title: 'ID card renewed',
+    message: 'Your AMCAG ID card has been renewed and is valid for 3 more years.',
+    link: '/member-dashboard/id-card.html', read: false, createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  return {success: true, cardExpiresAt: expires.toISOString()};
+});
+
+// ================================================================
+// Question of the Day: member answers and executive results
+// Answers live in daily_question_answers (no client access; everything goes through these functions).
+// ================================================================
+const QUESTION_VIEW_TITLE_PATTERN = /(^|[^a-z])(president|secretary|pro|public relations( officer)?)([^a-z]|$)/;
+const QUESTION_VIEW_TITLE_EXCLUDE = /vice|assistant|deputy|organi[sz]er|treasurer/;
+
+function canViewQuestionAnswers(profile) {
+  if (!profile) return {allowed: false};
+  if (profile.role === 'super_admin') return {allowed: true, region: null};
+  if (profile.role !== 'national_executive' && profile.role !== 'regional_executive') return {allowed: false};
+  const title = String(profile.executiveTitle || profile.title || '').toLowerCase().trim();
+  if (!title || QUESTION_VIEW_TITLE_EXCLUDE.test(title) || !QUESTION_VIEW_TITLE_PATTERN.test(title)) {
+    return {allowed: false};
+  }
+  if (profile.role === 'regional_executive') {
+    if (!profile.region) return {allowed: false};
+    return {allowed: true, region: profile.region};
+  }
+  return {allowed: true, region: null};
+}
+
+async function requireActiveMember(request) {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const snap = await admin.firestore().collection('users').doc(request.auth.uid).get();
+  if (!snap.exists || (snap.data().status && snap.data().status !== 'active')) {
+    throw new functions.https.HttpsError('permission-denied', 'Active members only');
+  }
+  return snap.data();
+}
+
+exports.getDailyQuestion = functions.https.onCall(async (request) => {
+  const profile = await requireActiveMember(request);
+  const dayNo = dailyQuestions.dayNumber();
+  const q = dailyQuestions.questionForDay(dayNo);
+  const answerRef = admin.firestore().collection('daily_question_answers').doc(`${dayNo}_${request.auth.uid}`);
+  const answerSnap = await answerRef.get();
+  const out = {dayNo, topic: q.topic, question: q.question, options: q.options, answered: false};
+  if (answerSnap.exists) {
+    out.answered = true;
+    out.choice = answerSnap.data().choice;
+    out.correct = answerSnap.data().correct;
+    out.correctIndex = q.answer;
+    out.explanation = q.explanation;
+  }
+  out.canViewResults = canViewQuestionAnswers({...profile}).allowed;
+  return out;
+});
+
+exports.submitDailyAnswer = functions.https.onCall(async (request) => {
+  const profile = await requireActiveMember(request);
+  const choice = Number((request.data || {}).choice);
+  const dayNo = dailyQuestions.dayNumber();
+  const q = dailyQuestions.questionForDay(dayNo);
+  if (!Number.isInteger(choice) || choice < 0 || choice >= q.options.length) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid answer choice');
+  }
+  const ref = admin.firestore().collection('daily_question_answers').doc(`${dayNo}_${request.auth.uid}`);
+  const correct = choice === q.answer;
+  await admin.firestore().runTransaction(async (tx) => {
+    const existing = await tx.get(ref);
+    if (existing.exists) {
+      throw new functions.https.HttpsError('already-exists', 'You have already answered today\'s question');
+    }
+    tx.set(ref, {
+      dayNo,
+      uid: request.auth.uid,
+      memberName: profile.fullName || profile.displayName || '',
+      memberId: profile.memberId || '',
+      region: profile.region || '',
+      questionIndex: q.index,
+      questionText: q.question,
+      topic: q.topic,
+      choice,
+      choiceText: q.options[choice],
+      correctText: q.options[q.answer],
+      correct,
+      answeredAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  });
+  return {correct, correctIndex: q.answer, explanation: q.explanation, choice};
+});
+
+exports.getQuestionResults = functions.https.onCall(async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const callerSnap = await admin.firestore().collection('users').doc(request.auth.uid).get();
+  const access = callerSnap.exists ? canViewQuestionAnswers(callerSnap.data()) : {allowed: false};
+  if (!access.allowed) {
+    throw new functions.https.HttpsError('permission-denied', 'You are not allowed to view question answers');
+  }
+  const data = request.data || {};
+  const today = dailyQuestions.dayNumber();
+  const dayNo = Number.isInteger(Number(data.dayNo)) && data.dayNo !== null && data.dayNo !== '' ? Number(data.dayNo) : today;
+  // Regional executives are locked to their own region; others may filter.
+  const region = access.region || (data.region ? String(data.region) : null);
+
+  // Region is filtered in memory so no composite index is needed.
+  const snap = await admin.firestore().collection('daily_question_answers').where('dayNo', '>=', today - 29).limit(8000).get();
+
+  const days = {};
+  const answers = [];
+  snap.forEach((doc) => {
+    const a = doc.data();
+    if (region && a.region !== region) return;
+    const d = days[a.dayNo] || (days[a.dayNo] = {dayNo: a.dayNo, topic: a.topic, question: a.questionText, total: 0, correct: 0});
+    d.total++;
+    if (a.correct) d.correct++;
+    if (a.dayNo === dayNo) {
+      answers.push({
+        memberName: a.memberName, memberId: a.memberId, region: a.region,
+        choiceText: a.choiceText, correct: !!a.correct,
+        answeredAt: a.answeredAt ? a.answeredAt.toMillis() : null
+      });
+    }
+  });
+  answers.sort((x, y) => (y.answeredAt || 0) - (x.answeredAt || 0));
+  const q = dailyQuestions.questionForDay(dayNo);
+  return {
+    today,
+    dayNo,
+    region,
+    lockedRegion: !!access.region,
+    question: {topic: q.topic, question: q.question, correctText: q.options[q.answer]},
+    days: Object.values(days).sort((x, y) => y.dayNo - x.dayNo),
+    answers
+  };
+});
+
+// ================================================================
+// Email the member when their registration is approved or rejected
+// ================================================================
+function reviewEmailHtml(title, bodyHtml) {
+  return '<!doctype html><html><body style="margin:0;background:#f3f6f4;font-family:Segoe UI,Arial,sans-serif;color:#1a2433">' +
+    '<div style="max-width:600px;margin:0 auto;padding:20px"><div style="background:#0b5d3b;color:#fff;padding:18px 24px;border-radius:8px 8px 0 0;font-size:20px;font-weight:bold">' +
+    dailyQuestions.escapeHtml(title) + '</div><div style="background:#fff;padding:24px;border-radius:0 0 8px 8px;line-height:1.55">' +
+    bodyHtml + '<p style="font-size:12px;color:#8892a0;margin-top:28px">Association of Medicine Counter Assistants of Ghana (AMCAG)</p></div></div></body></html>';
+}
+
+exports.onMemberReviewed = onDocumentUpdated({
+  document: 'users/{uid}',
+  secrets: ['EMAIL_PASS']
+}, async (event) => {
+  const before = event.data.before.data() || {};
+  const after = event.data.after.data() || {};
+  if (before.status === after.status) return;
+  const approved = before.status === 'pending' && after.status === 'active';
+  const rejected = before.status === 'pending' && after.status === 'rejected';
+  if (!approved && !rejected) return;
+  if (!after.email || after.reviewEmailSent === after.status) return;
+
+  const esc = dailyQuestions.escapeHtml;
+  const first = esc(String(after.fullName || 'Member').split(' ')[0]);
+  let subject;
+  let html;
+  let text;
+  if (approved) {
+    subject = 'Welcome to AMCAG: your membership is approved';
+    html = reviewEmailHtml('Membership approved', '<p>Dear ' + first + ',</p>' +
+      '<p>Your AMCAG membership has been <strong>approved</strong>. Your Member ID is:</p>' +
+      '<p style="font-size:22px;font-weight:bold;color:#0b5d3b;margin:8px 0">' + esc(after.memberId || '') + '</p>' +
+      '<p>You can now sign in to your member dashboard to pay dues, get your ID card and join meetings.</p>' +
+      '<p style="text-align:center;margin:22px 0"><a href="https://amcag-af624.web.app/membership" style="background:#0b5d3b;color:#fff;text-decoration:none;padding:13px 28px;border-radius:6px;font-weight:bold;display:inline-block">Sign in</a></p>');
+    text = 'Dear ' + String(after.fullName || 'Member').split(' ')[0] + ',\n\nYour AMCAG membership has been approved. Your Member ID is ' + (after.memberId || '') + '.\nSign in: https://amcag-af624.web.app/membership';
+  } else {
+    subject = 'Update on your AMCAG membership application';
+    html = reviewEmailHtml('Membership application update', '<p>Dear ' + first + ',</p>' +
+      '<p>Thank you for applying to join AMCAG. After review, we could not approve your application at this time.</p>' +
+      '<p><strong>Reason:</strong> ' + esc(after.rejectionReason || 'Not specified') + '</p>' +
+      '<p>If you believe this is a mistake, or you can provide the missing information, please contact your regional AMCAG executives.</p>');
+    text = 'Dear ' + String(after.fullName || 'Member').split(' ')[0] + ',\n\nWe could not approve your AMCAG application at this time.\nReason: ' + (after.rejectionReason || 'Not specified');
+  }
+
+  const transporter = createDailyQuestionTransporter();
+  await transporter.sendMail({
+    from: 'AMCAG Membership <' + (process.env.EMAIL_USER || 'amcag2018@gmail.com') + '>',
+    to: after.email,
+    subject,
+    html,
+    text
+  });
+  await event.data.after.ref.update({ reviewEmailSent: after.status });
+});
+
+// ================================================================
+// Membership registration fee (one-time) and who can see ID cards
+// ================================================================
+const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const FEE_RECORDER_PATTERN = /(president|secretary|treasurer|financial)/;
+const FEE_RECORDER_EXCLUDE = /vice|assistant|deputy|organi[sz]er/;
+
+function normRegion(v) {
+  return String(v || '').trim().toLowerCase().replace(/[\s_-]+/g, '-');
+}
+
+// Super admin records for anyone; national president/secretary/treasurer for anyone;
+// regional president/secretary/treasurer for their own region.
+function canRecordFeePayments(profile) {
+  if (!profile) return {allowed: false};
+  if (profile.role === 'super_admin') return {allowed: true, region: null};
+  if (profile.role !== 'national_executive' && profile.role !== 'regional_executive') return {allowed: false};
+  const title = String(profile.executiveTitle || profile.title || '').toLowerCase().trim();
+  if (!title || FEE_RECORDER_EXCLUDE.test(title) || !FEE_RECORDER_PATTERN.test(title)) return {allowed: false};
+  if (profile.role === 'regional_executive') {
+    return profile.region ? {allowed: true, region: profile.region} : {allowed: false};
+  }
+  return {allowed: true, region: null};
+}
+
+// Marks the member's registration fee as paid (idempotent) and tells them their ID card is ready.
+async function applyRegistrationFeePaid(db, uid, payment, paymentId) {
+  const now = admin.firestore.Timestamp.now();
+  const fields = {
+    registrationFeePaid: true,
+    registrationFeePaidAt: now,
+    registrationFeeReference: payment.hubtelClientReference || payment.reference || paymentId,
+    registrationFeeAmount: Number(payment.amount) || 0,
+    registrationFeeMethod: payment.paymentMethod || 'hubtel',
+    updatedAt: now
+  };
+  const userRef = db.collection('users').doc(uid);
+  const changed = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    if (!snap.exists || snap.data().registrationFeePaid === true) return false;
+    tx.update(userRef, fields);
+    return true;
+  });
+  if (!changed) return false;
+  try {
+    const mirror = db.collection('members').doc(uid);
+    if ((await mirror.get()).exists) await mirror.update(fields);
+  } catch (e) { console.warn('members mirror fee update skipped:', e.message); }
+  await db.collection('notifications').doc('regfee_' + uid).set({
+    uid,
+    type: 'registration_fee_paid',
+    title: 'Registration fee received',
+    message: 'Thank you. Your registration fee of GHS ' + (Number(payment.amount) || 0).toFixed(2) + ' is confirmed and your AMCAG ID card is ready.',
+    link: '/member-dashboard/id-card.html',
+    read: false,
+    status: 'unread',
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  await db.collection('audit_logs').add({
+    action: 'registration_fee_paid',
+    performedBy: payment.recordedBy || uid,
+    targetUser: uid,
+    details: {paymentId, amount: Number(payment.amount) || 0, method: payment.paymentMethod || 'hubtel'},
+    timestamp: now
+  });
+  return true;
+}
+
+// Fires for Hubtel callbacks, status checks and recorded cash payments alike.
+exports.onRegistrationFeePayment = onDocumentWritten('payments/{paymentId}', async (event) => {
+  const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
+  if (!after || after.type !== 'registration_fee' || String(after.status || '').toLowerCase() !== 'paid') return;
+  const before = event.data.before && event.data.before.exists ? event.data.before.data() : null;
+  if (before && String(before.status || '').toLowerCase() === 'paid') return;
+  await applyRegistrationFeePaid(admin.firestore(), after.uid, after, event.params.paymentId);
+});
+
+exports.getRegistrationFeeStatus = functions.https.onCall(async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const db = admin.firestore();
+  const snap = await db.collection('users').doc(request.auth.uid).get();
+  if (!snap.exists) {
+    throw new functions.https.HttpsError('not-found', 'Member not found');
+  }
+  const user = snap.data();
+  const fees = await getFeeSettings(db);
+  let pendingReference = null;
+  if (user.registrationFeePaid !== true) {
+    const inFlight = await db.collection('payments')
+      .where('uid', '==', request.auth.uid)
+      .where('type', '==', 'registration_fee')
+      .where('status', '==', 'awaiting_payment')
+      .get();
+    const recent = inFlight.docs.find((d) => d.data().createdAt && (Date.now() - d.data().createdAt.toMillis()) < 10 * 60 * 1000);
+    pendingReference = recent ? recent.data().hubtelClientReference : null;
+  }
+  return {
+    fee: fees.registrationFee,
+    currency: fees.currency || 'GHS',
+    paid: user.registrationFeePaid === true,
+    paidAt: user.registrationFeePaidAt && user.registrationFeePaidAt.toMillis ? user.registrationFeePaidAt.toMillis() : null,
+    method: user.registrationFeeMethod || null,
+    status: user.status || '',
+    memberId: user.memberId || null,
+    pendingReference
+  };
+});
+
+exports.payRegistrationFee = functions.https.onCall({
+  secrets: HUBTEL_SECRET_NAMES,
+  ...HUBTEL_STATIC_EGRESS
+}, async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const db = admin.firestore();
+  const uid = request.auth.uid;
+  const snap = await db.collection('users').doc(uid).get();
+  if (!snap.exists) {
+    throw new functions.https.HttpsError('not-found', 'Member not found');
+  }
+  const member = snap.data();
+  if (member.status !== 'active') {
+    throw new functions.https.HttpsError('permission-denied', 'Your membership must be approved before paying the registration fee');
+  }
+  if (member.registrationFeePaid === true) {
+    throw new functions.https.HttpsError('already-exists', 'Your registration fee is already paid');
+  }
+
+  const channel = String(request.data?.channel || '').trim();
+  if (!HUBTEL_MOMO_CHANNELS.has(channel)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Select a valid mobile money network');
+  }
+  const msisdn = normalizeGhanaMsisdn(String(request.data?.paymentPhone || '').trim() || member.phone);
+  if (!msisdn) {
+    throw new functions.https.HttpsError('failed-precondition', 'Enter a valid Ghana mobile number before paying online');
+  }
+
+  const inFlight = await db.collection('payments')
+    .where('uid', '==', uid)
+    .where('type', '==', 'registration_fee')
+    .where('status', '==', 'awaiting_payment')
+    .get();
+  if (inFlight.docs.some((d) => d.data().createdAt && (Date.now() - d.data().createdAt.toMillis()) < 10 * 60 * 1000)) {
+    throw new functions.https.HttpsError('already-exists', 'A mobile money prompt is still pending. Approve it on your phone or wait a few minutes.');
+  }
+
+  const fees = await getFeeSettings(db);
+  const amount = fees.registrationFee;
+  const paymentAccount = resolvePaymentAccount({type: 'registration_fee', region: member.region});
+  ensureHubtelCredentialsConfigured(paymentAccount);
+
+  const clientReference = 'REG-' + crypto.randomBytes(8).toString('hex');
+  const paymentRef = db.collection('payments').doc();
+  await paymentRef.set({
+    uid,
+    requestedBy: uid,
+    memberName: member.fullName || 'Unknown',
+    memberId: member.memberId || null,
+    region: member.region || null,
+    paymentAccountScope: paymentAccount.scope,
+    paymentAccountOwner: paymentAccount.owner,
+    type: 'registration_fee',
+    amount,
+    paymentMethod: 'hubtel',
+    paymentProvider: 'hubtel',
+    status: 'awaiting_payment',
+    approvalStatus: 'awaiting_payment',
+    requiresApproval: false,
+    hubtelClientReference: clientReference,
+    hubtelChannel: channel,
+    hubtelMsisdn: '***' + msisdn.slice(-4),
+    createdAt: admin.firestore.Timestamp.now()
+  });
+
+  try {
+    const response = await sendHubtelReceiveMoney({
+      paymentAccount,
+      msisdn,
+      channel,
+      amount,
+      description: 'AMCAG Registration Fee',
+      clientReference,
+      name: member.fullName,
+      email: member.email
+    });
+    const code = String(response.ResponseCode || '');
+    if (code !== '0001' && code !== '0000') {
+      throw new Error(response.Message || 'Hubtel responded with code ' + (code || 'unknown'));
+    }
+    const txId = (response.Data || {}).TransactionId || null;
+    if (txId) await paymentRef.update({hubtelTransactionId: txId});
+    return {
+      success: true,
+      pending: true,
+      message: 'Approve the mobile money prompt on your phone to complete payment.',
+      clientReference,
+      totalAmount: amount
+    };
+  } catch (hubtelError) {
+    console.error('Registration fee Hubtel request failed:', hubtelError.response?.data || hubtelError.message);
+    await paymentRef.update({status: 'failed', hubtelCallbackStatus: 'request_failed', updatedAt: admin.firestore.Timestamp.now()});
+    const apiMessage = hubtelError.response?.data?.Message || hubtelError.response?.data?.message;
+    throw new functions.https.HttpsError(
+      'internal',
+      hubtelError.response?.status === 403
+        ? 'Hubtel rejected the request (server IP not whitelisted). Please pay through an executive instead.'
+        : (apiMessage || 'Could not start the mobile money payment. Please try again.')
+    );
+  }
+});
+
+// An authorised executive records a registration fee paid in cash, by bank transfer or manually.
+exports.recordRegistrationFeePayment = functions.https.onCall(async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const db = admin.firestore();
+  const actorSnap = await db.collection('users').doc(request.auth.uid).get();
+  const actor = actorSnap.exists ? actorSnap.data() : null;
+  const access = canRecordFeePayments(actor);
+  if (!access.allowed) {
+    throw new functions.https.HttpsError('permission-denied', 'You are not allowed to record registration fee payments');
+  }
+  const memberUid = String(request.data?.memberUid || '').trim();
+  const method = ['cash', 'bank_transfer', 'mobile_money_manual'].includes(request.data?.method) ? request.data.method : 'cash';
+  const reference = String(request.data?.reference || '').trim().slice(0, 60);
+  if (!memberUid) {
+    throw new functions.https.HttpsError('invalid-argument', 'Member is required');
+  }
+  const targetSnap = await db.collection('users').doc(memberUid).get();
+  if (!targetSnap.exists) {
+    throw new functions.https.HttpsError('not-found', 'Member not found');
+  }
+  const target = targetSnap.data();
+  if (access.region && normRegion(access.region) !== normRegion(target.region)) {
+    throw new functions.https.HttpsError('permission-denied', 'You can only record payments for members in your region');
+  }
+  if (target.status !== 'active') {
+    throw new functions.https.HttpsError('failed-precondition', 'Only approved members can pay the registration fee');
+  }
+  if (target.registrationFeePaid === true) {
+    throw new functions.https.HttpsError('already-exists', 'This member has already paid the registration fee');
+  }
+  const fees = await getFeeSettings(db);
+  const now = admin.firestore.Timestamp.now();
+  const payment = {
+    uid: memberUid,
+    memberName: target.fullName || 'Unknown',
+    memberId: target.memberId || null,
+    region: target.region || null,
+    type: 'registration_fee',
+    amount: fees.registrationFee,
+    paymentMethod: method,
+    paymentProvider: 'manual',
+    status: 'paid',
+    approvalStatus: 'approved',
+    requiresApproval: false,
+    verified: true,
+    reference: reference || null,
+    recordedBy: request.auth.uid,
+    recordedByName: actor.fullName || actor.email || request.auth.uid,
+    paymentDate: now,
+    processedAt: now,
+    createdAt: now
+  };
+  const ref = await db.collection('payments').add(payment);
+  await applyRegistrationFeePaid(db, memberUid, payment, ref.id);
+  return {success: true, amount: fees.registrationFee};
+});
+
+// Member list for the ID card page: super admin and selected executives only.
+exports.listMemberCards = functions.https.onCall(async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  const db = admin.firestore();
+  const callerSnap = await db.collection('users').doc(request.auth.uid).get();
+  const caller = callerSnap.exists ? callerSnap.data() : null;
+  const view = canViewQuestionAnswers(caller);
+  if (!view.allowed) {
+    throw new functions.https.HttpsError('permission-denied', 'You are not allowed to view member ID cards');
+  }
+  const record = canRecordFeePayments(caller);
+  const snap = await db.collection('users').where('status', '==', 'active').limit(3000).get();
+  const members = [];
+  snap.forEach((doc) => {
+    const u = doc.data();
+    if (view.region && normRegion(view.region) !== normRegion(u.region)) return;
+    const canRecordThis = record.allowed && (!record.region || normRegion(record.region) === normRegion(u.region));
+    members.push({
+      uid: doc.id,
+      fullName: u.fullName || '',
+      memberId: u.memberId || '',
+      region: u.region || '',
+      role: u.role || 'member',
+      feePaid: u.registrationFeePaid === true,
+      canRecord: canRecordThis && u.registrationFeePaid !== true,
+      canRenew: canRecordThis && u.registrationFeePaid === true,
+      cardExpiresAt: (tsToDate(u.cardExpiresAt) || (tsToDate(u.registrationFeePaidAt) ? addYears(tsToDate(u.registrationFeePaidAt), CARD_VALID_YEARS) : null) || {toISOString: () => ''}).toISOString(),
+      photoUrl: u.profilePictureUrl || u.photoURL || u.photoUrl || ''
+    });
+  });
+  members.sort((a, b) => a.fullName.localeCompare(b.fullName));
+  return {members, scope: view.region || 'all'};
+});
+
+
+// ============================================================================
+// ===== COMMUNITY CHAT: oversight, moderation, rooms, push notifications =====
+// ============================================================================
+const {onDocumentUpdated: onChatDocUpdated} = require('firebase-functions/v2/firestore');
+
+const CHAT_EDIT_WINDOW_MS = 15 * 60 * 1000;
+const CHAT_CHANNELS = ['regional', 'announcement', 'national', 'room'];
+const CHAT_SITE = 'https://amcag-af624.web.app';
+
+const chatNorm = (v) => String(v || '').trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const chatSanitize = (v) => String(v || '').trim().replace(/[.#$\[\]/]/g, '-').replace(/\s+/g, ' ');
+const chatRegionRaw = (p) => String((p && (p.regionId || p.region || p.regionName || p.assignedRegion)) || '').trim();
+const chatErr = (code, msg) => new functions.https.HttpsError(code, msg);
+
+// National president / PRO and the super admin may view every region's chat.
+function chatIsOversight(profile) {
+  if (!profile) return false;
+  const role = String(profile.role || '').toLowerCase();
+  if (role === 'super_admin') return true;
+  if (role !== 'national_executive') return false;
+  const title = String(profile.executiveTitle || profile.title || '').toLowerCase().trim();
+  return CAMPAIGN_APPROVER_PATTERN.test(title) && !CAMPAIGN_APPROVER_EXCLUDE.test(title);
+}
+
+async function chatActor(request) {
+  if (!request.auth) throw chatErr('unauthenticated', 'User must be authenticated');
+  const snap = await admin.firestore().collection('users').doc(request.auth.uid).get();
+  const profile = snap.exists ? snap.data() : null;
+  if (!profile || !['active', 'approved'].includes(String(profile.status || '').toLowerCase())) {
+    throw chatErr('permission-denied', 'Your account is not active');
+  }
+  const role = String(profile.role || 'member').toLowerCase();
+  const regionRaw = chatRegionRaw(profile);
+  return {
+    uid: request.auth.uid,
+    profile,
+    role,
+    name: profile.fullName || profile.name || 'AMCAG Member',
+    regionRaw,
+    regionKey: chatNorm(regionRaw),
+    oversight: chatIsOversight(profile),
+    isExec: EXECUTIVE_ROLES.has(role)
+  };
+}
+
+function chatMessagePaths(channel, region, roomId) {
+  if (channel === 'national') return ['national-chat/messages'];
+  if (channel === 'room') return ['chat-rooms/' + roomId + '/messages'];
+  const base = channel === 'announcement' ? 'regional-announcements' : 'regional-chats';
+  const tail = channel === 'announcement' ? 'posts' : 'messages';
+  const raw = String(region || '');
+  return Array.from(new Set([chatSanitize(raw), chatNorm(raw)].filter(Boolean))).map((k) => base + '/' + k + '/' + tail);
+}
+
+function chatCheckInput(data) {
+  const channel = String((data && data.channel) || '');
+  const messageId = String((data && data.messageId) || '');
+  const roomId = String((data && data.roomId) || '');
+  if (!CHAT_CHANNELS.includes(channel)) throw chatErr('invalid-argument', 'Unknown channel');
+  if (!/^[-A-Za-z0-9_]{8,40}$/.test(messageId)) throw chatErr('invalid-argument', 'Invalid message');
+  if (channel === 'room' && !/^[-A-Za-z0-9_]{8,40}$/.test(roomId)) throw chatErr('invalid-argument', 'Invalid room');
+  if ((channel === 'regional' || channel === 'announcement') && !chatNorm(data.region)) throw chatErr('invalid-argument', 'Region required');
+  return {channel, messageId, roomId, region: String((data && data.region) || '')};
+}
+
+async function chatFindMessage(input) {
+  for (const base of chatMessagePaths(input.channel, input.region, input.roomId)) {
+    const ref = admin.database().ref(base + '/' + input.messageId);
+    const snap = await ref.once('value');
+    if (snap.exists()) return {ref, data: snap.val(), base};
+  }
+  throw chatErr('not-found', 'Message not found');
+}
+
+async function chatLoadRoom(roomId) {
+  const snap = await admin.firestore().collection('chat_rooms').doc(roomId).get();
+  if (!snap.exists) throw chatErr('not-found', 'Room not found');
+  return snap.data();
+}
+
+// Is the caller allowed to see / take part in this channel?
+async function chatCanAccess(actor, input) {
+  if (input.channel === 'regional' || input.channel === 'announcement') {
+    return actor.oversight || actor.regionKey === chatNorm(input.region);
+  }
+  if (input.channel === 'national') return actor.isExec;
+  const room = await chatLoadRoom(input.roomId);
+  return actor.oversight || (room.memberUids || []).includes(actor.uid);
+}
+
+// Can the caller hide / restore / pin things in this channel?
+async function chatCanModerate(actor, input) {
+  if (actor.oversight) return true;
+  if (input.channel === 'regional' || input.channel === 'announcement') {
+    return actor.role === 'regional_executive' && actor.regionKey === chatNorm(input.region);
+  }
+  if (input.channel === 'room') {
+    const room = await chatLoadRoom(input.roomId);
+    return room.createdBy === actor.uid || (actor.role === 'regional_executive' && room.scope === 'region' && room.regionKey === actor.regionKey);
+  }
+  return false;
+}
+
+async function chatAudit(entry) {
+  await admin.firestore().collection('chat_audit').add({...entry, at: admin.firestore.FieldValue.serverTimestamp()});
+}
+
+function chatContentOf(data) {
+  const out = {};
+  ['text', 'fileUrl', 'fileName', 'fileType', 'fileDuration'].forEach((k) => { if (data[k] !== undefined && data[k] !== null) out[k] = data[k]; });
+  return out;
+}
+
+async function chatHideMessage(actor, input, found, reason) {
+  const data = found.data;
+  if (data.hidden === true || data.deleted === true) return;
+  const db = admin.firestore();
+  await db.collection('chat_hidden').doc(input.channel + '_' + input.messageId).set({
+    channel: input.channel, messageId: input.messageId, base: found.base,
+    content: chatContentOf(data), hiddenBy: actor.uid, hiddenAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  await found.ref.update({
+    hidden: true, hiddenBy: actor.uid, hiddenByName: actor.name, hiddenReason: String(reason || '').slice(0, 200),
+    hiddenAt: admin.database.ServerValue.TIMESTAMP,
+    text: null, fileUrl: null, fileName: null, fileType: null, fileDuration: null, pinned: null
+  });
+  await chatAudit({
+    action: 'hide', channel: input.channel, regionKey: chatNorm(input.region), roomId: input.roomId || null, messageId: input.messageId,
+    byUid: actor.uid, byName: actor.name, byRole: actor.role, reason: String(reason || '').slice(0, 200),
+    targetUid: data.senderId || data.authorId || null, targetName: data.senderName || data.authorName || null,
+    snippet: String(data.text || '').slice(0, 120)
+  });
+}
+
+// ---- moderate: hide / restore / pin / unpin ----
+exports.moderateChatMessage = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  const input = chatCheckInput(request.data);
+  const action = String((request.data && request.data.action) || '');
+  const reason = String((request.data && request.data.reason) || '').slice(0, 200);
+  if (!['hide', 'restore', 'pin', 'unpin'].includes(action)) throw chatErr('invalid-argument', 'Unknown action');
+  if (!(await chatCanModerate(actor, input))) throw chatErr('permission-denied', 'You cannot moderate this channel');
+  const found = await chatFindMessage(input);
+
+  if (action === 'hide') {
+    await chatHideMessage(actor, input, found, reason);
+  } else if (action === 'restore') {
+    if (found.data.hidden !== true) throw chatErr('failed-precondition', 'Message is not hidden');
+    if (!actor.oversight && found.data.hiddenBy && found.data.hiddenBy !== actor.uid) {
+      throw chatErr('permission-denied', 'Only the national president, PRO or super admin can restore this message');
+    }
+    const doc = await admin.firestore().collection('chat_hidden').doc(input.channel + '_' + input.messageId).get();
+    const content = doc.exists ? (doc.data().content || {}) : {};
+    await found.ref.update({
+      hidden: null, hiddenBy: null, hiddenByName: null, hiddenReason: null, hiddenAt: null,
+      text: content.text || null, fileUrl: content.fileUrl || null, fileName: content.fileName || null,
+      fileType: content.fileType || null, fileDuration: content.fileDuration || null
+    });
+    await chatAudit({action: 'restore', channel: input.channel, regionKey: chatNorm(input.region), roomId: input.roomId || null, messageId: input.messageId, byUid: actor.uid, byName: actor.name, byRole: actor.role, reason});
+  } else {
+    if (input.channel !== 'announcement') throw chatErr('invalid-argument', 'Only announcements can be pinned');
+    if (found.data.hidden === true) throw chatErr('failed-precondition', 'Hidden messages cannot be pinned');
+    await found.ref.update({pinned: action === 'pin' ? true : null});
+    await chatAudit({action, channel: input.channel, regionKey: chatNorm(input.region), messageId: input.messageId, byUid: actor.uid, byName: actor.name, byRole: actor.role, reason});
+  }
+  return {success: true};
+});
+
+// ---- edit / delete your own message (within 15 minutes) ----
+async function chatOwnMessage(request) {
+  const actor = await chatActor(request);
+  const input = chatCheckInput(request.data);
+  if (!(await chatCanAccess(actor, input))) throw chatErr('permission-denied', 'No access to this channel');
+  const found = await chatFindMessage(input);
+  const owner = found.data.senderId || found.data.authorId;
+  if (owner !== actor.uid) throw chatErr('permission-denied', 'You can only change your own messages');
+  if (found.data.hidden === true || found.data.deleted === true) throw chatErr('failed-precondition', 'This message was already removed');
+  if (Date.now() - Number(found.data.timestamp || 0) > CHAT_EDIT_WINDOW_MS) {
+    throw chatErr('failed-precondition', 'Messages can only be changed within 15 minutes of sending');
+  }
+  return {actor, input, found};
+}
+
+exports.editChatMessage = functions.https.onCall(async (request) => {
+  const {found} = await chatOwnMessage(request);
+  const text = String((request.data && request.data.text) || '').trim();
+  if (!text || text.length > 2000) throw chatErr('invalid-argument', 'Message must be between 1 and 2000 characters');
+  if (!found.data.text) throw chatErr('failed-precondition', 'Only text messages can be edited');
+  await found.ref.update({text, editedAt: admin.database.ServerValue.TIMESTAMP});
+  return {success: true};
+});
+
+exports.deleteChatMessage = functions.https.onCall(async (request) => {
+  const {found} = await chatOwnMessage(request);
+  await found.ref.update({deleted: true, text: null, fileUrl: null, fileName: null, fileType: null, fileDuration: null, pinned: null, editedAt: null});
+  return {success: true};
+});
+
+// ---- notifications helpers ----
+async function chatNotifyUsers(db, uids, payload) {
+  const list = Array.from(new Set(uids)).filter(Boolean);
+  for (let i = 0; i < list.length; i += 400) {
+    const batch = db.batch();
+    list.slice(i, i + 400).forEach((uid) => {
+      batch.set(db.collection('notifications').doc(), {
+        uid, type: payload.type, title: payload.title, message: payload.message, link: payload.link,
+        read: false, status: 'unread', createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+  }
+}
+
+async function chatModeratorUids(db, regionKey, extraUids) {
+  const snap = await db.collection('users').where('role', 'in', ['super_admin', 'national_executive', 'regional_executive']).get();
+  const out = new Set(extraUids || []);
+  snap.docs.forEach((doc) => {
+    const u = doc.data();
+    if (u.status && !['active', 'approved'].includes(String(u.status).toLowerCase())) return;
+    if (chatIsOversight(u)) out.add(doc.id);
+    else if (regionKey && u.role === 'regional_executive' && chatNorm(chatRegionRaw(u)) === regionKey) out.add(doc.id);
+  });
+  return Array.from(out);
+}
+
+// ---- report a message ----
+exports.reportChatMessage = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  const input = chatCheckInput(request.data);
+  const reason = String((request.data && request.data.reason) || '').trim().slice(0, 300);
+  if (!reason) throw chatErr('invalid-argument', 'Please say why you are reporting this message');
+  if (!(await chatCanAccess(actor, input))) throw chatErr('permission-denied', 'No access to this channel');
+  const found = await chatFindMessage(input);
+  const senderId = found.data.senderId || found.data.authorId || '';
+  if (senderId === actor.uid) throw chatErr('invalid-argument', 'You cannot report your own message');
+  const db = admin.firestore();
+  const regionKey = (input.channel === 'regional' || input.channel === 'announcement') ? chatNorm(input.region) : '';
+  const id = input.channel + '__' + input.messageId + '__' + actor.uid;
+  const ref = db.collection('chat_reports').doc(id);
+  if ((await ref.get()).exists) return {success: true, duplicate: true};
+  await ref.set({
+    channel: input.channel, regionKey, regionName: String(input.region || ''), roomId: input.roomId || null, messageId: input.messageId,
+    reportedBy: actor.uid, reportedByName: actor.name, reason,
+    senderId, senderName: found.data.senderName || found.data.authorName || '',
+    snapshot: {text: String(found.data.text || '').slice(0, 500), fileUrl: found.data.fileUrl || null, fileType: found.data.fileType || null},
+    status: 'open', createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  let extra = [];
+  if (input.channel === 'room') { try { extra = [(await chatLoadRoom(input.roomId)).createdBy]; } catch (e) { extra = []; } }
+  const mods = (await chatModeratorUids(db, regionKey, extra)).filter((u) => u !== actor.uid);
+  await chatNotifyUsers(db, mods, {
+    type: 'chat_report', title: 'A chat message was reported',
+    message: actor.name + ' reported a message: ' + reason.slice(0, 100),
+    link: '/member-dashboard/regional-chat.html?view=moderation'
+  });
+  return {success: true};
+});
+
+function chatReportScopeOk(actor, r) {
+  if (actor.oversight) return true;
+  if (actor.role === 'regional_executive' && r.regionKey && r.regionKey === actor.regionKey) return true;
+  return false;
+}
+
+exports.listChatReports = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  if (!actor.isExec) throw chatErr('permission-denied', 'Executives only');
+  const status = request.data && request.data.status === 'resolved' ? 'resolved' : 'open';
+  const snap = await admin.firestore().collection('chat_reports').where('status', 'in', status === 'open' ? ['open'] : ['resolved', 'dismissed']).get();
+  const rows = snap.docs.map((d) => ({id: d.id, ...d.data()})).filter((r) => chatReportScopeOk(actor, r));
+  rows.sort((a, b) => (b.createdAt ? b.createdAt.toMillis() : 0) - (a.createdAt ? a.createdAt.toMillis() : 0));
+  return {
+    reports: rows.slice(0, 100).map((r) => ({
+      id: r.id, channel: r.channel, regionKey: r.regionKey, regionName: r.regionName, roomId: r.roomId, messageId: r.messageId,
+      reportedByName: r.reportedByName, reason: r.reason, senderName: r.senderName, snapshot: r.snapshot, status: r.status,
+      createdAt: r.createdAt ? r.createdAt.toMillis() : 0
+    }))
+  };
+});
+
+exports.resolveChatReport = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  if (!actor.isExec) throw chatErr('permission-denied', 'Executives only');
+  const reportId = String((request.data && request.data.reportId) || '');
+  const action = String((request.data && request.data.action) || '');
+  if (!reportId || !['dismiss', 'hide'].includes(action)) throw chatErr('invalid-argument', 'Invalid request');
+  const ref = admin.firestore().collection('chat_reports').doc(reportId);
+  const snap = await ref.get();
+  if (!snap.exists) throw chatErr('not-found', 'Report not found');
+  const r = snap.data();
+  if (!chatReportScopeOk(actor, r) && !(r.channel === 'room' && await chatCanModerate(actor, {channel: 'room', roomId: r.roomId}))) {
+    throw chatErr('permission-denied', 'You cannot resolve this report');
+  }
+  if (action === 'hide') {
+    const input = {channel: r.channel, messageId: r.messageId, roomId: r.roomId || '', region: r.regionName || r.regionKey || ''};
+    try {
+      const found = await chatFindMessage(input);
+      await chatHideMessage(actor, input, found, 'Reported: ' + String(r.reason || '').slice(0, 120));
+    } catch (e) {
+      if (!(e && e.code === 'not-found')) throw e;
+    }
+  }
+  await ref.update({status: action === 'hide' ? 'resolved' : 'dismissed', resolvedBy: actor.uid, resolvedByName: actor.name, resolvedAt: admin.firestore.FieldValue.serverTimestamp()});
+  await chatAudit({action: 'report_' + action, channel: r.channel, regionKey: r.regionKey || '', messageId: r.messageId, byUid: actor.uid, byName: actor.name, byRole: actor.role, reason: String(r.reason || '').slice(0, 200)});
+  return {success: true};
+});
+
+exports.listChatAudit = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  if (actor.role !== 'super_admin') throw chatErr('permission-denied', 'Only the super admin can view the moderation log');
+  const snap = await admin.firestore().collection('chat_audit').orderBy('at', 'desc').limit(100).get();
+  return {
+    entries: snap.docs.map((d) => {
+      const e = d.data();
+      return {id: d.id, action: e.action, channel: e.channel, regionKey: e.regionKey || '', byName: e.byName, byRole: e.byRole, reason: e.reason || '',
+        targetName: e.targetName || '', snippet: e.snippet || '', at: e.at ? e.at.toMillis() : 0};
+    })
+  };
+});
+
+// ---- members of a region / everyone (for rooms) ----
+exports.listChatMembers = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  if (!actor.isExec) throw chatErr('permission-denied', 'Executives only');
+  const want = String((request.data && request.data.region) || '');
+  let regionKey = chatNorm(want);
+  const everyone = want === '__all__';
+  if (everyone && !(actor.oversight || actor.role === 'national_executive')) throw chatErr('permission-denied', 'National executives only');
+  if (!everyone) {
+    if (!actor.oversight) regionKey = actor.regionKey;
+    if (!regionKey) throw chatErr('invalid-argument', 'No region');
+  }
+  const snap = await admin.firestore().collection('users').where('status', 'in', ['active', 'approved']).get();
+  const members = [];
+  snap.docs.forEach((doc) => {
+    const u = doc.data();
+    if (!everyone && chatNorm(chatRegionRaw(u)) !== regionKey) return;
+    members.push({uid: doc.id, name: u.fullName || u.name || u.email || 'Member', role: String(u.role || 'member'), title: u.executiveTitle || '', region: chatRegionRaw(u)});
+  });
+  members.sort((a, b) => a.name.localeCompare(b.name));
+  return {members: members.slice(0, 1500)};
+});
+
+// ---- rooms (committees, youth, women, ...) ----
+function chatRoomPublic(id, r, actorUid) {
+  return {
+    id, name: r.name, description: r.description || '', scope: r.scope, regionKey: r.regionKey || '', regionName: r.regionName || '',
+    createdBy: r.createdBy, createdByName: r.createdByName || '', memberCount: (r.memberUids || []).length,
+    isMember: (r.memberUids || []).includes(actorUid), archived: r.archived === true
+  };
+}
+
+exports.listChatRooms = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  const db = admin.firestore();
+  const out = new Map();
+  const add = (snap) => snap.docs.forEach((d) => out.set(d.id, chatRoomPublic(d.id, d.data(), actor.uid)));
+  if (actor.oversight) add(await db.collection('chat_rooms').get());
+  else {
+    add(await db.collection('chat_rooms').where('memberUids', 'array-contains', actor.uid).get());
+    if (actor.role === 'regional_executive' && actor.regionKey) add(await db.collection('chat_rooms').where('regionKey', '==', actor.regionKey).get());
+  }
+  const rooms = Array.from(out.values()).filter((r) => !r.archived || actor.oversight).sort((a, b) => a.name.localeCompare(b.name));
+  return {rooms};
+});
+
+function chatRoomClean(data) {
+  const name = String((data && data.name) || '').trim().slice(0, 60);
+  const description = String((data && data.description) || '').trim().slice(0, 200);
+  return {name, description};
+}
+
+async function chatRoomWriteMembers(roomId, uids) {
+  const map = {};
+  uids.forEach((u) => { map[u] = true; });
+  await admin.database().ref('chat-rooms/' + roomId + '/meta').update({members: map});
+}
+
+exports.manageChatRoom = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  if (!actor.isExec) throw chatErr('permission-denied', 'Executives only');
+  const data = request.data || {};
+  const action = String(data.action || '');
+  const db = admin.firestore();
+  const cleanUids = (arr) => Array.from(new Set((Array.isArray(arr) ? arr : []).map(String).filter((u) => /^[A-Za-z0-9_-]{6,128}$/.test(u))));
+
+  async function validActiveUids(uids, execOnly) {
+    const refs = uids.map((u) => db.collection('users').doc(u));
+    const snaps = refs.length ? await db.getAll(...refs) : [];
+    return snaps.filter((s) => s.exists && ['active', 'approved'].includes(String((s.data() || {}).status || '').toLowerCase()) && (!execOnly || EXECUTIVE_ROLES.has(String((s.data() || {}).role || '').toLowerCase()))).map((s) => s.id);
+  }
+
+  if (action === 'create') {
+    const {name, description} = chatRoomClean(data);
+    if (name.length < 2) throw chatErr('invalid-argument', 'Give the room a name');
+    const scope = data.scope === 'national' ? 'national' : 'region';
+    let regionKey = '', regionName = '';
+    if (scope === 'national') {
+      if (!(actor.oversight || actor.role === 'national_executive')) throw chatErr('permission-denied', 'Only national executives can create national rooms');
+    } else if (actor.oversight && data.region) {
+      regionKey = chatNorm(data.region); regionName = String(data.region);
+    } else {
+      regionKey = actor.regionKey; regionName = actor.regionRaw;
+    }
+    if (scope === 'region' && !regionKey) throw chatErr('invalid-argument', 'A region is required');
+    const members = await validActiveUids(cleanUids(data.memberUids).slice(0, 500), scope === 'national');
+    const memberUids = Array.from(new Set([actor.uid, ...members]));
+    const roomId = admin.database().ref('chat-rooms').push().key;
+    const room = {name, description, scope, regionKey, regionName, createdBy: actor.uid, createdByName: actor.name, memberUids, archived: false, createdAt: admin.firestore.FieldValue.serverTimestamp()};
+    await db.collection('chat_rooms').doc(roomId).set(room);
+    await admin.database().ref('chat-rooms/' + roomId + '/meta').set({
+      name, description, scope, regionKey, regionName, createdBy: actor.uid, createdByName: actor.name,
+      createdAt: admin.database.ServerValue.TIMESTAMP, archived: false, members: memberUids.reduce((m, u) => { m[u] = true; return m; }, {})
+    });
+    await chatNotifyUsers(db, memberUids.filter((u) => u !== actor.uid), {type: 'chat_room', title: 'You were added to a chat room', message: actor.name + ' added you to "' + name + '".', link: '/member-dashboard/regional-chat.html?room=' + roomId});
+    await chatAudit({action: 'room_create', channel: 'room', roomId, regionKey, byUid: actor.uid, byName: actor.name, byRole: actor.role, reason: name});
+    return {success: true, roomId};
+  }
+
+  const roomId = String(data.roomId || '');
+  if (!/^[-A-Za-z0-9_]{8,40}$/.test(roomId)) throw chatErr('invalid-argument', 'Invalid room');
+  const room = await chatLoadRoom(roomId);
+
+  if (action === 'leave') {
+    if (room.createdBy === actor.uid) throw chatErr('failed-precondition', 'The room creator cannot leave; archive the room instead');
+    const next = (room.memberUids || []).filter((u) => u !== actor.uid);
+    await db.collection('chat_rooms').doc(roomId).update({memberUids: next});
+    await chatRoomWriteMembers(roomId, next);
+    return {success: true};
+  }
+
+  const canManage = actor.oversight || room.createdBy === actor.uid || (actor.role === 'regional_executive' && room.scope === 'region' && room.regionKey === actor.regionKey);
+  if (!canManage) throw chatErr('permission-denied', 'You cannot manage this room');
+
+  if (action === 'update') {
+    const {name, description} = chatRoomClean(data);
+    if (name.length < 2) throw chatErr('invalid-argument', 'Give the room a name');
+    await db.collection('chat_rooms').doc(roomId).update({name, description});
+    await admin.database().ref('chat-rooms/' + roomId + '/meta').update({name, description});
+    return {success: true};
+  }
+  if (action === 'archive' || action === 'unarchive') {
+    const archived = action === 'archive';
+    await db.collection('chat_rooms').doc(roomId).update({archived});
+    await admin.database().ref('chat-rooms/' + roomId + '/meta').update({archived});
+    await chatAudit({action: 'room_' + action, channel: 'room', roomId, byUid: actor.uid, byName: actor.name, byRole: actor.role, reason: room.name});
+    return {success: true};
+  }
+  if (action === 'addMembers' || action === 'removeMembers') {
+    let next = new Set(room.memberUids || []);
+    const uids = cleanUids(data.memberUids).slice(0, 500);
+    if (action === 'addMembers') {
+      const valid = await validActiveUids(uids, room.scope === 'national');
+      const fresh = valid.filter((u) => !next.has(u));
+      valid.forEach((u) => next.add(u));
+      await chatNotifyUsers(db, fresh, {type: 'chat_room', title: 'You were added to a chat room', message: actor.name + ' added you to "' + room.name + '".', link: '/member-dashboard/regional-chat.html?room=' + roomId});
+    } else {
+      uids.forEach((u) => { if (u !== room.createdBy) next.delete(u); });
+    }
+    if (next.size > 500) throw chatErr('failed-precondition', 'A room can have at most 500 members');
+    const arr = Array.from(next);
+    await db.collection('chat_rooms').doc(roomId).update({memberUids: arr});
+    await chatRoomWriteMembers(roomId, arr);
+    return {success: true, memberCount: arr.length};
+  }
+  if (action === 'members') {
+    const refs = (room.memberUids || []).map((u) => db.collection('users').doc(u));
+    const snaps = refs.length ? await db.getAll(...refs) : [];
+    return {members: snaps.filter((s) => s.exists).map((s) => ({uid: s.id, name: (s.data() || {}).fullName || 'Member', role: (s.data() || {}).role || 'member'}))};
+  }
+  throw chatErr('invalid-argument', 'Unknown action');
+});
+
+// ---- push notification registration and mute settings ----
+exports.registerPushToken = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  const token = String((request.data && request.data.token) || '');
+  if (token.length < 20 || token.length > 4096) throw chatErr('invalid-argument', 'Invalid token');
+  const id = crypto.createHash('sha1').update(token).digest('hex');
+  const db = admin.firestore();
+  await db.collection('chat_push_tokens').doc(id).set({
+    token, uid: actor.uid, regionKey: actor.regionKey || '', executive: actor.isExec, updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  const prefs = await db.collection('chat_prefs').doc(actor.uid).get();
+  return {success: true, muted: prefs.exists ? (prefs.data().muted || []) : []};
+});
+
+exports.unregisterPushToken = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  const token = String((request.data && request.data.token) || '');
+  if (!token) return {success: true};
+  const ref = admin.firestore().collection('chat_push_tokens').doc(crypto.createHash('sha1').update(token).digest('hex'));
+  const snap = await ref.get();
+  if (snap.exists && snap.data().uid === actor.uid) await ref.delete();
+  return {success: true};
+});
+
+exports.getChatPrefs = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  const prefs = await admin.firestore().collection('chat_prefs').doc(actor.uid).get();
+  return {muted: prefs.exists ? (prefs.data().muted || []) : []};
+});
+
+exports.setChatMute = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  const key = String((request.data && request.data.channelKey) || '');
+  if (!/^(regional|announcement):[a-z0-9-]{1,80}$|^national$|^room:[-A-Za-z0-9_]{8,40}$/.test(key)) throw chatErr('invalid-argument', 'Invalid channel');
+  const muted = request.data && request.data.muted === true;
+  await admin.firestore().collection('chat_prefs').doc(actor.uid).set({
+    muted: muted ? admin.firestore.FieldValue.arrayUnion(key) : admin.firestore.FieldValue.arrayRemove(key)
+  }, {merge: true});
+  return {success: true};
+});
+
+// ---- push delivery ----
+function chatPreview(m) {
+  if (m.text) return String(m.text).slice(0, 110);
+  const t = String(m.fileType || '');
+  if (t.startsWith('image/')) return 'Sent a photo';
+  if (t.startsWith('audio/')) return 'Sent a voice note';
+  return 'Sent a file';
+}
+
+async function chatSendPush({tokenDocs, channelKey, senderUid, title, body, link}) {
+  const db = admin.firestore();
+  const docs = tokenDocs.filter((d) => d.data().uid !== senderUid);
+  if (!docs.length) return;
+  const uids = Array.from(new Set(docs.map((d) => d.data().uid)));
+  const mutedSet = new Set();
+  for (let i = 0; i < uids.length; i += 300) {
+    const snaps = await db.getAll(...uids.slice(i, i + 300).map((u) => db.collection('chat_prefs').doc(u)));
+    snaps.forEach((s) => { if (s.exists && (s.data().muted || []).includes(channelKey)) mutedSet.add(s.id); });
+  }
+  const targets = docs.filter((d) => !mutedSet.has(d.data().uid));
+  for (let i = 0; i < targets.length; i += 500) {
+    const chunk = targets.slice(i, i + 500);
+    const res = await admin.messaging().sendEachForMulticast({
+      tokens: chunk.map((d) => d.data().token),
+      notification: {title, body},
+      data: {link},
+      webpush: {headers: {Urgency: 'high', TTL: '86400'}, fcmOptions: {link: CHAT_SITE + link}, notification: {icon: CHAT_SITE + '/images/logo.jpg', tag: channelKey, renotify: true, silent: false, vibrate: [200, 100, 200]}}
+    });
+    const dead = [];
+    res.responses.forEach((r, idx) => {
+      const code = r.error && r.error.code;
+      if (code === 'messaging/registration-token-not-registered' || code === 'messaging/invalid-registration-token') dead.push(chunk[idx].ref.delete());
+    });
+    if (dead.length) await Promise.all(dead);
+  }
+}
+
+// Called by the page right after a message is posted: verifies the message is real and recent, then pushes it.
+exports.notifyChatMessage = functions.https.onCall(async (request) => {
+  const actor = await chatActor(request);
+  const input = chatCheckInput(request.data);
+  if (!(await chatCanAccess(actor, input))) throw chatErr('permission-denied', 'No access to this channel');
+  const found = await chatFindMessage(input);
+  const m = found.data;
+  const sender = m.senderId || m.authorId;
+  if (sender !== actor.uid) throw chatErr('permission-denied', 'Only the sender can trigger notifications');
+  if (Date.now() - Number(m.timestamp || 0) > 2 * 60 * 1000) return {success: true, skipped: 'old'};
+  if (m.hidden === true || m.deleted === true || m.system === true) return {success: true, skipped: 'removed'};
+  try {
+    await admin.firestore().collection('chat_push_sent').doc(input.channel + '_' + input.messageId).create({at: admin.firestore.FieldValue.serverTimestamp()});
+  } catch (e) {
+    return {success: true, skipped: 'already sent'};
+  }
+  const db = admin.firestore();
+  if (input.channel === 'regional') {
+    const key = chatNorm(input.region);
+    const snap = await db.collection('chat_push_tokens').where('regionKey', '==', key).get();
+    await chatSendPush({tokenDocs: snap.docs, channelKey: 'regional:' + key, senderUid: actor.uid,
+      title: (m.regionName || 'Regional chat') + ' · ' + (m.senderName || 'Member'), body: chatPreview(m), link: '/member-dashboard/regional-chat.html?c=regional'});
+  } else if (input.channel === 'announcement') {
+    const key = chatNorm(input.region);
+    const snap = await db.collection('chat_push_tokens').where('regionKey', '==', key).get();
+    await chatSendPush({tokenDocs: snap.docs, channelKey: 'announcement:' + key, senderUid: actor.uid,
+      title: 'Announcement · ' + (m.regionName || 'AMCAG'), body: (m.authorName || 'Executive') + ': ' + chatPreview(m), link: '/member-dashboard/regional-chat.html?c=announcement'});
+  } else if (input.channel === 'national') {
+    const snap = await db.collection('chat_push_tokens').where('executive', '==', true).get();
+    await chatSendPush({tokenDocs: snap.docs, channelKey: 'national', senderUid: actor.uid,
+      title: 'National chat · ' + (m.senderName || 'Executive'), body: chatPreview(m), link: '/member-dashboard/regional-chat.html?c=national'});
+  } else {
+    const room = await chatLoadRoom(input.roomId);
+    const members = (room.memberUids || []).filter((u) => u !== actor.uid);
+    const docs = [];
+    for (let i = 0; i < members.length; i += 30) {
+      const snap = await db.collection('chat_push_tokens').where('uid', 'in', members.slice(i, i + 30)).get();
+      snap.docs.forEach((d) => docs.push(d));
+    }
+    await chatSendPush({tokenDocs: docs, channelKey: 'room:' + input.roomId, senderUid: actor.uid,
+      title: room.name + ' · ' + (m.senderName || 'Member'), body: chatPreview(m), link: '/member-dashboard/regional-chat.html?room=' + input.roomId});
+  }
+  return {success: true};
+});
+
+// ---- friendly welcome note in the regional chat when a member is approved ----
+exports.onMemberWelcomeChat = onChatDocUpdated('users/{uid}', async (event) => {
+  const before = event.data.before.data() || {};
+  const after = event.data.after.data() || {};
+  const wasActive = ['active', 'approved'].includes(String(before.status || '').toLowerCase());
+  const isActive = ['active', 'approved'].includes(String(after.status || '').toLowerCase());
+  if (wasActive || !isActive) return;
+  if (String(after.role || 'member').toLowerCase() !== 'member') return;
+  const raw = chatRegionRaw(after);
+  const key = chatNorm(raw);
+  if (!key) return;
+  const first = String(after.fullName || '').trim().split(/\s+/)[0] || 'a new member';
+  await admin.database().ref('regional-chats/' + key + '/messages').push({
+    senderId: 'system', senderName: 'AMCAG', senderRole: 'system', system: true,
+    text: 'Please welcome ' + first + ' to the ' + raw + ' community chat!',
+    region: key, regionName: raw, timestamp: admin.database.ServerValue.TIMESTAMP
+  });
+});
+
+// ===== PUBLIC DONOR RECOGNITION =====
+// The public page cannot read donations directly (they are private), so this returns only what is safe to show:
+// named donors who chose to be public, overall totals, and recent impact stories without donor names.
+exports.getDonorRecognition = functions.https.onCall(async () => {
+  const db = admin.firestore();
+  const snap = await db.collection('donations').where('status', 'in', ['confirmed', 'distributed']).get();
+  const donors = {};
+  const donorIds = new Set();
+  let totalRaised = 0;
+  const beneficiaries = new Set();
+  const stories = [];
+  snap.docs.forEach((doc) => {
+    const d = doc.data();
+    const uid = d.donorUid || d.donorId || doc.id;
+    donorIds.add(uid);
+    if (d.type === 'monetary') totalRaised += Number(d.amount || 0);
+    const isPublic = d.visibility === 'public' && d.donorType !== 'anonymous';
+    if (isPublic) {
+      const row = donors[uid] || (donors[uid] = {name: d.donorName || 'AMCAG donor', total: 0, donationCount: 0, hasMaterial: false});
+      if (d.type === 'monetary') row.total += Number(d.amount || 0); else row.hasMaterial = true;
+      row.donationCount += 1;
+    }
+    if (d.status === 'distributed') {
+      if (d.beneficiaryName) beneficiaries.add(String(d.beneficiaryName).trim().toLowerCase());
+      if (d.visibility !== 'executives_only') {
+        const when = d.distributedAt && d.distributedAt.toMillis ? d.distributedAt.toMillis() : 0;
+        const photos = Array.isArray(d.distributionPhotos) ? d.distributionPhotos : [];
+        const photo = photos.map((p) => p && p.url).find((u) => /^https:\/\//.test(String(u || ''))) || '';
+        stories.push({
+          beneficiary: String(d.beneficiaryName || '').slice(0, 120),
+          beneficiaryType: String(d.beneficiaryType || '').slice(0, 60),
+          impact: String(d.impact || '').slice(0, 400),
+          photoUrl: photo,
+          at: when
+        });
+      }
+    }
+  });
+  stories.sort((a, b) => b.at - a.at);
+  return {
+    donors: Object.values(donors).sort((a, b) => b.total - a.total),
+    stats: {
+      totalRaised,
+      totalDonors: donorIds.size,
+      totalBeneficiaries: beneficiaries.size,
+      totalDistributions: snap.docs.filter((x) => x.data().status === 'distributed').length
+    },
+    stories: stories.slice(0, 6)
+  };
 });

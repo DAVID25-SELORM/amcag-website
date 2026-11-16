@@ -6,7 +6,7 @@
   <title>Donations Management | Region Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
 </head>
 <body class="dashboard-layout">
   <nav class="navbar">
@@ -16,7 +16,7 @@
         <span>AMCAG Region Dashboard</span>
       </a>
       <div class="navbar-actions">
-        <button class="btn btn-sm" onclick="signOut()">Sign Out</button>
+        <a href="/profile.html" class="btn btn-sm" style="margin-right: 8px;">Profile</a><button class="btn btn-sm" onclick="signOut()">Sign Out</button>
       </div>
     </div>
   </nav>
@@ -203,6 +203,10 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     let currentUser = null;
@@ -752,7 +756,17 @@
         }
 
         if (!userData.region) {
-          UIModule.showAlert('No region assigned to your account.', 'error');
+          const nationalAccess = ['super_admin', 'national_executive'].includes(userData.role);
+          for (const id of ['pendingList', 'confirmedList', 'inventoryList']) {
+            const container = document.getElementById(id);
+            container.textContent = 'Regional donations require a region assigned to your account. ';
+            if (nationalAccess) {
+              const link = document.createElement('a');
+              link.href = '/national/donations-overview.html';
+              link.textContent = 'View national donations';
+              container.appendChild(link);
+            }
+          }
           return;
         }
 
@@ -765,6 +779,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

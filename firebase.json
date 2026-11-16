@@ -4,11 +4,27 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      ".git",
+      ".git/**",
+      ".firebase",
+      ".firebase/**",
+      ".sixth",
+      ".sixth/**",
       "**/node_modules/**",
+      "package.json",
+      "package-lock.json",
       "README.md",
       "FIREBASE_SETUP.md",
       "**/*.md",
+      "firestore.rules",
+      "firestore.indexes.json",
+      "database.rules.json",
+      "storage.rules",
+      "**/*.log",
+      "firebase-debug.*.log",
       "firebase-reset/**",
+      "index-old-backup.html",
+      "hubtel-integration-flow.pdf",
       "functions/**",
       "check-user-status.js",
       "final-verification.js",
@@ -35,8 +51,18 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=86400"
+              "value": "no-cache, no-store, max-age=0, must-revalidate"
           }
+        ]
+      },
+      {
+        "source": "**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, max-age=0, must-revalidate" }, { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "X-Frame-Options", "value": "DENY" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+          { "key": "Permissions-Policy", "value": "camera=(self \"https://meet.jit.si\"), microphone=(self \"https://meet.jit.si\"), geolocation=()" },
+          { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://www.googleapis.com https://js.paystack.co https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://www.gstatic.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://*.cloudfunctions.net https://api.paystack.co; frame-src 'self' https://meet.jit.si https://js.paystack.co https://checkout.paystack.com https://*.firebaseio.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" }
         ]
       }
     ],
@@ -61,7 +87,7 @@
       "ignore": [
         "node_modules",
         ".git",
-        "firebase-debug.log",
+        "**/*.log",
         "firebase-debug.*.log",
         "*.local"
       ]

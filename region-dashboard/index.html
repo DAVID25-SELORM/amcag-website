@@ -8,7 +8,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link rel="stylesheet" href="/css/animations.css">
   <link rel="stylesheet" href="/css/dark-mode.css">
   
@@ -28,11 +28,13 @@
         <li><a href="/region-dashboard/index.html" class="navbar-link active">Dashboard</a></li>
         <li><a href="/region-dashboard/member-approval.html" class="navbar-link">Members</a></li>
         <li><a href="/region-dashboard/meetings.html" class="navbar-link">Events</a></li>
+        <li><a href="/region-dashboard/agm-registrations.html" class="navbar-link">AGM</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
           <span class="theme-icon">🌙</span>
         </button></li>
-        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+        <li><a href="/membership.html" onclick="signOut(); return false;" class="navbar-link" data-nav-logout="true">Logout</a></li>
       </ul>
     </div>
   </nav>
@@ -106,6 +108,21 @@
         </div>
       </div>
 
+      <!-- AGM Banner -->
+      <div style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); border-radius: var(--radius-xl); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: white;">
+        <div>
+          <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; margin-bottom: 0.25rem;">Upcoming Event</div>
+          <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.2rem;">AMCAG Annual General Meeting 2026</div>
+          <div style="font-size: 0.85rem; opacity: 0.9;">📅 10th – 11th July 2026 &nbsp;|&nbsp; 📍 PCG Hall, Koforidua &nbsp;|&nbsp; <span id="agm-countdown" style="font-weight:600;"></span></div>
+          <div style="margin-top: 0.5rem; font-size: 0.85rem;">
+            Your Region: <strong id="agm-total">—</strong> registered &nbsp;|&nbsp;
+            Paid: <strong id="agm-paid">—</strong> &nbsp;|&nbsp;
+            Pending: <strong id="agm-pending">—</strong>
+          </div>
+        </div>
+        <a href="/region-dashboard/agm-registrations.html" style="background: white; color: #1a73e8; border-radius: var(--radius-md); padding: 0.5rem 1.25rem; font-weight: 700; font-size: 0.85rem; text-decoration: none; white-space: nowrap; flex-shrink: 0;">Manage Registrations →</a>
+      </div>
+
       <!-- Main Grid -->
       <div class="grid grid-2" style="gap: var(--space-6); align-items: start;">
         <!-- Left Column -->
@@ -114,7 +131,7 @@
           <div class="card">
             <h3 class="card-title">Quick Actions</h3>
             <div class="flex-col gap-2 mt-3">
-              <a href="/member-dashboard/regional-chat.html" class="btn btn-outline btn-block">💬 Regional Chat</a>
+              <a href="/member-dashboard/regional-chat.html" class="btn btn-outline btn-block">💬 Chat &amp; Announcements</a>
               <a href="/region-dashboard/member-approval.html" class="btn btn-outline btn-block">👥 Member Approval</a>
               <a href="/region-dashboard/donations.html" class="btn btn-outline btn-block">🎁 Manage Donations</a>
               <a href="/region-dashboard/meetings.html" class="btn btn-outline btn-block">📹 Schedule Meetings</a>
@@ -122,6 +139,7 @@
               <a href="/national/news-management.html" class="btn btn-outline btn-block">📰 Manage News</a>
               <a href="/region-dashboard/payment-approvals.html" class="btn btn-outline btn-block">💳 Payment Approvals</a>
               <a href="/region-dashboard/dues-overview.html" class="btn btn-outline btn-block">💰 Dues Overview</a>
+              <a href="/region-dashboard/agm-registrations.html" class="btn btn-primary btn-block">AGM Registrations</a>
               <a href="/region-dashboard/waiver-management.html" class="btn btn-outline btn-block">📝 Waiver Management</a>
             </div>
           </div>
@@ -226,9 +244,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
   <script src="/js/suspension-check.js"></script>
   
   <script>
@@ -273,7 +295,7 @@
     
     async function loadDashboardData(user) {
       try {
-        const region = user.profile.region;
+        const region = user.profile.region || user.profile.regionId;
         
         // Load member statistics
         const memberStats = await APIModule.Members.getStats(region);
@@ -281,20 +303,15 @@
         document.getElementById('active-members').textContent = memberStats.active;
         
         // Load employment statistics
-        const db = window.FirebaseModule.firestore();
-        const regionalMembersSnapshot = await db.collection('users')
-          .where('role', '==', 'member')
-          .where('region', '==', region)
-          .get();
-        
         let employedCount = 0;
         let unemployedCount = 0;
-        
-        regionalMembersSnapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.employmentStatus === 'Employed') {
+
+        const members = await APIModule.Members.getAll({ region: region });
+        members.forEach(data => {
+          const employmentStatus = String(data.employmentStatus || '').toLowerCase();
+          if (employmentStatus === 'employed') {
             employedCount++;
-          } else if (data.employmentStatus === 'Not Employed') {
+          } else if (employmentStatus === 'not employed' || employmentStatus === 'unemployed') {
             unemployedCount++;
           }
         });
@@ -303,14 +320,13 @@
         document.getElementById('unemployed-members').textContent = unemployedCount;
         
         // Load payment statistics
-        const members = await APIModule.Members.getAll({ region: region });
         let totalPayments = 0;
         let completedPayments = 0;
         let pendingPayments = 0;
         
         for (const member of members) {
-          const payments = await APIModule.Payments.getAll({ memberId: member.id });
-          const completed = payments.filter(p => p.status === 'completed');
+          const payments = await APIModule.Payments.getAll({ uid: member.uid || member.id });
+          const completed = payments.filter(p => ['completed', 'paid'].includes(String(p.status || '').toLowerCase()));
           const pending = payments.filter(p => p.status === 'pending');
           
           completedPayments += completed.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -375,8 +391,8 @@
       `).join('');
     }
     
-    function signOut() {
-      if (confirm('Are you sure you want to sign out?')) {
+    async function signOut() {
+      if (await AMCAGDialog.confirm('Are you sure you want to sign out?')) {
         AuthModule.signOut();
       }
     }
@@ -407,6 +423,47 @@
       }
     })();
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
+  <script>
+    (function () {
+      const AGM_DATE = new Date('2026-07-10T09:00:00');
+      function updateCountdown() {
+        const el = document.getElementById('agm-countdown');
+        if (!el) return;
+        const diff = AGM_DATE - Date.now();
+        if (diff <= 0) { el.textContent = 'Event is live!'; return; }
+        el.textContent = Math.floor(diff / 86400000) + ' days to go';
+      }
+      updateCountdown();
+      setInterval(updateCountdown, 60000);
+
+      function loadAgmStats(region) {
+        const db = window.FirebaseModule?.db?.();
+        if (!db || !region) return;
+        db.collection('agmRegistrations')
+          .where('eventId', '==', 'agm-2026')
+          .where('region', '==', region)
+          .get()
+          .then((snap) => {
+            let paid = 0;
+            snap.forEach((d) => { if (d.data().paymentStatus === 'paid') paid++; });
+            const total = snap.size;
+            document.getElementById('agm-total').textContent = total;
+            document.getElementById('agm-paid').textContent = paid;
+            document.getElementById('agm-pending').textContent = total - paid;
+          }).catch(() => {});
+      }
+
+      let attempts = 0;
+      const iv = setInterval(() => {
+        const user = typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser?.();
+        const region = user?.profile?.region;
+        if (region && window.FirebaseModule?.db?.()) {
+          clearInterval(iv);
+          loadAgmStats(region);
+        } else if (++attempts > 30) clearInterval(iv);
+      }, 300);
+    })();
+  </script>
 </body>
 </html>

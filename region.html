@@ -6,7 +6,7 @@
   <title>Regional Chapter | AMCAG</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -16,7 +16,7 @@
         <img src="/images/logo.jpg" alt="AMCAG Logo">
         <span>AMCAG</span>
       </a>
-      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <button class="navbar-toggle" onclick="return window.AMCAGToggleNavbar ? window.AMCAGToggleNavbar(this,event) : (function(btn,e){if(e){e.preventDefault();e.stopPropagation();}var nav=btn.closest('.navbar');var menu=nav&&nav.querySelector('.navbar-menu');if(!menu)return false;var open=!menu.classList.contains('active');menu.classList.toggle('active',open);btn.classList.toggle('active',open);btn.setAttribute('aria-expanded',String(open));if(nav)nav.classList.toggle('menu-open',open);document.body.classList.toggle('navbar-menu-open',open);document.body.style.overflow=open?'hidden':'';return false;})(this,event)"><span></span><span></span><span></span></button>
       <ul class="navbar-menu">
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><a href="/about.html" class="navbar-link">About</a></li>
@@ -42,6 +42,10 @@
 
   <section class="section bg-surface">
     <div class="container">
+      <div style="margin-bottom: var(--space-4);">
+        <a href="/regions.html" class="btn btn-outline btn-sm">&larr; Back to Regions</a>
+      </div>
+
       <div class="grid grid-3 gap-4 mb-6">
         <div class="stat-card">
           <div class="stat-value" id="members-count">-</div>
@@ -99,15 +103,19 @@
 
   <footer class="footer">
     <div class="container">
-      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p>
+        <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p></div>
     </div>
   </footer>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="/js/firebase.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/firebase.js?v=20260602-authdomain1"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
   <script>
     // Map of Ghana regions with default information
     const ghanaRegions = {
@@ -129,6 +137,271 @@
       'oti': 'Oti'
     };
 
+    function slugifyRegion(regionName) {
+      return String(regionName || '')
+        .toLowerCase()
+        .trim()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    function normalizeText(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[-_]+/g, ' ')
+        .replace(/\s+/g, ' ');
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function getRecordRegion(record = {}) {
+      return record.region ||
+        record.regionName ||
+        record.regionId ||
+        record.assignedRegion ||
+        record.chapter ||
+        record.regionalChapter ||
+        '';
+    }
+
+    function getRecordUid(record = {}) {
+      return record.uid || record.memberUid || record.id || '';
+    }
+
+    function regionMatches(record, regionName, regionId) {
+      const regionValue = getRecordRegion(record);
+      if (!regionValue) return false;
+
+      const normalizedRegion = normalizeText(regionValue);
+      const targets = new Set([
+        normalizeText(regionName),
+        normalizeText(regionId),
+        normalizeText(slugifyRegion(regionName))
+      ].filter(Boolean));
+
+      return targets.has(normalizedRegion) ||
+        targets.has(normalizeText(slugifyRegion(regionValue)));
+    }
+
+    function getLeaderName(leader = {}) {
+      return leader.fullName || leader.name || leader.displayName || leader.memberName || '';
+    }
+
+    function getLeaderPosition(leader = {}) {
+      return leader.position || leader.title || leader.roleTitle || leader.executiveTitle || '';
+    }
+
+    function normalizeLeaderSlot(position) {
+      const normalized = normalizeText(position)
+        .replace(/^regional /, '')
+        .replace(/^national /, '');
+      if (normalized.includes('president') || normalized.includes('chairperson')) return 'president';
+      if (normalized === 'secretary' || normalized.includes('general secretary')) return 'secretary';
+      if (normalized.includes('treasurer') || normalized.includes('financial secretary')) return 'treasurer';
+      return normalized || 'other';
+    }
+
+    function isPublicLeader(leader = {}) {
+      const status = normalizeText(leader.status || leader.approvalStatus || 'active');
+      return !status || ['active', 'approved', 'current'].includes(status);
+    }
+
+    const primaryLeadershipSlots = [
+      { key: 'president', label: 'Regional President' },
+      { key: 'secretary', label: 'Regional Secretary' },
+      { key: 'treasurer', label: 'Regional Treasurer' }
+    ];
+
+    function renderLeadership(leaders = []) {
+      const leadershipList = document.getElementById('leadership-list');
+      const bySlot = new Map();
+      const extras = [];
+
+      leaders.filter(isPublicLeader).forEach((leader) => {
+        const slot = normalizeLeaderSlot(getLeaderPosition(leader));
+        if (primaryLeadershipSlots.some((item) => item.key === slot)) {
+          if (!bySlot.has(slot)) bySlot.set(slot, leader);
+          return;
+        }
+        extras.push(leader);
+      });
+
+      const rows = primaryLeadershipSlots.map(({ key, label }) => {
+        const leader = bySlot.get(key);
+        return {
+          position: label,
+          name: getLeaderName(leader) || 'TBA'
+        };
+      });
+
+      extras.forEach((leader) => {
+        rows.push({
+          position: getLeaderPosition(leader) || 'Regional Executive',
+          name: getLeaderName(leader) || 'TBA'
+        });
+      });
+
+      leadershipList.innerHTML = rows.map((leader, index) => `
+        <div style="padding: var(--space-3); background: var(--surface); border-radius: var(--radius-md); ${index < rows.length - 1 ? 'margin-bottom: var(--space-3);' : ''}">
+          <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${escapeHtml(leader.position)}</h4>
+          <p style="color: var(--text-secondary); font-size: var(--text-sm);">${escapeHtml(leader.name)}</p>
+        </div>
+      `).join('');
+    }
+
+    async function loadRegionalLeadership(db, regionName, regionId, fallbackLeadership = []) {
+      const leaders = Array.isArray(fallbackLeadership) ? [...fallbackLeadership] : [];
+
+      try {
+        const snapshot = await db.collection('leadership').get();
+        snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((leader) => normalizeText(leader.level || leader.leadershipLevel) === 'regional')
+          .filter((leader) => regionMatches(leader, regionName, regionId))
+          .forEach((leader) => leaders.push(leader));
+      } catch (error) {
+        console.warn('Could not load regional leadership records:', error);
+      }
+
+      const deduped = [];
+      const seen = new Set();
+      leaders.forEach((leader) => {
+        const key = leader.id || leader.executiveId || `${getLeaderPosition(leader)}:${getLeaderName(leader)}`;
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        deduped.push(leader);
+      });
+
+      renderLeadership(deduped);
+    }
+
+    function getPublicCountForRegion(counts, regionName, regionId) {
+      const targets = new Set([
+        normalizeText(regionName),
+        normalizeText(regionId),
+        normalizeText(slugifyRegion(regionName))
+      ].filter(Boolean));
+
+      return Object.entries(counts || {}).reduce((total, [key, value]) => {
+        return targets.has(normalizeText(key)) || targets.has(normalizeText(slugifyRegion(key)))
+          ? total + Number(value || 0)
+          : total;
+      }, 0);
+    }
+
+    function waitForAuthResolution(timeoutMs = 1800) {
+      const auth = window.FirebaseModule?.auth?.() || (typeof firebase !== 'undefined' && typeof firebase.auth === 'function' ? firebase.auth() : null);
+      if (!auth || typeof auth.onAuthStateChanged !== 'function') {
+        return Promise.resolve(null);
+      }
+
+      return new Promise((resolve) => {
+        let settled = false;
+        let unsubscribe = null;
+        const finish = (user) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (typeof unsubscribe === 'function') unsubscribe();
+          resolve(user || null);
+        };
+        const timer = setTimeout(() => finish(auth.currentUser || null), timeoutMs);
+
+        unsubscribe = auth.onAuthStateChanged(
+          (user) => finish(user),
+          () => finish(auth.currentUser || null)
+        );
+      });
+    }
+
+    async function loadMemberStats(db, regionName, regionId) {
+      let publicCount = null;
+      try {
+        const statsDoc = await db.collection('publicStats').doc('regionCounts').get();
+        if (statsDoc.exists) {
+          publicCount = getPublicCountForRegion(statsDoc.data().counts || {}, regionName, regionId);
+          document.getElementById('members-count').textContent = publicCount.toLocaleString();
+          const publicActive = getPublicCountForRegion(statsDoc.data().activeCounts || {}, regionName, regionId);
+          if (publicCount > 0 && statsDoc.data().activeCounts) {
+            document.getElementById('active-rate').textContent = Math.round((publicActive / publicCount) * 100) + '%';
+          }
+        }
+      } catch (error) {
+        console.warn('Could not load public region count:', error);
+      }
+
+      try {
+        const signedInUser = await waitForAuthResolution();
+        if (!signedInUser) {
+          if (publicCount === null) {
+            document.getElementById('members-count').textContent = '0';
+          }
+          const guestRate = document.getElementById('active-rate');
+          if (!/%$/.test(guestRate.textContent)) guestRate.textContent = '-';
+          return;
+        }
+
+        const snapshots = await Promise.allSettled([
+          db.collection('members').get(),
+          db.collection('users').get()
+        ]);
+        // Members cannot list user records; keep the public stats already shown.
+        if (snapshots.every((result) => result.status === 'rejected')) {
+          const rate = document.getElementById('active-rate');
+          if (!/%$/.test(rate.textContent)) rate.textContent = '-';
+          return;
+        }
+        const merged = new Map();
+
+        if (snapshots[0].status === 'fulfilled') {
+          snapshots[0].value.docs.forEach((doc) => {
+            const record = { id: doc.id, ...doc.data() };
+            const uid = getRecordUid(record) || doc.id;
+            if (uid) merged.set(uid, record);
+          });
+        }
+
+        if (snapshots[1].status === 'fulfilled') {
+          snapshots[1].value.docs
+            .map((doc) => ({ id: doc.id, ...doc.data() }))
+            .filter((record) => String(record.role || 'member').toLowerCase() === 'member')
+            .forEach((record) => {
+              const uid = getRecordUid(record);
+              if (!uid) return;
+              merged.set(uid, {
+                ...(merged.get(uid) || {}),
+                ...record
+              });
+            });
+        }
+
+        const members = Array.from(merged.values())
+          .filter((record) => regionMatches(record, regionName, regionId));
+
+        document.getElementById('members-count').textContent = members.length.toLocaleString();
+        const activeMembers = members.filter((member) => String(member.status || '').toLowerCase() === 'active');
+        const activeRate = members.length ? Math.round((activeMembers.length / members.length) * 100) : 0;
+        document.getElementById('active-rate').textContent = activeRate + '%';
+      } catch (error) {
+        console.warn('Authenticated region member query unavailable:', error);
+        if (publicCount === null) {
+          document.getElementById('members-count').textContent = '0';
+        }
+        const rateEl = document.getElementById('active-rate');
+        if (!/%$/.test(rateEl.textContent)) rateEl.textContent = '-';
+      }
+    }
+
     async function loadRegion() {
       const params = new URLSearchParams(window.location.search);
       const regionId = params.get('id');
@@ -140,7 +413,9 @@
       }
 
       try {
+        await window.FirebaseModule?.whenReady?.();
         const db = FirebaseModule.db();
+        if (!db) throw new Error('Firestore is not initialized');
         let regionData = null;
         const regionName = ghanaRegions[regionId] || regionId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         
@@ -167,15 +442,7 @@
         // Update page with region information
         document.getElementById('region-name').textContent = regionData.name || regionName;
         
-        // Load member count
-        try {
-          const membersSnapshot = await db.collection('users')
-            .where('region', '==', regionData.name)
-            .get();
-          document.getElementById('members-count').textContent = membersSnapshot.size.toLocaleString();
-        } catch (error) {
-          document.getElementById('members-count').textContent = '-';
-        }
+        await loadMemberStats(db, regionData.name || regionName, regionId);
         
         // Load events count for this year
         try {
@@ -189,27 +456,12 @@
           document.getElementById('events-count').textContent = '-';
         }
         
-        // Calculate active rate
-        try {
-          const allMembers = await db.collection('users')
-            .where('region', '==', regionData.name)
-            .get();
-          const activeMembers = allMembers.docs.filter(doc => doc.data().status === 'active');
-          const rate = allMembers.size > 0 ? Math.round((activeMembers.length / allMembers.size) * 100) : 0;
-          document.getElementById('active-rate').textContent = rate + '%';
-        } catch (error) {
-          document.getElementById('active-rate').textContent = '-';
-        }
-        
         // Update contact information
         document.getElementById('region-address').textContent = regionData.address || 'TBA';
         document.getElementById('region-phone').textContent = regionData.phone || 'TBA';
         document.getElementById('region-email').textContent = regionData.email || 'TBA';
         
-        // Load regional leadership if available
-        if (regionData.leadership) {
-          loadLeadership(regionData.leadership);
-        }
+        await loadRegionalLeadership(db, regionData.name || regionName, regionId, regionData.leadership);
         
       } catch (error) {
         console.error('Error loading region:', error);
@@ -220,23 +472,12 @@
         document.getElementById('region-address').textContent = 'Contact national office for information';
         document.getElementById('region-phone').textContent = '+233 XX XXX XXXX';
         document.getElementById('region-email').textContent = `${regionId}@amcag.org.gh`;
-      }
-    }
-    
-    function loadLeadership(leadership) {
-      const leadershipList = document.getElementById('leadership-list');
-      if (leadership && Array.isArray(leadership)) {
-        leadershipList.innerHTML = leadership.map(leader => `
-          <div style="padding: var(--space-3); background: var(--surface); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
-            <h4 style="font-weight: var(--font-semibold); margin-bottom: var(--space-1);">${leader.position}</h4>
-            <p style="color: var(--text-secondary); font-size: var(--text-sm);">${leader.name || 'TBA'}</p>
-          </div>
-        `).join('');
+        renderLeadership([]);
       }
     }
     
     loadRegion();
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

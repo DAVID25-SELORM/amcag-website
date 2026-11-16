@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -17,7 +17,7 @@
         <img src="/images/logo.jpg" alt="AMCAG Logo">
         <span>AMCAG</span>
       </a>
-      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <button class="navbar-toggle" onclick="return window.AMCAGToggleNavbar ? window.AMCAGToggleNavbar(this,event) : (function(btn,e){if(e){e.preventDefault();e.stopPropagation();}var nav=btn.closest('.navbar');var menu=nav&&nav.querySelector('.navbar-menu');if(!menu)return false;var open=!menu.classList.contains('active');menu.classList.toggle('active',open);btn.classList.toggle('active',open);btn.setAttribute('aria-expanded',String(open));if(nav)nav.classList.toggle('menu-open',open);document.body.classList.toggle('navbar-menu-open',open);document.body.style.overflow=open?'hidden':'';return false;})(this,event)"><span></span><span></span><span></span></button>
       <ul class="navbar-menu">
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><a href="/about.html" class="navbar-link">About</a></li>
@@ -41,108 +41,63 @@
     </div>
   </section>
 
+  <section class="agm-feature-section" id="featured-agm">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Featured Upcoming Event</span>
+        <h2 class="section-title">Featured Upcoming Event</h2>
+      </div>
+      <div id="featuredAgmEvent"></div>
+    </div>
+  </section>
+
   <section class="section bg-surface">
     <div class="container">
       <div class="section-header">
-        <span class="section-tag">Upcoming</span>
-        <h2 class="section-title">Upcoming Events</h2>
+        <span class="section-tag">More Events</span>
+        <h2 class="section-title">Other Upcoming Events</h2>
       </div>
       
-      <div class="grid grid-2 gap-4" id="events-list">
-        <div class="card">
-          <div class="flex gap-3 mb-3">
-            <div style="background: var(--color-primary-40); color: white; padding: var(--space-2); border-radius: var(--radius-lg); text-align: center; min-width: 70px;">
-              <div style="font-size: var(--text-3xl); font-weight: var(--font-bold);">15</div>
-              <div style="font-size: var(--text-sm);">MAR 2026</div>
-            </div>
-            <div style="flex: 1;">
-              <span class="badge badge-primary mb-2">National Event</span>
-              <h3 class="card-title">Annual General Meeting</h3>
-            </div>
-          </div>
-          <p class="card-body mb-3">The 2026 Annual General Meeting brings together members from all regions for strategic planning and networking.</p>
-          <div class="flex-between">
-            <div><span style="color: var(--text-secondary);">📍 Accra International Conference Centre</span></div>
-            <a href="#" class="btn btn-sm btn-outline">Details</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="flex gap-3 mb-3">
-            <div style="background: var(--color-secondary-50); color: white; padding: var(--space-2); border-radius: var(--radius-lg); text-align: center; min-width: 70px;">
-              <div style="font-size: var(--text-3xl); font-weight: var(--font-bold);">22</div>
-              <div style="font-size: var(--text-sm);">MAR 2026</div>
-            </div>
-            <div style="flex: 1;">
-              <span class="badge badge-secondary mb-2">Regional Event</span>
-              <h3 class="card-title">Professional Development Workshop</h3>
-            </div>
-          </div>
-          <p class="card-body mb-3">Hands-on training workshop covering pharmaceutical best practices and customer care.</p>
-          <div class="flex-between">
-            <div><span style="color: var(--text-secondary);">📍 Kumasi Regional Office</span></div>
-            <a href="#" class="btn btn-sm btn-outline">Details</a>
-          </div>
-        </div>
+      <div class="grid grid-2 gap-4" id="upcomingEventsList">
+        <div class="empty-state" style="grid-column: 1 / -1;">Loading upcoming events...</div>
       </div>
     </div>
   </section>
 
   <footer class="footer">
     <div class="container">
-      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p>
+        <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p></div>
     </div>
   </footer>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
   <script>
-    // Sample upcoming events
-    const sampleEvents = [
-      {
-        title: 'Annual General Meeting 2026',
-        description: 'Join us for the Annual General Meeting where we will discuss organizational progress, elect new executives, and plan for the year ahead.',
-        eventDate: new Date('2026-03-15T09:00:00'),
-        location: 'AMCAG National Headquarters, Accra',
-        eventType: 'General Meeting',
-        region: null
-      },
-      {
-        title: 'Professional Development Workshop',
-        description: 'Comprehensive training on pharmaceutical best practices, regulatory compliance, and customer care excellence.',
-        eventDate: new Date('2026-03-22T10:00:00'),
-        location: 'Kumasi Regional Office',
-        eventType: 'Training',
-        region: 'Ashanti'
-      },
-      {
-        title: 'Member Networking Event',
-        description: 'Connect with fellow members, share experiences, and build professional relationships in a relaxed environment.',
-        eventDate: new Date('2026-04-05T14:00:00'),
-        location: 'Takoradi Conference Center',
-        eventType: 'Networking',
-        region: 'Western'
-      },
-      {
-        title: 'Health & Safety Compliance Seminar',
-        description: 'Learn about latest health and safety regulations affecting pharmaceutical and chemical administration.',
-        eventDate: new Date('2026-04-18T09:30:00'),
-        location: 'Ho Regional Hospital',
-        eventType: 'Seminar',
-        region: 'Volta'
-      },
-      {
-        title: 'Regional Coordinators Meeting',
-        description: 'Quarterly meeting for all regional coordinators to align strategies and share best practices.',
-        eventDate: new Date('2026-05-10T10:00:00'),
-        location: 'Virtual Meeting (Zoom)',
-        eventType: 'Meeting',
-        region: null
+    let eventsLoading = false;
+
+    function setText(id, value, fallback = '0') {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
       }
-    ];
+      el.textContent = value ?? fallback;
+    }
+
+    function setHTML(id, value, fallback = '') {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.innerHTML = value ?? fallback;
+    }
 
     function renderEvents(events) {
       return events.map(data => {
@@ -167,62 +122,144 @@
                 <p class="card-body">${(data.description || '').substring(0, 100)}...</p>
               </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2" style="align-items: center; justify-content: space-between; flex-wrap: wrap;">
+              <div class="flex gap-2">
               <span class="badge ${data.region ? 'badge-secondary' : 'badge-primary'}">${data.region || 'National'}</span>
               <span class="badge badge-success">${data.eventType || 'Event'}</span>
+              </div>
+              ${data.registrationUrl ? `<a href="${data.registrationUrl}" class="btn btn-sm btn-primary">Register for AGM 2026</a>` : ''}
             </div>
           </div>
         `;
       }).join('');
     }
 
-    async function loadEvents() {
-      const eventsContainer = document.getElementById('events-list');
-      
+    function getCurrentAgmEvent() {
+      return {
+        id: 'agm-2026',
+        featured: true,
+        status: 'upcoming',
+        title: 'AMCAG Annual General Meeting (AGM)',
+        description: 'Strengthening Professional Excellence Nationwide through sustainable growth, improved welfare, and stronger representation for MCAs.',
+        eventDate: new Date('2026-07-10T09:00:00'),
+        eventTime: '9:00 AM daily',
+        venue: 'PCG Ascension Presbyterian Church Hall, Koforidua, Eastern Region',
+        location: 'PCG Ascension Presbyterian Church Hall, Koforidua, Eastern Region',
+        region: 'National',
+        eventType: 'AGM',
+        registrationLink: '/member-dashboard/agm-registration.html',
+        registrationUrl: '/member-dashboard/agm-registration.html'
+      };
+    }
+
+    function renderFeaturedAgm(event) {
+      return `
+        <div class="agm-feature-card">
+          <div class="agm-feature-main">
+            <span class="agm-event-badge">Upcoming Event</span>
+            <p class="section-tag" style="margin-top: var(--space-3);">${event.eventType || 'AGM'}</p>
+            <h2 class="agm-feature-title">${event.title || 'AMCAG Annual General Meeting (AGM)'}</h2>
+            <p class="agm-feature-copy">${event.description || ''}</p>
+            <div class="agm-meta-grid">
+              <div class="agm-meta-item">
+                <span class="agm-meta-label">Date</span>
+                <span class="agm-meta-value">10th - 11th July, 2026</span>
+              </div>
+              <div class="agm-meta-item">
+                <span class="agm-meta-label">Time</span>
+                <span class="agm-meta-value">${event.eventTime || '9:00 AM daily'}</span>
+              </div>
+              <div class="agm-meta-item">
+                <span class="agm-meta-label">Venue</span>
+                <span class="agm-meta-value">${event.venue || event.location || 'Venue to be confirmed'}</span>
+              </div>
+            </div>
+            <div class="agm-feature-actions">
+              <a href="#upcomingEventsList" class="btn btn-outline">View Details</a>
+              <a href="${event.registrationLink || event.registrationUrl || '/member-dashboard/agm-registration.html'}" class="btn btn-primary">Register / RSVP</a>
+            </div>
+          </div>
+          <div class="agm-feature-side">
+            <span style="font-size: var(--text-sm); opacity: 0.9;">National AGM</span>
+            <strong style="font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1;">2026</strong>
+            <span>Status: ${event.status || 'upcoming'}</span>
+            <span>Members nationwide are encouraged to attend and participate.</span>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadUpcomingEvents() {
+      if (eventsLoading) return;
+
+      const container = document.getElementById('upcomingEventsList');
+      if (!container) {
+        console.warn('[Events] Missing #upcomingEventsList');
+        return;
+      }
+
+      eventsLoading = true;
+      const featuredContainer = document.getElementById('featuredAgmEvent');
+      const fallbackAgm = getCurrentAgmEvent();
+      if (featuredContainer) {
+        featuredContainer.innerHTML = renderFeaturedAgm(fallbackAgm);
+      }
+      container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Additional events will be announced soon.</div>';
+
       try {
         const db = firebase.firestore();
-        const now = new Date();
-        let snapshot;
-        
-        try {
-          snapshot = await db.collection('events')
-            .where('eventDate', '>=', now)
-            .orderBy('eventDate', 'asc')
-            .limit(10)
-            .get();
-        } catch (queryError) {
-          console.warn('Events query with where/orderBy failed, trying simpler query:', queryError);
-          try {
-            snapshot = await db.collection('events').limit(10).get();
-          } catch (simpleQueryError) {
-            snapshot = { empty: true };
-          }
-        }
+        const snapshot = await db.collection('events')
+          .orderBy('eventDate', 'asc')
+          .limit(5)
+          .get();
         
         if (snapshot.empty) {
-          console.log('Events collection is empty, showing sample events');
-          eventsContainer.innerHTML = renderEvents(sampleEvents);
           return;
         }
         
         const events = snapshot.docs.map(doc => ({
+          id: doc.id,
           ...doc.data(),
           eventDate: doc.data().eventDate?.toDate ? doc.data().eventDate.toDate() : new Date(doc.data().eventDate)
         }));
         
-        eventsContainer.innerHTML = renderEvents(events);
+        const featuredAgm = events.find((event) =>
+          event.featured === true ||
+          String(event.eventType || '').toLowerCase() === 'agm' ||
+          String(event.title || '').toLowerCase().includes('agm')
+        ) || fallbackAgm;
+
+        if (featuredContainer) {
+          featuredContainer.innerHTML = renderFeaturedAgm({
+            ...fallbackAgm,
+            ...featuredAgm,
+            registrationLink: featuredAgm.registrationLink || featuredAgm.registrationUrl || fallbackAgm.registrationLink
+          });
+        }
+
+        const otherEvents = events.filter((event) =>
+          event.id !== featuredAgm.id &&
+          event.eventId !== featuredAgm.id &&
+          String(event.eventType || '').toLowerCase() !== 'agm' &&
+          !String(event.title || '').toLowerCase().includes('agm')
+        );
+
+        container.innerHTML = otherEvents.length
+          ? renderEvents(otherEvents)
+          : '<div class="empty-state" style="grid-column: 1 / -1;">Additional events will be announced soon.</div>';
         
       } catch (error) {
-        console.error('Error loading events:', error);
-        console.log('Showing sample events due to error');
-        eventsContainer.innerHTML = renderEvents(sampleEvents);
+        console.error('[Events] Failed to load upcoming events:', error);
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Additional events will be announced soon.</div>';
+      } finally {
+        eventsLoading = false;
       }
     }
     
     // Wait for Firebase App to be initialized before loading events
     function waitForFirebase() {
       if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-        loadEvents();
+        loadUpcomingEvents();
       } else {
         setTimeout(waitForFirebase, 50);
       }
@@ -234,6 +271,7 @@
       waitForFirebase();
     }
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>
+

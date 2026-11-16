@@ -23,7 +23,7 @@ try {
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://amcag-website-default-rtdb.firebaseio.com"
+  databaseURL: "https://amcag-af624-default-rtdb.firebaseio.com"
 });
 
 const auth = admin.auth();
@@ -71,7 +71,7 @@ async function resetPassword() {
     console.log('===========================================');
     console.log(`\nEmail: ${email}`);
     console.log('Password: Updated');
-    console.log(`\nYou can now login at: https://amcag-website.web.app/membership.html`);
+    console.log(`\nYou can now login at: https://amcag-af624.web.app/membership.html`);
     console.log('===========================================\n');
     
   } catch (error) {

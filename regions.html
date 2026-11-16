@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Regional Chapters | AMCAG</title>  <link rel="icon" type="image/png" href="/images/logo.jpg">  <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -15,7 +15,7 @@
         <img src="/images/logo.jpg" alt="AMCAG Logo">
         <span>AMCAG</span>
       </a>
-      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <button class="navbar-toggle" onclick="return window.AMCAGToggleNavbar ? window.AMCAGToggleNavbar(this,event) : (function(btn,e){if(e){e.preventDefault();e.stopPropagation();}var nav=btn.closest('.navbar');var menu=nav&&nav.querySelector('.navbar-menu');if(!menu)return false;var open=!menu.classList.contains('active');menu.classList.toggle('active',open);btn.classList.toggle('active',open);btn.setAttribute('aria-expanded',String(open));if(nav)nav.classList.toggle('menu-open',open);document.body.classList.toggle('navbar-menu-open',open);document.body.style.overflow=open?'hidden':'';return false;})(this,event)"><span></span><span></span><span></span></button>
       <ul class="navbar-menu">
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><a href="/about.html" class="navbar-link">About</a></li>
@@ -43,99 +43,8 @@
     <div class="container">
       <div class="grid grid-4 gap-4" id="regions-list">
         <div class="card gateway-card">
-          <h3 class="card-title">Greater Accra</h3>
-          <p class="card-body mb-3">Members: 3,245</p>
-          <a href="/region.html?id=greater-accra" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Ashanti</h3>
-          <p class="card-body mb-3">Members: 2,867</p>
-          <a href="/region.html?id=ashanti" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Central</h3>
-          <p class="card-body mb-3">Members: 1,245</p>
-          <a href="/region.html?id=central" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Eastern</h3>
-          <p class="card-body mb-3">Members: 1,932</p>
-          <a href="/region.html?id=eastern" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Northern</h3>
-          <p class="card-body mb-3">Members: 987</p>
-          <a href="/region.html?id=northern" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Western</h3>
-          <p class="card-body mb-3">Members: 1,543</p>
-          <a href="/region.html?id=western" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Volta</h3>
-          <p class="card-body mb-3">Members: 876</p>
-          <a href="/region.html?id=volta" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Upper East</h3>
-          <p class="card-body mb-3">Members: 654</p>
-          <a href="/region.html?id=upper-east" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Upper West</h3>
-          <p class="card-body mb-3">Members: 543</p>
-          <a href="/region.html?id=upper-west" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Bono</h3>
-          <p class="card-body mb-3">Members: 789</p>
-          <a href="/region.html?id=bono" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Bono East</h3>
-          <p class="card-body mb-3">Members: 612</p>
-          <a href="/region.html?id=bono-east" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Ahafo</h3>
-          <p class="card-body mb-3">Members: 487</p>
-          <a href="/region.html?id=ahafo" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Western North</h3>
-          <p class="card-body mb-3">Members: 698</p>
-          <a href="/region.html?id=western-north" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Savannah</h3>
-          <p class="card-body mb-3">Members: 531</p>
-          <a href="/region.html?id=savannah" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">North East</h3>
-          <p class="card-body mb-3">Members: 423</p>
-          <a href="/region.html?id=north-east" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-        </div>
-
-        <div class="card gateway-card">
-          <h3 class="card-title">Oti</h3>
-          <p class="card-body mb-3">Members: 564</p>
-          <a href="/region.html?id=oti" class="btn btn-outline btn-sm btn-block">View Chapter</a>
+          <h3 class="card-title">Loading regions...</h3>
+          <p class="card-body mb-3">Members: 0</p>
         </div>
       </div>
     </div>
@@ -143,103 +52,268 @@
 
   <footer class="footer">
     <div class="container">
-      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p>
+        <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p></div>
     </div>
   </footer>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
   <script>
-    async function loadRegions() {
-      const regionsContainer = document.getElementById('regions-list');
-      
-      try {
-        const db = FirebaseModule.db();
-        
-        // Try to load from regions collection (without orderBy to avoid index requirement)
-        let snapshot;
-        try {
-          snapshot = await db.collection('regions').get();
-        } catch (queryError) {
-          console.warn('Regions collection query failed, using defaults:', queryError);
-          snapshot = { empty: true };
+    const ghanaRegions = [
+      'Ahafo', 'Ashanti', 'Bono', 'Bono East', 'Central', 'Eastern',
+      'Greater Accra', 'North East', 'Northern', 'Oti', 'Savannah', 'Upper East',
+      'Upper West', 'Volta', 'Western', 'Western North'
+    ];
+
+    function slugifyRegion(regionName) {
+      return String(regionName || '')
+        .toLowerCase()
+        .trim()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    function normalizeText(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[-_]+/g, ' ')
+        .replace(/\s+/g, ' ');
+    }
+
+    function getMemberRegion(member = {}) {
+      return member.region ||
+        member.regionName ||
+        member.regionId ||
+        member.assignedRegion ||
+        member.chapter ||
+        member.regionalChapter ||
+        '';
+    }
+
+    function waitForAuthResolution(timeoutMs = 1800) {
+      const auth = window.FirebaseModule?.auth?.() || (typeof firebase !== 'undefined' && typeof firebase.auth === 'function' ? firebase.auth() : null);
+      if (!auth || typeof auth.onAuthStateChanged !== 'function') {
+        return Promise.resolve(null);
+      }
+
+      return new Promise((resolve) => {
+        let settled = false;
+        let unsubscribe = null;
+        const finish = (user) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (typeof unsubscribe === 'function') unsubscribe();
+          resolve(user || null);
+        };
+        const timer = setTimeout(() => finish(auth.currentUser || null), timeoutMs);
+
+        unsubscribe = auth.onAuthStateChanged(
+          (user) => finish(user),
+          () => finish(auth.currentUser || null)
+        );
+      });
+    }
+
+    function addRegionCount(counts, regionValue, increment = 1) {
+      const normalized = normalizeText(regionValue);
+      if (!normalized) return;
+
+      const canonicalRegion = ghanaRegions.find((regionName) => {
+        return normalizeText(regionName) === normalized ||
+          normalizeText(slugifyRegion(regionName)) === normalized;
+      }) || String(regionValue).trim();
+
+      counts[canonicalRegion] = (counts[canonicalRegion] || 0) + Number(increment || 0);
+    }
+
+    function getRegionCount(counts, regionName) {
+      const targets = new Set([
+        normalizeText(regionName),
+        normalizeText(slugifyRegion(regionName))
+      ]);
+
+      return Object.entries(counts || {}).reduce((total, [key, value]) => {
+        return targets.has(normalizeText(key)) || targets.has(normalizeText(slugifyRegion(key)))
+          ? total + Number(value || 0)
+          : total;
+      }, 0);
+    }
+
+    function countMembersForRegion(members, targetRegion, regionId, regionNameById = new Map()) {
+      const targets = new Set([
+        normalizeText(targetRegion),
+        normalizeText(regionId),
+        normalizeText(slugifyRegion(targetRegion))
+      ].filter(Boolean));
+
+      return members.filter(member => {
+        const regionValue = getMemberRegion(member);
+        if (!regionValue) {
+          console.warn('[Region Count] Member has no region assigned', member);
+          return false;
         }
-        
-        // If no regions in database, show default Ghana regions
-        if (snapshot.empty) {
-          const ghanaRegions = [
-            'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Northern', 'Western',
-            'Volta', 'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo',
-            'Western North', 'Savannah', 'North East', 'Oti'
-          ];
-          
-          regionsContainer.innerHTML = ghanaRegions.map(regionName => `
-            <div class="card gateway-card">
-              <h3 class="card-title">${regionName}</h3>
-              <p class="card-body mb-3">Members: -</p>
-              <a href="/region.html?id=${regionName.toLowerCase().replace(/ /g, '-')}" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-            </div>
-          `).join('');
+
+        const normalizedRegion = normalizeText(regionValue);
+        const mappedRegionName = normalizeText(regionNameById.get(String(regionValue)) || regionNameById.get(slugifyRegion(regionValue)));
+        return targets.has(normalizedRegion) || (mappedRegionName && targets.has(mappedRegionName));
+      }).length;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[char]));
+    }
+
+    async function countRegionMembers(db, regionName, regionId) {
+      const seen = new Set();
+      const queries = [
+        db.collection('members').where('region', '==', regionName).get(),
+        db.collection('members').where('regionId', '==', regionId).get(),
+        db.collection('users').where('region', '==', regionName).get(),
+        db.collection('users').where('regionId', '==', regionId).get()
+      ];
+
+      const results = await Promise.allSettled(queries);
+      results.forEach((result) => {
+        if (result.status !== 'fulfilled') {
+          console.warn(`[Regions] Count query skipped for ${regionName}:`, result.reason);
           return;
         }
-        
-        // Load member count for each region
-        const regionsWithCounts = await Promise.all(snapshot.docs.map(async (doc) => {
-          const data = doc.data();
-          try {
-            const membersSnapshot = await db.collection('users')
-              .where('region', '==', data.name)
-              .get();
-            return {
-              id: doc.id,
-              ...data,
-              memberCount: membersSnapshot.size
-            };
-          } catch (error) {
-            return {
-              id: doc.id,
-              ...data,
-              memberCount: 0
-            };
-          }
-        }));
-        
-        // Sort by name in JavaScript
-        regionsWithCounts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-        
-        regionsContainer.innerHTML = regionsWithCounts.map(region => `
+
+        result.value.docs.forEach((doc) => seen.add(doc.id));
+      });
+
+      try {
+        const regionalMembers = await db.collection('regions').doc(regionName).collection('members').get();
+        regionalMembers.docs.forEach((doc) => seen.add(doc.id));
+      } catch (error) {
+        console.warn(`[Regions] Regional member index unavailable for ${regionName}:`, error);
+      }
+
+      try {
+        const publicMembers = await db.collection('publicRegionMembers').doc(regionId).collection('members').get();
+        publicMembers.docs.forEach((doc) => seen.add(doc.id));
+      } catch (error) {
+        console.warn(`[Regions] Public regional member index unavailable for ${regionName}:`, error);
+      }
+
+      return seen.size;
+    }
+
+    async function loadAllMemberRecords(db) {
+      const records = [];
+      const snapshots = await Promise.allSettled([
+        db.collection('members').get(),
+        db.collection('users').get()
+      ]);
+
+      snapshots.forEach((result) => {
+        if (result.status !== 'fulfilled') {
+          console.warn('[Region Count] Member collection query skipped:', result.reason);
+          return;
+        }
+
+        result.value.docs.forEach((doc) => {
+          records.push({ id: doc.id, ...(doc.data() || {}) });
+        });
+      });
+
+      return records;
+    }
+
+    function renderRegions(regions) {
+      const regionsContainer = document.getElementById('regions-list');
+      regionsContainer.innerHTML = regions.map((region) => {
+        const regionName = region.name || 'Unknown Region';
+        const regionId = region.id || slugifyRegion(regionName);
+        const chairperson = region.chairperson
+          ? `<p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Chair: ${escapeHtml(region.chairperson)}</p>`
+          : '';
+
+        return `
           <div class="card gateway-card">
-            <h3 class="card-title">${region.name || 'Unknown Region'}</h3>
-            <p class="card-body mb-3">Members: ${region.memberCount.toLocaleString()}</p>
-            ${region.chairperson ? `<p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2);">Chair: ${region.chairperson}</p>` : ''}
-            <a href="/region.html?id=${region.id}" class="btn btn-outline btn-sm btn-block">View Chapter</a>
+            <h3 class="card-title">${escapeHtml(regionName)}</h3>
+            <p class="card-body mb-3">Members: ${region.memberCount === null || region.memberCount === undefined ? 'Loading...' : Number(region.memberCount || 0).toLocaleString()}</p>
+            ${chairperson}
+            <a href="/region.html?id=${encodeURIComponent(regionId)}" class="btn btn-outline btn-sm btn-block">View Chapter</a>
           </div>
-        `).join('');
-        
+        `;
+      }).join('');
+    }
+
+    async function loadRegions() {
+      try {
+        await window.FirebaseModule?.whenReady?.();
+        const db = FirebaseModule.db();
+        if (!db) throw new Error('Firestore is not initialized');
+
+        // Try publicStats first (publicly readable, no auth needed).
+        let publicCounts = {};
+        let statsFound = false;
+        try {
+          const statsDoc = await db.collection('publicStats').doc('regionCounts').get();
+          if (statsDoc.exists) {
+            Object.entries(statsDoc.data().counts || {}).forEach(([region, count]) => {
+              addRegionCount(publicCounts, region, count);
+            });
+            statsFound = Object.keys(publicCounts).length > 0;
+          }
+        } catch (e) {
+          console.warn('publicStats unavailable:', e);
+        }
+
+        // Fallback: query users directly if publicStats is empty or missing.
+        // Works when the viewer is authenticated (allow list: if isAuthenticated()).
+        if (!statsFound) {
+          try {
+            const signedInUser = await waitForAuthResolution();
+            // Guests use public counts; private user records require authentication.
+            if (signedInUser) {
+              const usersSnap = await db.collection('users').get();
+              usersSnap.forEach((doc) => {
+                addRegionCount(publicCounts, getMemberRegion(doc.data()));
+              });
+            }
+          } catch (e) {
+            // Unauthenticated visitors can't query users — counts stay 0 until seeded.
+            console.warn('Unable to load member counts:', e.message);
+          }
+        }
+
+        const regions = ghanaRegions.map((regionName) => ({
+          id: slugifyRegion(regionName),
+          name: regionName,
+          memberCount: getRegionCount(publicCounts, regionName)
+        }));
+        regions.sort((a, b) => a.name.localeCompare(b.name));
+        renderRegions(regions);
+
       } catch (error) {
         console.error('Error loading regions:', error);
-        
-        // Fall back to default Ghana regions on any error
-        const ghanaRegions = [
-          'Greater Accra', 'Ashanti', 'Central', 'Eastern', 'Northern', 'Western',
-          'Volta', 'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo',
-          'Western North', 'Savannah', 'North East', 'Oti'
-        ];
-        
-        regionsContainer.innerHTML = ghanaRegions.map(regionName => `
-          <div class="card gateway-card">
-            <h3 class="card-title">${regionName}</h3>
-            <p class="card-body mb-3">Members: -</p>
-            <a href="/region.html?id=${regionName.toLowerCase().replace(/ /g, '-')}" class="btn btn-outline btn-sm btn-block">View Chapter</a>
-          </div>
-        `).join('');
+        renderRegions(ghanaRegions.map((regionName) => ({
+          id: slugifyRegion(regionName),
+          name: regionName,
+          memberCount: 0
+        })));
       }
     }
     loadRegions();
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

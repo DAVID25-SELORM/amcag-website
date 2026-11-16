@@ -6,7 +6,7 @@
   <title>Member Approval | AMCAG National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link rel="icon" href="/images/logo.jpg" type="image/jpeg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -85,7 +85,7 @@
       <div class="card">
         <div class="flex-between mb-4">
           <h3 class="card-title">Pending Registrations</h3>
-          <div class="flex gap-2">
+          <div class="flex gap-2 member-filter-row">
             <input type="text" id="searchInput" class="form-input" placeholder="Search by name or email..." style="width: 250px;">
             <select id="regionFilter" class="form-input" style="width: auto;">
               <option value="">All Regions</option>
@@ -109,19 +109,17 @@
           </div>
         </div>
 
-        <div class="table-container">
-          <table class="table">
+        <div class="table-container" style="overflow-x: auto;">
+          <table class="table members-table">
             <thead>
               <tr>
-                <th style="width: 40px;">
-                  <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                </th>
+                <th>Member ID</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Region</th>
-                <th>Registered</th>
-                <th>Actions</th>
+                <th>Status</th>
+                <th style="width: 120px;">Actions</th>
               </tr>
             </thead>
             <tbody id="pendingTableBody">
@@ -146,12 +144,12 @@
   </div>
 
   <!-- Member Details Modal -->
-  <div id="memberModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-    <div class="card" style="max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-      <div style="padding: 2rem;">
+  <div id="memberModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 1rem;">
+    <div class="card" style="max-width: 760px; width: min(96vw, 760px); max-height: calc(100vh - 2rem); overflow-y: auto; margin: auto 0;">
+      <div style="padding: 1.25rem;">
         <h3 class="mb-4">Member Details</h3>
         
-        <div class="grid grid-2 gap-3 mb-4">
+        <div class="grid grid-2 gap-3 mb-4" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));">
           <div>
             <label class="text-secondary" style="font-size: 0.85rem;">Full Name</label>
             <div class="mb-2" id="modalName" style="font-weight: 600;">-</div>
@@ -180,7 +178,7 @@
 
         <div class="form-group">
           <label class="form-label">Member ID</label>
-          <input type="text" id="memberIdInput" class="form-input" placeholder="e.g., AMCAG-2026-0001" readonly>
+          <input type="text" id="memberIdInput" class="form-input" placeholder="e.g., AMCAG-GA-2026-0001" readonly>
           <span class="form-help">Auto-generated on approval</span>
         </div>
 
@@ -205,6 +203,10 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     let pendingMembers = [];
@@ -232,6 +234,85 @@
       const date = toDateSafe(value);
       if (!date) return 'N/A';
       return includeTime ? date.toLocaleString() : date.toLocaleDateString();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getMemberId(member) {
+      return member?.memberId || 'N/A';
+    }
+
+    function getMemberName(member) {
+      return member?.fullName || member?.name || member?.displayName || 'N/A';
+    }
+
+    function getMemberRegion(member) {
+      return member?.region || member?.regionName || member?.assignedRegion || 'N/A';
+    }
+
+    function getMemberPhone(member) {
+      return member?.phone || member?.phoneNumber || member?.contact || 'N/A';
+    }
+
+    function getMemberStatus(member) {
+      return String(member?.status || 'pending').trim().toLowerCase() || 'pending';
+    }
+
+    function getMemberStatusBadge(member) {
+      const status = getMemberStatus(member);
+      const classMap = {
+        active: 'badge-success',
+        pending: 'badge-warning',
+        rejected: 'badge-error',
+        suspended: 'badge-neutral',
+        inactive: 'badge-neutral'
+      };
+      return `<span class="badge ${classMap[status] || 'badge-warning'}">${escapeHtml(status)}</span>`;
+    }
+
+    const REGION_CODE_MAP = {
+      'greater accra': 'GA',
+      ashanti: 'AR',
+      central: 'CR',
+      eastern: 'ER',
+      northern: 'NR',
+      'upper east': 'UER',
+      'upper west': 'UWR',
+      volta: 'VR',
+      western: 'WR',
+      'western north': 'WNR',
+      bono: 'BR',
+      'bono east': 'BER',
+      ahafo: 'AHR',
+      savannah: 'SR',
+      'north east': 'NER',
+      oti: 'OR'
+    };
+
+    function getRegionCode(region) {
+      const normalized = String(region || '').trim().toLowerCase();
+      if (REGION_CODE_MAP[normalized]) return REGION_CODE_MAP[normalized];
+
+      const generated = normalized
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(part => part[0])
+        .join('')
+        .replace(/[^a-z]/g, '')
+        .toUpperCase();
+
+      return generated || 'GEN';
+    }
+
+    function getMemberRegistrationDate(member) {
+      return toDateSafe(member?.registrationDate) || toDateSafe(member?.createdAt) || new Date();
     }
 
     function setPendingFallbackMode(enabled) {
@@ -288,6 +369,45 @@
         console.error('Failed to initialize approval functions:', error);
         return false;
       }
+    }
+
+    function waitForAuthenticatedUser(maxWaitMs = 5000) {
+      const auth = firebase.auth();
+      if (auth.currentUser) {
+        return Promise.resolve(auth.currentUser);
+      }
+
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          unsubscribe();
+          resolve(null);
+        }, maxWaitMs);
+
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (!user) return;
+          clearTimeout(timeout);
+          unsubscribe();
+          resolve(user);
+        });
+      });
+    }
+
+    async function ensureApprovalFunctionsReady() {
+      const user = await waitForAuthenticatedUser();
+      if (!user) {
+        UIModule.showAlert('Your admin session has expired. Please sign in again.', 'error');
+        setTimeout(() => window.location.href = '/membership.html', 1200);
+        return false;
+      }
+
+      try {
+        await user.getIdToken(true);
+      } catch (error) {
+        console.error('Unable to refresh auth token before approval action:', error);
+        return false;
+      }
+
+      return initializeApprovalFunctions();
     }
 
     // Load pending members
@@ -368,18 +488,19 @@
 
       tbody.innerHTML = filteredMembers.map(member => `
         <tr>
+          <td><span class="cell-secondary">${escapeHtml(getMemberId(member))}</span></td>
+          <td><span class="cell-primary cell-wrap">${escapeHtml(getMemberName(member))}</span></td>
+          <td><span class="cell-email">${escapeHtml(member.email || 'N/A')}</span></td>
+          <td>${escapeHtml(getMemberPhone(member))}</td>
+          <td>${escapeHtml(getMemberRegion(member))}</td>
+          <td>${getMemberStatusBadge(member)}</td>
           <td>
-            <input type="checkbox" class="member-checkbox" data-uid="${member.uid}" onchange="updateBulkActions()">
-          </td>
-          <td style="font-weight: 600;">${member.fullName || 'N/A'}</td>
-          <td>${member.email || 'N/A'}</td>
-          <td>${member.phone || 'N/A'}</td>
-          <td><span class="badge badge-secondary">${member.region || 'N/A'}</span></td>
-          <td>${formatDate(member.registrationDate || member.createdAt)}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" onclick='viewMemberDetails(${JSON.stringify(member).replace(/'/g, "\\'")})'>
-              Review
-            </button>
+            <div class="table-actions">
+              <input type="checkbox" class="member-checkbox" data-uid="${escapeHtml(member.uid)}" onchange="updateBulkActions()" aria-label="Select ${escapeHtml(getMemberName(member))}">
+              <button class="btn btn-sm btn-primary" onclick='viewMemberDetails(${JSON.stringify(member).replace(/'/g, "\\'")})'>
+                Review
+              </button>
+            </div>
           </td>
         </tr>
       `).join('');
@@ -395,11 +516,12 @@
 
       filteredMembers = pendingMembers.filter(member => {
         const matchesSearch = 
-          (member.fullName || '').toLowerCase().includes(searchTerm) ||
+          getMemberName(member).toLowerCase().includes(searchTerm) ||
           (member.email || '').toLowerCase().includes(searchTerm) ||
-          (member.phone || '').includes(searchTerm);
+          getMemberPhone(member).toLowerCase().includes(searchTerm) ||
+          getMemberId(member).toLowerCase().includes(searchTerm);
 
-        const matchesRegion = !regionFilter || member.region === regionFilter;
+        const matchesRegion = !regionFilter || getMemberRegion(member) === regionFilter;
 
         return matchesSearch && matchesRegion;
       });
@@ -421,36 +543,24 @@
       document.getElementById('bulkActions').style.display = checkedCount > 0 ? 'flex' : 'none';
     }
 
-    function extractMemberSequence(memberId, expectedYear) {
-      const match = String(memberId || '').match(/^AMCAG-(\d{4})-(\d{3,6})$/i);
+    function extractMemberSequence(memberId, expectedRegionCode, expectedYear) {
+      const match = String(memberId || '').match(/^AMCAG-([A-Z]{2,4})-(\d{4})-(\d{3,6})$/i);
       if (!match) return 0;
-      const year = parseInt(match[1], 10);
-      const sequence = parseInt(match[2], 10);
+      const regionCode = String(match[1] || '').toUpperCase();
+      const year = parseInt(match[2], 10);
+      const sequence = parseInt(match[3], 10);
       if (!Number.isFinite(year) || !Number.isFinite(sequence)) return 0;
+      if (regionCode !== expectedRegionCode) return 0;
       if (year !== expectedYear) return 0;
       return sequence > 0 ? sequence : 0;
     }
 
-    async function getNextMemberIdPreview() {
+    async function getNextMemberIdPreview(member) {
       const db = firebase.firestore();
-      const year = new Date().getFullYear();
-      const prefix = `AMCAG-${year}-`;
+      const year = getMemberRegistrationDate(member).getFullYear();
+      const regionCode = getRegionCode(member?.region);
+      const prefix = `AMCAG-${regionCode}-${year}-`;
       let highestSequence = 0;
-
-      try {
-        const counterDoc = await db.collection('system_counters').doc('membership_id').get();
-        if (counterDoc.exists) {
-          const counterData = counterDoc.data() || {};
-          if (counterData.year === year) {
-            const counterValue = parseInt(counterData.lastNumber || 0, 10);
-            if (Number.isFinite(counterValue) && counterValue > 0) {
-              highestSequence = counterValue;
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('Unable to read membership counter for preview:', error);
-      }
 
       try {
         const latestMemberQuery = await db.collection('users')
@@ -462,7 +572,7 @@
 
         if (!latestMemberQuery.empty) {
           const memberData = latestMemberQuery.docs[0].data() || {};
-          highestSequence = Math.max(highestSequence, extractMemberSequence(memberData.memberId, year));
+          highestSequence = Math.max(highestSequence, extractMemberSequence(memberData.memberId, regionCode, year));
         }
       } catch (error) {
         console.warn('Unable to query latest member ID for preview:', error);
@@ -471,14 +581,38 @@
       return `${prefix}${String(highestSequence + 1).padStart(4, '0')}`;
     }
 
+    async function callApprovalFunction(functionName, payload) {
+      const user = await waitForAuthenticatedUser();
+      if (!user) {
+        throw new Error('Your admin session has expired. Please sign in again.');
+      }
+
+      const token = await user.getIdToken(true);
+      const response = await fetch(`https://us-central1-amcag-af624.cloudfunctions.net/${functionName}Http`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ data: payload })
+      });
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || body.error) {
+        throw new Error(body.error?.message || body.error?.status || `Approval service failed (${response.status})`);
+      }
+
+      return { data: body.result || body.data || body };
+    }
+
     // View member details
     async function viewMemberDetails(member) {
       selectedMemberUid = member.uid;
       
-      document.getElementById('modalName').textContent = member.fullName || 'N/A';
+      document.getElementById('modalName').textContent = getMemberName(member);
       document.getElementById('modalEmail').textContent = member.email || 'N/A';
-      document.getElementById('modalPhone').textContent = member.phone || 'N/A';
-      document.getElementById('modalRegion').textContent = member.region || 'N/A';
+      document.getElementById('modalPhone').textContent = getMemberPhone(member);
+      document.getElementById('modalRegion').textContent = getMemberRegion(member);
       document.getElementById('modalRegDate').textContent = formatDate(member.registrationDate || member.createdAt, true);
       document.getElementById('modalEmailVerified').innerHTML = member.emailVerified ? 
         '<span class="badge badge-success">✅ Verified</span>' : 
@@ -487,7 +621,7 @@
       // Preview next membership ID (actual final ID is generated securely on the server).
       document.getElementById('memberIdInput').value = 'Generating...';
       try {
-        const previewId = await getNextMemberIdPreview();
+        const previewId = await getNextMemberIdPreview(member);
         document.getElementById('memberIdInput').value = previewId;
       } catch (error) {
         document.getElementById('memberIdInput').value = 'Auto-generated on approval';
@@ -506,7 +640,7 @@
     async function approveSingleMember() {
       if (!selectedMemberUid) return;
 
-      if (!initializeApprovalFunctions()) {
+      if (!(await ensureApprovalFunctionsReady())) {
         UIModule.showAlert('Approval service is not ready yet. Please wait a moment and try again.', 'error');
         return;
       }
@@ -516,7 +650,7 @@
       try {
         UIModule.showLoader('Approving member...');
 
-        const result = await approveMemberFunction({
+        const result = await callApprovalFunction('approveMember', {
           memberUid: selectedMemberUid,
           notes: notes
         });
@@ -543,21 +677,21 @@
     async function rejectSingleMember() {
       if (!selectedMemberUid) return;
 
-      if (!initializeApprovalFunctions()) {
+      if (!(await ensureApprovalFunctionsReady())) {
         UIModule.showAlert('Approval service is not ready yet. Please wait a moment and try again.', 'error');
         return;
       }
 
       const notes = document.getElementById('approvalNotes').value || 'No reason provided';
 
-      if (!confirm('Are you sure you want to reject this member registration?')) {
+      if (!await AMCAGDialog.confirm('Are you sure you want to reject this member registration?')) {
         return;
       }
 
       try {
         UIModule.showLoader('Rejecting member...');
 
-        const result = await rejectMemberFunction({
+        const result = await callApprovalFunction('rejectMember', {
           memberUid: selectedMemberUid,
           reason: notes
         });
@@ -586,12 +720,12 @@
 
       if (selectedUids.length === 0) return;
 
-      if (!initializeApprovalFunctions()) {
+      if (!(await ensureApprovalFunctionsReady())) {
         UIModule.showAlert('Approval service is not ready yet. Please wait a moment and try again.', 'error');
         return;
       }
 
-      if (!confirm(`Approve ${selectedUids.length} member(s)?`)) return;
+      if (!await AMCAGDialog.confirm(`Approve ${selectedUids.length} member(s)?`)) return;
 
       try {
         UIModule.showLoader(`Approving ${selectedUids.length} members...`);
@@ -601,7 +735,7 @@
         for (const uid of selectedUids) {
 
           try {
-            const result = await approveMemberFunction({
+            const result = await callApprovalFunction('approveMember', {
               memberUid: uid,
               notes: 'Bulk approval'
             });
@@ -630,12 +764,12 @@
 
       if (selectedUids.length === 0) return;
 
-      if (!initializeApprovalFunctions()) {
+      if (!(await ensureApprovalFunctionsReady())) {
         UIModule.showAlert('Approval service is not ready yet. Please wait a moment and try again.', 'error');
         return;
       }
 
-      const reason = prompt(`Enter reason for rejecting ${selectedUids.length} member(s):`);
+      const reason = await AMCAGDialog.prompt(`Enter reason for rejecting ${selectedUids.length} member(s):`);
       if (!reason) return;
 
       try {
@@ -645,7 +779,7 @@
 
         for (const uid of selectedUids) {
           try {
-            const result = await rejectMemberFunction({
+            const result = await callApprovalFunction('rejectMember', {
               memberUid: uid,
               reason: reason
             });
@@ -695,10 +829,10 @@
         return;
       }
 
-      initializeApprovalFunctions();
+      await ensureApprovalFunctionsReady();
       loadPendingMembers();
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

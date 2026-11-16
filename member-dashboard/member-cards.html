@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member ID Cards | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .mc-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 18px rgba(11,93,59,.12); padding: 18px; margin-bottom: 16px; overflow-x: auto; }
+    .mc-controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; align-items: end; }
+    .mc-controls label { font-size: .8rem; color: #5a6778; display: block; margin-bottom: 4px; }
+    .mc-controls input, .mc-controls select { padding: 9px 10px; border: 1px solid #cfd8d2; border-radius: 8px; font: inherit; min-width: 170px; }
+    .mc-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    .mc-table th, .mc-table td { padding: 9px 10px; border-bottom: 1px solid #edf1ee; text-align: left; white-space: nowrap; vertical-align: middle; }
+    .mc-table th { color: #5a6778; font-size: .78rem; text-transform: uppercase; }
+    .mc-who { display: flex; align-items: center; gap: 10px; }
+    .mc-photo { width: 36px; height: 36px; border-radius: 50%; background: #e3ece7 center 15%/cover no-repeat; flex: none; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #0b5d3b; }
+    .mc-badge { padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: .78rem; }
+    .mc-badge.paid { background: #e3f4ea; color: #0b5d3b; }
+    .mc-badge.unpaid { background: #fff1d6; color: #8a5200; }
+    .mc-btn { border: 0; border-radius: 7px; padding: 7px 12px; font: 600 .82rem Inter, Arial, sans-serif; cursor: pointer; text-decoration: none; display: inline-block; margin-right: 6px; }
+    .mc-btn.view { background: #0b5d3b; color: #fff; }
+    .mc-btn.rec { background: #eef2ef; color: #1a2433; }
+    .mc-modal { position: fixed; inset: 0; background: rgba(15,28,22,.55); display: none; align-items: center; justify-content: center; z-index: 100000; padding: 16px; }
+    .mc-modal.on { display: flex; }
+    .mc-box { background: #fff; border-radius: 14px; max-width: 420px; width: 100%; padding: 22px; }
+    .mc-box label { display: block; font-weight: 600; margin: 12px 0 6px; font-size: .9rem; }
+    .mc-box select, .mc-box input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #cfd8d2; border-radius: 8px; font: inherit; }
+    .mc-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+  </style>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo"><img src="/images/logo.jpg" alt="AMCAG Logo"><span>AMCAG Member</span></a>
+      <div class="navbar-actions"><button class="btn btn-sm" onclick="signOut()">Sign Out</button></div>
+    </div>
+  </nav>
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item"><span>📊</span> Dashboard</a>
+      </nav>
+    </aside>
+    <main class="dashboard-content">
+      <div class="dashboard-header"><div><h1 class="dashboard-title">Member ID Cards</h1><p class="dashboard-subtitle" id="scope">Loading...</p></div></div>
+      <div id="err" class="mc-card" style="display:none"></div>
+      <div id="content" style="display:none">
+        <div class="mc-card">
+          <div class="mc-controls">
+            <div><label for="q">Search name or member ID</label><input id="q" type="search" placeholder="Search..."></div>
+            <div id="regionWrap"><label for="reg">Region</label><select id="reg"><option value="">All regions</option></select></div>
+            <div><label for="fee">Registration fee</label><select id="fee"><option value="">All</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select></div>
+          </div>
+          <table class="mc-table"><thead><tr><th>Member</th><th>Member ID</th><th>Region</th><th>Registration fee</th><th>Card valid until</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table>
+          <p id="count" style="color:#5a6778;font-size:.85rem;margin:12px 0 0"></p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="mc-modal" id="modal">
+    <div class="mc-box">
+      <h3 style="margin:0 0 4px;color:#0b5d3b">Record registration fee</h3>
+      <div id="mWho" style="color:#5a6778"></div>
+      <label for="mMethod">How was it paid?</label>
+      <select id="mMethod"><option value="cash">Cash</option><option value="bank_transfer">Bank transfer</option><option value="mobile_money_manual">Mobile money (outside the site)</option></select>
+      <label for="mRef">Receipt or reference (optional)</label>
+      <input id="mRef" type="text" maxlength="60" placeholder="e.g. receipt number">
+      <div class="mc-actions"><button class="mc-btn rec" type="button" id="mCancel">Cancel</button><button class="mc-btn view" type="button" id="mSave">Record payment</button></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script>
+    function signOut() { AuthModule.signOut(); }
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+      });
+    }
+    function call(name, data) {
+      return firebase.functions().httpsCallable(name)(data || {}).then(function (r) { return r.data; });
+    }
+    var all = [];
+    var recordUid = null;
+
+    function safePhoto(u) { return /^https:\/\//i.test(u || '') ? u.replace(/"/g, '%22') : ''; }
+
+    function draw() {
+      var q = document.getElementById('q').value.trim().toLowerCase();
+      var reg = document.getElementById('reg').value;
+      var fee = document.getElementById('fee').value;
+      var list = all.filter(function (m) {
+        if (q && (m.fullName + ' ' + m.memberId).toLowerCase().indexOf(q) < 0) return false;
+        if (reg && m.region !== reg) return false;
+        if (fee === 'paid' && !m.feePaid) return false;
+        if (fee === 'unpaid' && m.feePaid) return false;
+        return true;
+      });
+      document.getElementById('rows').innerHTML = list.length ? list.map(function (m) {
+        var photo = safePhoto(m.photoUrl);
+        return '<tr><td><div class="mc-who"><div class="mc-photo"' + (photo ? ' style="background-image:url(\'' + esc(photo) + '\')"' : '') + '>' +
+          (photo ? '' : esc((m.fullName || '?').charAt(0).toUpperCase())) + '</div>' + esc(m.fullName) + '</div></td>' +
+          '<td>' + esc(m.memberId || 'Not issued') + '</td><td>' + esc(m.region) + '</td>' +
+          '<td><span class="mc-badge ' + (m.feePaid ? 'paid' : 'unpaid') + '">' + (m.feePaid ? 'Paid' : 'Unpaid') + '</span></td>' +
+          '<td>' + (m.cardExpiresAt ? esc(new Date(m.cardExpiresAt).toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'})) : '-') + '</td>' +
+          '<td>' + (m.feePaid ? '<a class="mc-btn view" href="/member-dashboard/id-card.html?uid=' + encodeURIComponent(m.uid) + '">View card</a>' : '') +
+          (m.canRenew ? '<button class="mc-btn rec" type="button" data-renew="' + esc(m.uid) + '" data-name="' + esc(m.fullName) + '">Renew card</button>' : '') +
+          (m.canRecord ? '<button class="mc-btn rec" type="button" data-uid="' + esc(m.uid) + '" data-name="' + esc(m.fullName) + '">Record payment</button>' : '') +
+          '</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="color:#5a6778">No members match.</td></tr>';
+      document.getElementById('count').textContent = list.length + ' of ' + all.length + ' members';
+    }
+
+    async function load() {
+      try {
+        var d = await call('listMemberCards');
+        all = d.members;
+        document.getElementById('content').style.display = '';
+        document.getElementById('scope').textContent = d.scope === 'all' ? 'All active members' : ('Active members in ' + d.scope + ' Region');
+        var regions = Array.from(new Set(all.map(function (m) { return m.region; }).filter(Boolean))).sort();
+        var rs = document.getElementById('reg');
+        rs.innerHTML = '<option value="">All regions</option>' + regions.map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('');
+        if (d.scope !== 'all') document.getElementById('regionWrap').style.display = 'none';
+        draw();
+      } catch (e) {
+        var box = document.getElementById('err');
+        box.style.display = '';
+        box.textContent = e.code === 'functions/permission-denied' ? 'You do not have access to member ID cards.' : (e.message || 'Unable to load members.');
+        document.getElementById('scope').textContent = '';
+      }
+    }
+
+    ['q', 'reg', 'fee'].forEach(function (id) { document.getElementById(id).addEventListener('input', draw); });
+    document.getElementById('rows').addEventListener('click', async function (e) {
+      var r = e.target.closest('button[data-renew]');
+      if (r) {
+        if (!await AMCAGDialog.confirm('Renew the ID card for ' + r.getAttribute('data-name') + ' for another 3 years from today?', {title: 'Renew ID card', okText: 'Renew'})) return;
+        try { await call('renewIdCard', {memberUid: r.getAttribute('data-renew')}); AMCAGDialog.toast('ID card renewed for 3 years.', 'success'); load(); }
+        catch (err) { alert(err.message || 'Could not renew the card.'); }
+        return;
+      }
+      var b = e.target.closest('button[data-uid]');
+      if (!b) return;
+      recordUid = b.getAttribute('data-uid');
+      document.getElementById('mWho').textContent = b.getAttribute('data-name');
+      document.getElementById('mRef').value = '';
+      document.getElementById('modal').classList.add('on');
+    });
+    document.getElementById('mCancel').addEventListener('click', function () { document.getElementById('modal').classList.remove('on'); });
+    document.getElementById('mSave').addEventListener('click', async function () {
+      var btn = this;
+      btn.disabled = true;
+      try {
+        await call('recordRegistrationFeePayment', {
+          memberUid: recordUid,
+          method: document.getElementById('mMethod').value,
+          reference: document.getElementById('mRef').value
+        });
+        document.getElementById('modal').classList.remove('on');
+        AMCAGDialog.toast('Registration fee recorded. The member can now view their ID card.', 'success');
+        load();
+      } catch (e) {
+        alert(e.message || 'Could not record the payment.');
+      }
+      btn.disabled = false;
+    });
+
+    AuthModule.onAuthStateChanged(function (user) {
+      if (!user) { window.location.href = '/membership.html'; return; }
+      load();
+    });
+  </script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
+</body>
+</html>

@@ -169,7 +169,10 @@ const SuspensionCheckModule = (function() {
     signOutBtn.onmouseout = () => signOutBtn.style.background = '#dc2626';
     signOutBtn.onclick = () => {
       firebase.auth().signOut().then(() => {
-        window.location.href = '/index.html';
+        // ✅ NAVIGATION PATCH START
+        const routes = window.AMCAG_ROUTES || {};
+        window.location.href = routes.LOGOUT_REDIRECT || routes.LOGIN || '/membership.html';
+        // ✅ NAVIGATION PATCH END
       });
     };
 

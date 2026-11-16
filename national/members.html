@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -18,7 +18,7 @@
         <span>AMCAG National</span>
       </a>
       <div class="navbar-actions">
-        <button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+        <a href="/profile.html" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); margin-right: 8px;">Profile</a><button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
       </div>
     </div>
   </nav>
@@ -67,19 +67,19 @@
 
       <div class="grid grid-4 gap-4 mb-6">
         <div class="stat-card">
-          <div class="stat-value">15,243</div>
+          <div class="stat-value" id="members-total">0</div>
           <div class="stat-label">Total Members</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">14,567</div>
+          <div class="stat-value" id="members-active">0</div>
           <div class="stat-label">Active</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">245</div>
+          <div class="stat-value" id="members-pending">0</div>
           <div class="stat-label">Pending Approval</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">431</div>
+          <div class="stat-value" id="members-inactive">0</div>
           <div class="stat-label">Inactive</div>
         </div>
       </div>
@@ -87,7 +87,7 @@
       <div class="card">
         <div class="flex-between mb-4">
           <h3 class="card-title">All Members</h3>
-          <div class="flex gap-2">
+          <div class="flex gap-2 member-filter-row">
             <input type="text" class="form-input" placeholder="Search members..." style="width: 250px;">
             <select class="form-input" style="width: auto;">
               <option value="">All Regions</option>
@@ -118,19 +118,19 @@
         </div>
 
         <div class="table-container">
-          <table class="table">
+          <table class="table members-table">
             <thead>
               <tr>
                 <th>Member ID</th>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Phone</th>
                 <th>Region</th>
-                <th>Join Date</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="membersTableBody">
               <tr>
                 <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
                   <div style="display: inline-block;">
@@ -230,9 +230,14 @@
   <!-- App Modules -->
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/password-toggle.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     // ===== DEFINE BUTTON FUNCTIONS IMMEDIATELY =====
@@ -290,6 +295,24 @@
     let allMembers = [];
     let filteredMembers = [];
     let addMemberModalId = null;
+
+    function setText(id, value, fallback = "0") {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.textContent = value ?? fallback;
+    }
+
+    function setHTML(id, value, fallback = "") {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.innerHTML = value ?? fallback;
+    }
 
     // ===== RE-AUTHENTICATION MODAL LOGIC (SECURITY LAYER 1) =====
     window.openResetModal = async (uid, userName) => {
@@ -379,7 +402,7 @@
 
     // ===== PASSWORD RESET MODAL LOGIC (SECURITY LAYER 2) =====
     function showPasswordResetModal() {
-      document.getElementById('resetUserName').textContent = `Resetting password for: ${selectedUserName}`;
+      setText('resetUserName', `Resetting password for: ${selectedUserName}`, '');
       document.getElementById('newPassword').value = '';
       document.getElementById('generatedPasswordDisplay').style.display = 'none';
       document.getElementById('resetModal').style.display = 'flex';
@@ -405,7 +428,7 @@
       if (!/[!@#$%^&*]/.test(password)) password += '!';
       
       document.getElementById('newPassword').value = password;
-      document.getElementById('generatedPasswordText').textContent = password;
+      setText('generatedPasswordText', password, '');
       document.getElementById('generatedPasswordDisplay').style.display = 'block';
     };
 
@@ -534,9 +557,9 @@
         UIModule.showAlert('Error loading members: ' + error.message, 'error');
         
         // Show error state in table
-        const tbody = document.querySelector('.table tbody');
+        const tbody = document.getElementById('membersTableBody');
         if (tbody) {
-          tbody.innerHTML = `
+          setHTML('membersTableBody', `
             <tr>
               <td colspan="7" style="text-align: center; padding: 3rem;">
                 <div style="color: var(--color-error);">
@@ -547,14 +570,14 @@
                 </div>
               </td>
             </tr>
-          `;
+          `);
         }
       }
     }
 
     // ===== RENDER MEMBERS TABLE =====
     function renderMembers() {
-      const tbody = document.querySelector('.table tbody');
+      const tbody = document.getElementById('membersTableBody');
       
       if (!tbody) {
         console.error('Table tbody not found');
@@ -562,11 +585,11 @@
       }
       
       if (filteredMembers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No members found</td></tr>';
+        setHTML('membersTableBody', '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No members found</td></tr>');
         return;
       }
       
-      tbody.innerHTML = filteredMembers.map(member => {
+      setHTML('membersTableBody', filteredMembers.map(member => {
         // Safely handle date conversion
         let joinDate = 'N/A';
         try {
@@ -585,50 +608,81 @@
         
         return `
           <tr>
-            <td>${member.memberId || 'Pending'}</td>
-            <td>${member.fullName || 'N/A'}</td>
-            <td>${member.email || 'N/A'}</td>
-            <td>${member.region || 'N/A'}</td>
-            <td>${joinDate}</td>
+            <td><span class="cell-secondary">${escapeHtml(getMemberId(member))}</span></td>
+            <td><span class="cell-primary cell-wrap">${escapeHtml(getMemberName(member))}</span></td>
+            <td><span class="cell-email">${escapeHtml(member.email || 'N/A')}</span></td>
+            <td>${escapeHtml(getMemberPhone(member))}</td>
+            <td>${escapeHtml(getMemberRegion(member))}</td>
+            <td>${getMemberStatusBadge(member)}</td>
             <td>
-              <span class="badge ${getStatusBadgeClass(member.status)}">
-                ${member.status || 'Pending'}
-              </span>
-            </td>
-            <td>
-              <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="viewMember('${member.uid}')">View</button>
-              <button class="btn btn-sm" style="background: var(--color-warning); color: white;" onclick="openResetModal('${member.uid}', '${(member.fullName || member.email || '').replace(/'/g, "\\'")}')">Reset Password</button>
+              <div class="table-actions">
+                <button class="btn btn-sm btn-outline" onclick="viewMember('${member.uid}')">View</button>
+                <button class="btn btn-sm" style="background: var(--color-warning); color: white;" onclick="openResetModal('${member.uid}', '${(member.fullName || member.email || '').replace(/'/g, "\\'")}')">Reset Password</button>
+              </div>
             </td>
           </tr>
         `;
-      }).join('');
+      }).join(''));
     }
 
     // ===== HELPER FUNCTIONS =====
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getMemberId(member) {
+      return member?.memberId || 'N/A';
+    }
+
+    function getMemberName(member) {
+      return member?.fullName || member?.name || member?.displayName || 'N/A';
+    }
+
+    function getMemberRegion(member) {
+      return member?.region || member?.regionName || member?.assignedRegion || 'N/A';
+    }
+
+    function getMemberPhone(member) {
+      return member?.phone || member?.phoneNumber || member?.contact || 'N/A';
+    }
+
+    function getMemberStatus(member) {
+      return String(member?.status || 'pending').trim().toLowerCase() || 'pending';
+    }
+
     function getStatusBadgeClass(status) {
       const statusMap = {
         'active': 'badge-success',
         'pending': 'badge-warning',
-        'inactive': 'badge-error'
+        'rejected': 'badge-error',
+        'suspended': 'badge-neutral',
+        'inactive': 'badge-neutral'
       };
-      return statusMap[status?.toLowerCase()] || 'badge-warning';
+      return statusMap[String(status || '').toLowerCase()] || 'badge-warning';
+    }
+
+    function getMemberStatusBadge(member) {
+      const status = getMemberStatus(member);
+      return `<span class="badge ${getStatusBadgeClass(status)}">${escapeHtml(status)}</span>`;
     }
 
     function updateStats() {
       const stats = {
         total: allMembers.length,
-        active: allMembers.filter(m => m.status === 'active').length,
-        pending: allMembers.filter(m => m.status === 'pending').length,
-        inactive: allMembers.filter(m => m.status === 'inactive').length
+        active: allMembers.filter(m => getMemberStatus(m) === 'active').length,
+        pending: allMembers.filter(m => getMemberStatus(m) === 'pending').length,
+        inactive: allMembers.filter(m => ['inactive', 'suspended'].includes(getMemberStatus(m))).length
       };
       
-      const statCards = document.querySelectorAll('.stat-card .stat-value');
-      if (statCards.length >= 4) {
-        statCards[0].textContent = stats.total.toLocaleString();
-        statCards[1].textContent = stats.active.toLocaleString();
-        statCards[2].textContent = stats.pending.toLocaleString();
-        statCards[3].textContent = stats.inactive.toLocaleString();
-      }
+      setText('members-total', stats.total.toLocaleString());
+      setText('members-active', stats.active.toLocaleString());
+      setText('members-pending', stats.pending.toLocaleString());
+      setText('members-inactive', stats.inactive.toLocaleString());
     }
 
     function getCurrentSearchTerm() {
@@ -654,17 +708,18 @@
       
       filteredMembers = allMembers.filter(member => {
         const matchesSearch = !searchTerm || 
-          member.fullName?.toLowerCase().includes(searchTerm) ||
+          getMemberName(member).toLowerCase().includes(searchTerm) ||
           member.email?.toLowerCase().includes(searchTerm) ||
-          member.memberId?.toLowerCase().includes(searchTerm);
+          getMemberPhone(member).toLowerCase().includes(searchTerm) ||
+          getMemberId(member).toLowerCase().includes(searchTerm);
         
         // Case-insensitive region matching
         const matchesRegion = !regionFilter || 
-          member.region?.toLowerCase() === regionFilter.toLowerCase();
+          getMemberRegion(member).toLowerCase() === regionFilter.toLowerCase();
         
         // Case-insensitive status matching
         const matchesStatus = !statusFilter || 
-          member.status?.toLowerCase() === statusFilter.toLowerCase();
+          getMemberStatus(member) === statusFilter.toLowerCase();
         
         return matchesSearch && matchesRegion && matchesStatus;
       });
@@ -687,11 +742,11 @@
         allMembers.forEach(member => {
           const row = [
             member.memberId || '',
-            `"${(member.fullName || '').replace(/"/g, '""')}"`,
+            `"${getMemberName(member).replace(/"/g, '""')}"`,
             member.email || '',
-            member.phoneNumber || '',
-            member.region || '',
-            member.status || '',
+            getMemberPhone(member),
+            getMemberRegion(member),
+            getMemberStatus(member),
             member.createdAt ? new Date(member.createdAt.toDate()).toLocaleDateString() : '',
             member.employmentStatus || ''
           ];
@@ -949,6 +1004,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

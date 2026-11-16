@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGM Registrations | AMCAG National Dashboard</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+    <div class="navbar-container">
+      <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
+        <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
+        <span>AMCAG National</span>
+      </a>
+      <div class="navbar-actions">
+        <a href="/profile.html" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); margin-right: 8px;">Profile</a><button class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/national/dashboard.html" class="dashboard-nav-item">Dashboard</a>
+        <a href="/national/members.html" class="dashboard-nav-item">Members</a>
+        <a href="/national/regions.html" class="dashboard-nav-item">Regions</a>
+        <a href="/national/payments.html" class="dashboard-nav-item">Payments</a>
+        <a href="/national/events.html" class="dashboard-nav-item">Events</a>
+        <a href="/national/agm-registrations.html" class="dashboard-nav-item active">AGM Registrations</a>
+        <a href="/national/analytics.html" class="dashboard-nav-item">Analytics</a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">AGM Registrations</h1>
+          <p class="dashboard-subtitle">Track 2026 Annual General Meeting registrations and payment status nationwide</p>
+        </div>
+        <div class="flex gap-2" style="flex-wrap: wrap;">
+          <button class="btn btn-outline" id="export-csv">Export to Excel</button>
+          <button class="btn btn-primary" id="export-pdf">Export PDF</button>
+        </div>
+      </div>
+
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="stat-value" id="total-registrations">0</div>
+          <div class="stat-label">Total Registrations</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="paid-registrations">0</div>
+          <div class="stat-label">Paid</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="pending-registrations">0</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="paid-amount">GHS 0.00</div>
+          <div class="stat-label">Confirmed Revenue</div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+          <div class="form-group">
+            <label class="form-label" for="filter-region">Region</label>
+            <select class="form-input" id="filter-region" data-agm-region-select>
+              <option value="">All regions</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="filter-status">Payment status</label>
+            <select class="form-input" id="filter-status">
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="failed">Failed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="filter-start">From</label>
+            <input class="form-input" type="date" id="filter-start">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="filter-end">To</label>
+            <input class="form-input" type="date" id="filter-end">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="filter-search">Search</label>
+            <input class="form-input" id="filter-search" placeholder="Name, phone, email">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Contact</th>
+                <th>Region</th>
+                <th>District</th>
+                <th>Facility</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th>Registered</th>
+                <th>Update</th>
+              </tr>
+            </thead>
+            <tbody id="agm-registrations-table">
+              <tr>
+                <td colspan="9" style="text-align: center; padding: 2rem;">Loading AGM registrations...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
+  <script src="/js/agm.js"></script>
+  <script>
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    function startAgmDashboard() {
+      if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+        AGMModule.initDashboard('national');
+      } else {
+        setTimeout(startAgmDashboard, 50);
+      }
+    }
+
+    startAgmDashboard();
+  </script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
+</body>
+</html>

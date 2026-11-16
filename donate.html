@@ -7,6 +7,7 @@
   <meta name="description" content="Support AMCAG's charitable activities including children's home visits and community outreach programs across Ghana.">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -17,7 +18,11 @@
         <img src="/images/logo.jpg" alt="AMCAG Logo">
         <span>AMCAG</span>
       </a>
-      <button class="navbar-toggle" onclick="toggleMobileMenu()">☰</button>
+      <button class="navbar-toggle" aria-label="Toggle navigation" onclick="return window.AMCAGToggleNavbar ? window.AMCAGToggleNavbar(this,event) : (function(btn,e){if(e){e.preventDefault();e.stopPropagation();}var nav=btn.closest('.navbar');var menu=nav&&nav.querySelector('.navbar-menu');if(!menu)return false;var open=!menu.classList.contains('active');menu.classList.toggle('active',open);btn.classList.toggle('active',open);btn.setAttribute('aria-expanded',String(open));if(nav)nav.classList.toggle('menu-open',open);document.body.classList.toggle('navbar-menu-open',open);document.body.style.overflow=open?'hidden':'';return false;})(this,event)">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
       <div class="navbar-menu" id="navbarMenu">
         <a href="/" class="navbar-item">Home</a>
         <a href="/about.html" class="navbar-item">About</a>
@@ -233,6 +238,7 @@
         Tax ID: [XXXXX] | Registered Charity<br>
         Contact: <a href="mailto:donations@amcag.org.gh" style="color: var(--color-primary);">donations@amcag.org.gh</a> | +233 XX XXX XXXX
       </p>
+      <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p>
     </div>
   </footer>
 
@@ -242,13 +248,12 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
   <script src="/js/firebase.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 
   <script>
     let submitDonation;
-
-    function toggleMobileMenu() {
-      document.getElementById('navbarMenu').classList.toggle('active');
-    }
 
     function toggleDonationType() {
       const type = document.querySelector('input[name="donationType"]:checked').value;
@@ -283,9 +288,9 @@
         const db = firebase.firestore();
         const snapshot = await db.collection('donation_campaigns')
           .where('status', '==', 'active')
-          .orderBy('createdAt', 'desc')
           .get();
 
+        const escC = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
         const campaignSelect = document.getElementById('campaignSelect');
         const campaignsList = document.getElementById('campaignsList');
 
@@ -303,16 +308,18 @@
           campaignSelect.appendChild(option);
         });
 
-        // Populate campaign cards
-        campaignsList.innerHTML = snapshot.docs.map(doc => {
+        // Populate campaign cards (newest first)
+        const sortedDocs = snapshot.docs.slice().sort((a, b) => ((b.data().createdAt && b.data().createdAt.toMillis ? b.data().createdAt.toMillis() : 0) - (a.data().createdAt && a.data().createdAt.toMillis ? a.data().createdAt.toMillis() : 0)));
+        campaignsList.innerHTML = sortedDocs.map(doc => {
           const campaign = { id: doc.id, ...doc.data() };
           const progress = campaign.targetAmount ? (campaign.currentAmount / campaign.targetAmount * 100).toFixed(1) : 0;
           const endDate = campaign.endDate ? new Date(campaign.endDate.toDate()).toLocaleDateString() : 'Ongoing';
 
           return `
             <div class="card">
-              <h3 style="margin-bottom: 1rem;">${campaign.title}</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 1rem;">${campaign.description}</p>
+              ${/^https:\/\//.test(campaign.imageUrl || '') ? '<img src="' + escC(campaign.imageUrl) + '" alt="" style="width:100%;height:160px;object-fit:cover;border-radius:10px;margin-bottom:1rem;">' : ''}
+              <h3 style="margin-bottom: 1rem;">${escC(campaign.title)}</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 1rem;">${escC(campaign.description)}</p>
               ${campaign.targetAmount ? `
                 <div style="margin-bottom: 1rem;">
                   <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
@@ -535,7 +542,7 @@
         donorName: document.getElementById('donorName').value,
         donorEmail: document.getElementById('donorEmail').value || null,
         donorPhone: document.getElementById('donorPhone').value || null,
-        campaign: document.getElementById('campaignSelect').value || null,
+        campaignId: document.getElementById('campaignSelect').value || null,
         purpose: document.getElementById('donationPurpose').value || null,
         donorType: document.getElementById('anonymousDonation').checked ? 'anonymous' : 'organization',
         visibility: document.getElementById('anonymousDonation').checked ? 'executives_only' : 'public'

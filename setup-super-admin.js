@@ -19,7 +19,7 @@ try {
   } catch (e2) {
     console.error('\n❌ ERROR: Service account key not found!');
     console.log('\nPlease download your service account key from:');
-    console.log('https://console.firebase.google.com/project/amcag-website/settings/serviceaccounts/adminsdk');
+    console.log('https://console.firebase.google.com/project/amcag-af624/settings/serviceaccounts/adminsdk');
     console.log('\nClick "Generate new private key" and save as:');
     console.log('functions/serviceAccountKey.json\n');
     process.exit(1);
@@ -28,7 +28,7 @@ try {
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://amcag-website-default-rtdb.firebaseio.com"
+    databaseURL: "https://amcag-af624-default-rtdb.firebaseio.com"
 });
 
 const auth = admin.auth();
@@ -99,7 +99,7 @@ async function createSuperAdmin() {
     console.log(`\nEmail: ${email}`);
     console.log(`Role: Super Admin`);
     console.log(`Status: Approved & Verified`);
-    console.log(`\nYou can now login at: https://amcag-website.web.app/membership.html`);
+    console.log(`\nYou can now login at: https://amcag-af624.web.app/membership.html`);
     console.log('===========================================\n');
     
   } catch (error) {

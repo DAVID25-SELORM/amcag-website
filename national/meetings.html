@@ -6,7 +6,7 @@
   <title>National Meetings | AMCAG National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <style>
     .meeting-card {
       background: white;
@@ -234,6 +234,14 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label class="form-label required">Meeting Format</label>
+          <select id="meetingFormat" class="form-input" required>
+            <option value="video">🎥 Video &amp; Audio</option>
+            <option value="audio">🎙️ Audio Only</option>
+          </select>
+        </div>
+
         <div style="display: flex; gap: 1rem; margin-top: 2rem;">
           <button type="submit" class="btn btn-primary" style="flex: 1;">Schedule Meeting</button>
           <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeScheduleModal()">Cancel</button>
@@ -255,15 +263,29 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     let currentUser = null;
     let userProfile = null;
     let scheduleMeeting;
+    let meetingsById = new Map();
     const REGIONS = ['Greater Accra', 'Ashanti', 'Western', 'Eastern', 'Central', 'Northern', 'Upper East', 'Upper West', 'Volta', 'Bono', 'Bono East', 'Ahafo', 'Oti', 'Savannah', 'North East', 'Western North'];
 
     function signOut() {
       AuthModule.signOut();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     function toggleRegionField() {
@@ -310,6 +332,7 @@
         } else if (filterStatus === 'past') {
           meetings = meetings.filter(m => isPast(m, now));
         }
+        meetingsById = new Map(meetings.map((meeting) => [meeting.id, meeting]));
 
         renderMeetings(meetings);
         updateStats(meetings);
@@ -364,39 +387,65 @@
         const statusClass = live ? 'live' : upcoming ? 'upcoming' : 'ended';
         const statusText = live ? '🔴 LIVE' : upcoming ? 'UPCOMING' : 'ENDED';
         const statusColor = live ? '#4caf50' : upcoming ? '#2196f3' : '#9e9e9e';
+        const meetingId = escapeHtml(meeting.id);
+        const title = escapeHtml(meeting.title || 'Untitled Meeting');
+        const description = escapeHtml(meeting.description || '');
+        const region = escapeHtml(meeting.region || '');
+        const hostName = escapeHtml(meeting.hostName || 'Unknown host');
+        const duration = Number.isFinite(Number(meeting.duration)) ? Number(meeting.duration) : 60;
+        const participants = Number.isFinite(Number(meeting.participants)) ? Number(meeting.participants) : 0;
 
         return `
           <div class="meeting-card" style="border-left: 4px solid ${statusColor};">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
               <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
                   <span style="background: ${statusColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${statusText}</span>
                   ${meeting.type === 'national' ? '<span class="badge badge-primary">National</span>' : ''}
-                  ${meeting.type === 'regional' ? `<span class="region-badge">${meeting.region}</span>` : ''}
+                  ${meeting.type === 'regional' ? `<span class="region-badge">${region}</span>` : ''}
                   ${meeting.type === 'general' ? '<span class="badge">General</span>' : ''}
                   ${meeting.recordingUrl ? '<span class="badge badge-success">📹 Recorded</span>' : ''}
                 </div>
-                <h4 style="margin: 0 0 0.5rem 0;">${meeting.title}</h4>
-                <p style="color: var(--text-secondary); margin: 0 0 0.5rem 0; font-size: 0.875rem;">${meeting.description || ''}</p>
+                <h4 style="margin: 0 0 0.5rem 0;">${title}</h4>
+                <p style="color: var(--text-secondary); margin: 0 0 0.5rem 0; font-size: 0.875rem;">${description}</p>
                 <div style="display: flex; gap: 1.5rem; font-size: 0.875rem; color: var(--text-secondary); flex-wrap: wrap;">
                   <span>📅 ${formatDate(meeting.scheduledTime)}</span>
                   <span>⏰ ${formatTime(meeting.scheduledTime)}</span>
-                  <span>⏱️ ${meeting.duration} mins</span>
-                  <span>👨‍💼 ${meeting.hostName}</span>
-                  ${meeting.participants ? `<span>👥 ${meeting.participants} joined</span>` : ''}
+                  <span>⏱️ ${duration} mins</span>
+                  <span>👨‍💼 ${hostName}</span>
+                  ${participants ? `<span>👥 ${participants} joined</span>` : ''}
                 </div>
               </div>
               <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                ${live ? `<button class="btn btn-success" onclick="joinMeeting('${meeting.id}', '${meeting.title}')">Join Live</button>` : ''}
-                ${upcoming ? `<button class="btn btn-primary" onclick="joinMeeting('${meeting.id}', '${meeting.title}')">Join</button>` : ''}
-                ${past && meeting.recordingUrl ? `<button class="btn btn-outline" onclick="window.open('${meeting.recordingUrl}', '_blank')">▶️ Watch</button>` : ''}
-                ${upcoming ? `<button class="btn btn-outline btn-sm" onclick="deleteMeeting('${meeting.id}')">Delete</button>` : ''}
+                ${live ? `<button class="btn btn-success" data-meeting-action="join" data-meeting-id="${meetingId}">Join Live</button>` : ''}
+                ${upcoming ? `<button class="btn btn-primary" data-meeting-action="join" data-meeting-id="${meetingId}">Join</button>` : ''}
+                ${past && meeting.recordingUrl ? `<button class="btn btn-outline" data-meeting-action="watch" data-meeting-id="${meetingId}">▶️ Watch</button>` : ''}
+                ${upcoming ? `<button class="btn btn-outline btn-sm" data-meeting-action="delete" data-meeting-id="${meetingId}">Delete</button>` : ''}
               </div>
             </div>
           </div>
         `;
       }).join('');
     }
+
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-meeting-action]');
+      if (!button) return;
+
+      const meeting = meetingsById.get(button.dataset.meetingId);
+      if (!meeting) {
+        UIModule.showAlert('Meeting record not found. Please refresh.', 'error');
+        return;
+      }
+
+      if (button.dataset.meetingAction === 'join') {
+        joinMeeting(meeting.id, meeting.title || 'AMCAG Meeting');
+      } else if (button.dataset.meetingAction === 'watch' && meeting.recordingUrl) {
+        window.open(meeting.recordingUrl, '_blank', 'noopener');
+      } else if (button.dataset.meetingAction === 'delete') {
+        deleteMeeting(meeting.id);
+      }
+    });
 
     function updateStats(meetings) {
       const now = new Date();
@@ -421,8 +470,9 @@
     }
 
     async function startInstantMeeting() {
-      const title = prompt('Enter meeting title:', 'Instant National Meeting');
+      const title = await AMCAGDialog.prompt('Enter meeting title:', 'Instant National Meeting');
       if (!title) return;
+      const formatChoice = await AMCAGDialog.confirm('Which meeting format do you want?', {title: 'Meeting format', okText: 'Video & Audio', cancelText: 'Audio only', danger: false});
 
       try {
         UIModule.showLoader('Starting meeting...');
@@ -433,7 +483,8 @@
           scheduledTime: new Date(),
           duration: 60,
           type: 'national',
-          visibility: 'executives'
+          visibility: 'executives',
+          meetingFormat: formatChoice ? 'video' : 'audio'
         };
 
         const result = await scheduleMeeting(meetingData);
@@ -470,7 +521,8 @@
         scheduledTime,
         duration,
         type,
-        visibility
+        visibility,
+        meetingFormat: document.getElementById('meetingFormat').value || 'video'
       };
 
       if (type === 'regional') {
@@ -504,16 +556,26 @@
     let currentMeetingId = null;
 
     function joinMeeting(meetingId, meetingTitle) {
+      const meeting = meetingsById.get(meetingId);
+      const isAudioOnly = meeting?.meetingFormat === 'audio';
+
       const roomName = `amcag-${meetingId}`;
       const displayName = userProfile.fullName || 'National Executive';
       const userEmail = userProfile.email || '';
-      
-      const jitsiUrl = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.fileRecordingsEnabled=true&config.dropbox.appKey=YOUR_DROPBOX_KEY&config.recordingService.enabled=true&userInfo.displayName=${encodeURIComponent(displayName)}&userInfo.email=${encodeURIComponent(userEmail)}`;
+
+      const jitsiUrl = `https://meet.jit.si/${roomName}`
+        + `#config.prejoinPageEnabled=false`
+        + `&config.startWithAudioMuted=false`
+        + `&config.startWithVideoMuted=${isAudioOnly}`
+        + `&config.disableVideo=${isAudioOnly}`
+        + `&userInfo.displayName=${encodeURIComponent(displayName)}`
+        + `&userInfo.email=${encodeURIComponent(userEmail)}`;
 
       document.getElementById('jitsiFrame').src = jitsiUrl;
       document.getElementById('jitsiContainer').style.display = 'block';
       document.body.style.overflow = 'hidden';
-      
+      currentMeetingId = meetingId;
+
       trackAttendance(meetingId, 'joined');
     }
 
@@ -550,7 +612,7 @@
     }
 
     async function deleteMeeting(meetingId) {
-      if (!confirm('Delete this meeting? All participants will be notified.')) return;
+      if (!await AMCAGDialog.confirm('Delete this meeting? All participants will be notified.')) return;
 
       try {
         UIModule.showLoader('Deleting meeting...');
@@ -632,6 +694,6 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link rel="stylesheet" href="/css/animations.css">
   <link rel="stylesheet" href="/css/dark-mode.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
         <img src="/images/logo.jpg" alt="AMCAG Logo">
         <span>AMCAG</span>
       </a>
-      <button class="navbar-toggle"><span></span><span></span><span></span></button>
+      <button class="navbar-toggle" onclick="return window.AMCAGToggleNavbar ? window.AMCAGToggleNavbar(this,event) : (function(btn,e){if(e){e.preventDefault();e.stopPropagation();}var nav=btn.closest('.navbar');var menu=nav&&nav.querySelector('.navbar-menu');if(!menu)return false;var open=!menu.classList.contains('active');menu.classList.toggle('active',open);btn.classList.toggle('active',open);btn.setAttribute('aria-expanded',String(open));if(nav)nav.classList.toggle('menu-open',open);document.body.classList.toggle('navbar-menu-open',open);document.body.style.overflow=open?'hidden':'';return false;})(this,event)"><span></span><span></span><span></span></button>
       <ul class="navbar-menu">
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><a href="/about.html" class="navbar-link">About</a></li>
@@ -50,30 +50,7 @@
     <div class="container">
       <div class="grid grid-3 gap-4" id="news-list">
         <div class="card">
-          <div style="height: 200px; background: var(--color-primary-95); border-radius: var(--radius-lg); margin-bottom: var(--space-3);"></div>
-          <span class="badge badge-primary mb-2">Announcement</span>
-          <h3 class="card-title mb-2">New Certification Program Launched</h3>
-          <p class="card-body mb-3">AMCAG introduces advanced certification pathway for experienced professionals seeking to enhance their credentials...</p>
-          <div style="color: var(--text-tertiary); font-size: var(--text-sm); margin-bottom: var(--space-3);">February 20, 2026</div>
-          <a href="#" class="btn btn-outline btn-sm">Read More</a>
-        </div>
-
-        <div class="card">
-          <div style="height: 200px; background: var(--color-secondary-95); border-radius: var(--radius-lg); margin-bottom: var(--space-3);"></div>
-          <span class="badge badge-success mb-2">Partnership</span>
-          <h3 class="card-title mb-2">MoH Collaboration Strengthened</h3>
-          <p class="card-body mb-3">Partnership with Ministry of Health expanded to improve pharmaceutical care delivery across all regions...</p>
-          <div style="color: var(--text-tertiary); font-size: var(--text-sm); margin-bottom: var(--space-3);">February 18, 2026</div>
-          <a href="#" class="btn btn-outline btn-sm">Read More</a>
-        </div>
-
-        <div class="card">
-          <div style="height: 200px; background: var(--color-success-bg); border-radius: var(--radius-lg); margin-bottom: var(--space-3);"></div>
-          <span class="badge badge-secondary mb-2">Achievement</span>
-          <h3 class="card-title mb-2">15,000 Members Milestone</h3>
-          <p class="card-body mb-3">AMCAG celebrates reaching 15,000 registered members nationwide, marking significant growth in professional membership...</p>
-          <div style="color: var(--text-tertiary); font-size: var(--text-sm); margin-bottom: var(--space-3);">February 15, 2026</div>
-          <a href="#" class="btn btn-outline btn-sm">Read More</a>
+          <div class="empty-state">Loading news and updates...</div>
         </div>
       </div>
     </div>
@@ -81,61 +58,33 @@
 
   <footer class="footer">
     <div class="container">
-      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p></div>
+      <div class="footer-bottom"><p>&copy; 2026 AMCAG. All rights reserved.</p>
+        <p class="developer-signature">Built by David Selorm Gabion | <a href="mailto:gabiondavidselorm@gmail.com">gabiondavidselorm@gmail.com</a></p></div>
     </div>
   </footer>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="/js/firebase.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
   <script>
-    // Sample news data
-    const sampleNews = [
-      {
-        title: 'AMCAG Launches New Digital Platform',
-        excerpt: 'The Association of Medical and Chemical Administrators Ghana unveils a comprehensive digital governance ecosystem to enhance member services and engagement.',
-        category: 'announcement',
-        image: 'https://via.placeholder.com/600x400/1A73E8/ffffff?text=Digital+Platform+Launch',
-        createdAt: new Date('2026-02-28')
-      },
-      {
-        title: 'Partnership with Ghana Health Service',
-        excerpt: 'AMCAG signs strategic partnership agreement with Ghana Health Service to improve pharmaceutical distribution and access across the country.',
-        category: 'partnership',
-        image: 'https://via.placeholder.com/600x400/34A853/ffffff?text=GHS+Partnership',
-        createdAt: new Date('2026-02-20')
-      },
-      {
-        title: 'Annual General Meeting 2026 Announcement',
-        excerpt: 'Save the date! Our Annual General Meeting will take place on March 15, 2026 in Accra. All members are encouraged to attend and participate.',
-        category: 'event',
-        image: 'https://via.placeholder.com/600x400/FBBC04/ffffff?text=AGM+2026',
-        createdAt: new Date('2026-02-15')
-      },
-      {
-        title: 'Member Excellence Awards 2025 Winners',
-        excerpt: 'Congratulations to all winners of the 2025 Member Excellence Awards. Your dedication to professional excellence inspires us all.',
-        category: 'achievement',
-        image: 'https://via.placeholder.com/600x400/EA4335/ffffff?text=Awards+2025',
-        createdAt: new Date('2026-02-10')
-      },
-      {
-        title: 'New Training Program for Members',
-        excerpt: 'AMCAG introduces comprehensive training program on pharmaceutical best practices and regulatory compliance for all members.',
-        category: 'announcement',
-        image: 'https://via.placeholder.com/600x400/1A73E8/ffffff?text=Training+Program',
-        createdAt: new Date('2026-02-05')
-      },
-      {
-        title: 'Regional Chapter Expansion',
-        excerpt: 'AMCAG strengthens presence across all 16 regions of Ghana with new chapter offices and increased regional coordination.',
-        category: 'announcement',
-        image: 'https://via.placeholder.com/600x400/34A853/ffffff?text=Regional+Expansion',
-        createdAt: new Date('2026-01-28')
-      }
-    ];
+    const sampleNews = [];
+
+    function getAgmNewsArticle() {
+      return {
+        id: 'agm-2026-news',
+        title: 'AGM 2026 Registration Now Open',
+        category: 'AGM 2026',
+        excerpt: 'AMCAG members can now register for the 2026 Annual General Meeting scheduled for July 10-11, 2026 in Koforidua.',
+        content: 'The AMCAG Annual General Meeting 2026 will bring members together for governance updates, welfare discussions, professional development, and national planning. Members are encouraged to register early.',
+        image: '/images/WhatsApp Image 2026-03-04 at 1.34.32 PM.jpeg',
+        createdAt: new Date('2026-05-30T09:00:00'),
+        link: '/events.html#featured-agm'
+      };
+    }
 
     function renderNews(articles) {
       return articles.map(data => {
@@ -156,7 +105,7 @@
             <h3 class="card-title mb-2">${data.title || 'Untitled'}</h3>
             <p class="card-body mb-3">${(data.excerpt || data.content || '').substring(0, 120)}...</p>
             <div style="color: var(--text-tertiary); font-size: var(--text-sm); margin-bottom: var(--space-3);">${formattedDate}</div>
-            <a href="#" class="btn btn-outline btn-sm" onclick="viewFullArticle('${data.id}'); return false;">Read More</a>
+            ${data.link ? `<a href="${data.link}" class="btn btn-outline btn-sm">Read More</a>` : `<a href="#" class="btn btn-outline btn-sm" onclick="viewFullArticle('${data.id}'); return false;">Read More</a>`}
           </div>
         `;
       }).join('');
@@ -236,8 +185,7 @@
         }
         
         if (snapshot.empty) {
-          console.log('News collection is empty, showing sample news');
-          allArticles = sampleNews.map((article, index) => ({ ...article, id: `sample-${index}` }));
+          allArticles = [getAgmNewsArticle()];
           newsContainer.innerHTML = renderNews(allArticles);
           return;
         }
@@ -248,13 +196,17 @@
           createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date(doc.data().createdAt)
         }));
         
-        allArticles = articles;
-        newsContainer.innerHTML = renderNews(articles);
+        const filteredArticles = articles.filter((article) =>
+          article.id !== 'agm-2026-news' &&
+          !String(article.title || '').toLowerCase().includes('agm 2026')
+        );
+        allArticles = [getAgmNewsArticle(), ...filteredArticles];
+        newsContainer.innerHTML = renderNews(allArticles);
         
       } catch (error) {
         console.error('Error loading news:', error);
-        console.log('Showing sample news due to error');
-        newsContainer.innerHTML = renderNews(sampleNews);
+        allArticles = [getAgmNewsArticle()];
+        newsContainer.innerHTML = renderNews(allArticles);
       }
     }
     
@@ -273,7 +225,7 @@
       waitForFirebase();
     }
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
   
   <!-- Theme Toggle -->
   <script>

@@ -16,7 +16,7 @@
       border-radius: 50%;
       background-color: var(--color-primary, #1a73e8);
       background-size: cover;
-      background-position: center;
+      background-position: center 15%;
       color: #fff;
       font-weight: 700;
       font-size: 13px;
@@ -40,7 +40,7 @@
       border-radius: 50%;
       background-color: var(--color-primary, #1a73e8);
       background-size: cover;
-      background-position: center;
+      background-position: center 15%;
       color: #fff;
       font-weight: 700;
       font-size: 14px;

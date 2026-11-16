@@ -6,7 +6,7 @@
   <title>Payments Management | AMCAG National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -66,52 +66,60 @@
 
       <div class="grid grid-4 gap-4 mb-6">
         <div class="stat-card">
-          <div class="stat-value">GH₵ 456,780</div>
+          <div class="stat-value" id="payments-total-revenue">GHS 0.00</div>
           <div class="stat-label">Total Revenue</div>
-          <div style="font-size: var(--text-sm); color: var(--color-success); margin-top: 0.5rem;">+12% vs last month</div>
+          <div style="font-size: var(--text-sm); color: var(--color-success); margin-top: 0.5rem;" id="payments-total-sub">All completed payments</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">GH₵ 89,450</div>
+          <div class="stat-value" id="payments-month-revenue">GHS 0.00</div>
           <div class="stat-label">This Month</div>
-          <div style="font-size: var(--text-sm); color: var(--color-success); margin-top: 0.5rem;">+8% growth</div>
+          <div style="font-size: var(--text-sm); color: var(--color-success); margin-top: 0.5rem;" id="payments-month-sub">Current month</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">12,456</div>
-          <div class="stat-label">Paid Members</div>
-          <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-top: 0.5rem;">82% of total</div>
+          <div class="stat-value" id="payments-paid-members">0</div>
+          <div class="stat-label">Members Who Have Paid</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-top: 0.5rem;" id="payments-paid-sub">of active members</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">2,787</div>
-          <div class="stat-label">Pending Dues</div>
-          <div style="font-size: var(--text-sm); color: var(--color-warning); margin-top: 0.5rem;">18% of total</div>
+          <div class="stat-value" id="payments-pending-dues">0</div>
+          <div class="stat-label">Pending Payments</div>
+          <div style="font-size: var(--text-sm); color: var(--color-warning); margin-top: 0.5rem;" id="payments-pending-sub">Awaiting approval</div>
         </div>
       </div>
 
       <!-- Payment Type Breakdown -->
-      <div class="grid grid-3 gap-4 mb-6">
+      <div class="grid grid-4 gap-4 mb-6">
+        <div class="card">
+          <div class="flex-between mb-2">
+            <h3 class="card-title">Registration Fees</h3>
+            <span style="font-size: var(--text-2xl);">🪪</span>
+          </div>
+          <div id="payments-registration-total" style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GHS 0.00</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);" id="payments-registration-share">0% of total revenue</div>
+        </div>
         <div class="card">
           <div class="flex-between mb-2">
             <h3 class="card-title">Membership Dues</h3>
             <span style="font-size: var(--text-2xl);">💳</span>
           </div>
-          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GH₵ 289,340</div>
-          <div style="font-size: var(--text-sm); color: var(--text-secondary);">63% of total revenue</div>
+          <div id="payments-dues-total" style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GHS 0.00</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);" id="payments-dues-share">0% of total revenue</div>
         </div>
         <div class="card">
           <div class="flex-between mb-2">
             <h3 class="card-title">Event Fees</h3>
             <span style="font-size: var(--text-2xl);">🎫</span>
           </div>
-          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GH₵ 98,560</div>
-          <div style="font-size: var(--text-sm); color: var(--text-secondary);">22% of total revenue</div>
+          <div id="payments-event-total" style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GHS 0.00</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);" id="payments-event-share">0% of total revenue</div>
         </div>
         <div class="card">
           <div class="flex-between mb-2">
             <h3 class="card-title">Donations</h3>
             <span style="font-size: var(--text-2xl);">🎁</span>
           </div>
-          <div style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GH₵ 68,880</div>
-          <div style="font-size: var(--text-sm); color: var(--text-secondary);">15% of total revenue</div>
+          <div id="payments-donation-total" style="font-size: var(--text-2xl); font-weight: 700; margin-bottom: 0.5rem;">GHS 0.00</div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary);" id="payments-donation-share">0% of total revenue</div>
         </div>
       </div>
 
@@ -151,91 +159,7 @@
               </tr>
             </thead>
             <tbody id="paymentsTableBody">
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00453</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Kwame Mensah</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-001</div>
-                </td>
-                <td>Membership Dues</td>
-                <td style="font-weight: 600;">GH₵ 50.00</td>
-                <td>Mobile Money</td>
-                <td>Mar 01, 2026</td>
-                <td><span class="badge badge-success">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="viewReceipt('TXN-2026-00453')">View Receipt</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00452</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Akosua Boateng</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-002</div>
-                </td>
-                <td>Event Registration</td>
-                <td style="font-weight: 600;">GH₵ 120.00</td>
-                <td>Bank Transfer</td>
-                <td>Feb 28, 2026</td>
-                <td><span class="badge badge-success">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="viewReceipt('TXN-2026-00452')">View Receipt</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00451</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Kofi Asante</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-003</div>
-                </td>
-                <td>Membership Dues</td>
-                <td style="font-weight: 600;">GH₵ 50.00</td>
-                <td>Mobile Money</td>
-                <td>Feb 28, 2026</td>
-                <td><span class="badge badge-warning">Pending</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="viewPaymentDetails('TXN-2026-00451')">View Details</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00450</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Ama Owusu</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-004</div>
-                </td>
-                <td>Donation</td>
-                <td style="font-weight: 600;">GH₵ 500.00</td>
-                <td>Bank Transfer</td>
-                <td>Feb 27, 2026</td>
-                <td><span class="badge badge-success">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="viewReceipt('TXN-2026-00450')">View Receipt</button>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div style="font-family: monospace; font-size: var(--text-sm);">TXN-2026-00449</div>
-                </td>
-                <td>
-                  <div style="font-weight: 600;">Yaw Mohammed</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">AMCAG-2025-005</div>
-                </td>
-                <td>Membership Dues</td>
-                <td style="font-weight: 600;">GH₵ 50.00</td>
-                <td>Mobile Money</td>
-                <td>Feb 27, 2026</td>
-                <td><span class="badge badge-error">Failed</span></td>
-                <td>
-                  <button class="btn btn-sm" style="background: var(--color-warning); color: white;" onclick="retryPayment('TXN-2026-00449')">Retry</button>
-                </td>
-              </tr>
+              <tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No payment records found.</td></tr>
             </tbody>
           </table>
         </div>
@@ -252,65 +176,7 @@
 
       <!-- Revenue Chart -->
       <div class="grid grid-2 gap-4 mt-6">
-        <div class="card">
-          <h3 class="card-title mb-4">Monthly Revenue Trend</h3>
-          <div class="space-y-3">
-            <div>
-              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
-                <span>January 2026</span>
-                <span style="font-weight: 600;">GH₵ 78,560</span>
-              </div>
-              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
-                <div style="width: 88%; height: 100%; background: linear-gradient(90deg, var(--color-success), var(--color-primary));"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
-                <span>February 2026</span>
-                <span style="font-weight: 600;">GH₵ 82,340</span>
-              </div>
-              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
-                <div style="width: 92%; height: 100%; background: linear-gradient(90deg, var(--color-success), var(--color-primary));"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
-                <span>March 2026 (MTD)</span>
-                <span style="font-weight: 600;">GH₵ 89,450</span>
-              </div>
-              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
-                <div style="width: 100%; height: 100%; background: linear-gradient(90deg, var(--color-success), var(--color-primary));"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3 class="card-title mb-4">Payment Methods Distribution</h3>
-          <div class="space-y-3">
-            <div class="flex-between p-3" style="background: var(--color-primary-95); border-radius: var(--radius-md);">
-              <div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Mobile Money</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">62%</div>
-              </div>
-              <div style="font-size: var(--text-2xl);">📱</div>
-            </div>
-            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
-              <div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Bank Transfer</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">28%</div>
-              </div>
-              <div style="font-size: var(--text-2xl);">🏦</div>
-            </div>
-            <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
-              <div>
-                <div style="font-size: var(--text-sm); color: var(--text-secondary);">Cash</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">10%</div>
-              </div>
-              <div style="font-size: var(--text-2xl);">💵</div>
-            </div>
-          </div>
-        </div>
+        <div class="card"><h3 class="card-title mb-4">Monthly Revenue Trend</h3><div class="empty-state">No revenue trend data found.</div></div><div class="card"><h3 class="card-title mb-4">Payment Methods Distribution</h3><div class="empty-state">No payment method data found.</div></div>
       </div>
     </main>
   </div>
@@ -319,13 +185,18 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
   
   <!-- App Modules -->
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     let recordPaymentModalId = null;
@@ -336,8 +207,27 @@
       rowsPerPage: 2,
       totalPages: 1
     };
+    let allPayments = [];
 
-    function signOut() {
+    function setText(id, value, fallback = "0") {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.textContent = value ?? fallback;
+    }
+
+    function setHTML(id, value, fallback = "") {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.innerHTML = value ?? fallback;
+    }
+
+    async function signOut() {
       AuthModule.signOut();
     }
 
@@ -449,7 +339,10 @@
     function getPaymentStatusMeta(status) {
       const normalized = String(status || '').toLowerCase();
       const map = {
+        paid: { label: 'Paid', className: 'badge-success' },
         completed: { label: 'Completed', className: 'badge-success' },
+        approved: { label: 'Approved', className: 'badge-success' },
+        waived: { label: 'Waived', className: 'badge-success' },
         pending: { label: 'Pending', className: 'badge-warning' },
         failed: { label: 'Failed', className: 'badge-error' }
       };
@@ -465,6 +358,7 @@
         event: 'Event Registration',
         event_registration: 'Event Registration',
         donation: 'Donation',
+        registration_fee: 'Registration Fee',
         other: 'Other'
       };
       return map[normalized] || (type ? String(type) : 'Other');
@@ -484,7 +378,7 @@
     function formatMoney(amount) {
       const numericAmount = Number(amount || 0);
       const safeAmount = Number.isFinite(numericAmount) ? numericAmount : 0;
-      return `GH₵ ${safeAmount.toLocaleString('en-GH', {
+      return `GHS ${safeAmount.toLocaleString('en-GH', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       })}`;
@@ -608,11 +502,16 @@
           <div class="grid grid-2 gap-3">
             <div class="form-group">
               <label class="form-label required">Member Name</label>
-              <input class="form-input" name="memberName" required placeholder="e.g., Kwame Mensah">
+              <div style="position: relative;">
+                <input class="form-input" name="memberName" required placeholder="Start typing a name or member ID" autocomplete="off">
+                <div id="memberSuggest" style="display:none; position:absolute; left:0; right:0; top:100%; z-index:50; background:#fff; border:1px solid #cfd8d2; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.15); max-height:240px; overflow:auto;"></div>
+              </div>
+              <input type="hidden" name="memberUid">
+              <small id="memberPicked" style="color:#0b5d3b; display:none;"></small>
             </div>
             <div class="form-group">
               <label class="form-label required">Member ID</label>
-              <input class="form-input" name="memberId" required placeholder="e.g., AMCAG-2025-001">
+              <input class="form-input" name="memberId" required placeholder="Fills in when you pick a member">
             </div>
           </div>
           <div class="grid grid-2 gap-3">
@@ -620,6 +519,7 @@
               <label class="form-label required">Type</label>
               <select class="form-input" name="type" required>
                 <option value="dues">Membership Dues</option>
+                <option value="registration_fee">Registration Fee (unlocks ID card)</option>
                 <option value="event">Event Registration</option>
                 <option value="donation">Donation</option>
                 <option value="other">Other</option>
@@ -664,6 +564,103 @@
         title: 'Record Payment',
         content: modalContent,
         size: 'medium'
+      });
+      wireMemberAutofill();
+    }
+
+    // ----- Member autofill for the Record Payment form -----
+    let memberDirectory = null;
+    let feeDefaults = { monthlyDues: 10, registrationFee: 60 };
+
+    async function loadMemberDirectory() {
+      if (memberDirectory) return memberDirectory;
+      try {
+        const snap = await firebase.firestore().collection('users').where('status', '==', 'active').limit(500).get();
+        memberDirectory = snap.docs.map((d) => {
+          const u = d.data();
+          return { uid: d.id, name: u.fullName || '', memberId: u.memberId || '', region: u.region || '', feePaid: u.registrationFeePaid === true };
+        }).filter((m) => m.name);
+      } catch (error) {
+        console.warn('Member list unavailable for autofill:', error);
+        memberDirectory = [];
+      }
+      return memberDirectory;
+    }
+
+    async function loadFeeDefaults() {
+      try {
+        const res = await firebase.functions().httpsCallable('getFeeSettings')();
+        const settings = (res.data && res.data.settings) || {};
+        if (settings.monthlyDues) feeDefaults.monthlyDues = settings.monthlyDues;
+        if (settings.registrationFee) feeDefaults.registrationFee = settings.registrationFee;
+      } catch (error) {
+        console.warn('Fee settings unavailable, using defaults:', error);
+      }
+    }
+
+    function wireMemberAutofill() {
+      const form = document.getElementById('record-payment-form');
+      if (!form) return;
+      const nameInput = form.elements.memberName;
+      const idInput = form.elements.memberId;
+      const uidInput = form.elements.memberUid;
+      const typeSelect = form.elements.type;
+      const amountInput = form.elements.amount;
+      const box = document.getElementById('memberSuggest');
+      const picked = document.getElementById('memberPicked');
+      let amountTouched = false;
+
+      amountInput.addEventListener('input', () => { amountTouched = true; });
+
+      function applyAmount() {
+        if (amountTouched) return;
+        if (typeSelect.value === 'registration_fee') amountInput.value = Number(feeDefaults.registrationFee).toFixed(2);
+        else if (typeSelect.value === 'dues') amountInput.value = Number(feeDefaults.monthlyDues).toFixed(2);
+        else amountInput.value = '';
+      }
+      typeSelect.addEventListener('change', applyAmount);
+      loadFeeDefaults().then(applyAmount);
+
+      function pick(m) {
+        nameInput.value = m.name;
+        idInput.value = m.memberId;
+        uidInput.value = m.uid;
+        picked.textContent = 'Linked to ' + m.name + (m.region ? ' (' + m.region + ')' : '') + (m.feePaid ? ' · registration fee already paid' : '');
+        picked.style.display = 'block';
+        box.style.display = 'none';
+      }
+
+      function unlink() {
+        uidInput.value = '';
+        picked.style.display = 'none';
+      }
+
+      function suggest(text) {
+        const q = text.trim().toLowerCase();
+        if (!q || !memberDirectory) { box.style.display = 'none'; return; }
+        const hits = memberDirectory.filter((m) => (m.name + ' ' + m.memberId).toLowerCase().includes(q)).slice(0, 8);
+        if (!hits.length) { box.style.display = 'none'; return; }
+        box.innerHTML = hits.map((m, i) =>
+          '<div data-i="' + i + '" style="padding:9px 12px; cursor:pointer; border-bottom:1px solid #edf1ee;">' +
+          '<strong>' + escapeHtml(m.name) + '</strong><br><span style="font-size:.8rem; color:#5a6778;">' +
+          escapeHtml(m.memberId || 'No member ID yet') + (m.region ? ' · ' + escapeHtml(m.region) : '') + '</span></div>').join('');
+        box.style.display = 'block';
+        box.onmousedown = (e) => {
+          const row = e.target.closest('[data-i]');
+          if (!row) return;
+          e.preventDefault();
+          pick(hits[Number(row.getAttribute('data-i'))]);
+        };
+      }
+
+      loadMemberDirectory().then(() => { if (nameInput.value) suggest(nameInput.value); });
+      nameInput.addEventListener('input', () => { unlink(); suggest(nameInput.value); });
+      nameInput.addEventListener('blur', () => setTimeout(() => { box.style.display = 'none'; }, 150));
+      idInput.addEventListener('input', () => {
+        unlink();
+        const typed = idInput.value.trim().toLowerCase();
+        const match = memberDirectory && typed ? memberDirectory.find((m) => m.memberId.toLowerCase() === typed) : null;
+        if (match) pick(match);
       });
     }
 
@@ -715,6 +712,8 @@
       const paymentDate = String(formData.get('paymentDate') || '').trim();
       const status = String(formData.get('status') || '').trim().toLowerCase();
       const amount = Number.parseFloat(String(formData.get('amount') || ''));
+      const memberUid = String(formData.get('memberUid') || '').trim();
+      const linked = (memberDirectory || []).find((m) => m.uid === memberUid) || null;
 
       if (!memberName || !memberId || !type || !method || !paymentDate || !status || !Number.isFinite(amount) || amount <= 0) {
         UIModule.showAlert('Please complete all required payment fields.', 'error');
@@ -728,6 +727,8 @@
         transactionId,
         memberName,
         memberId,
+        uid: memberUid || null,
+        region: linked ? linked.region : null,
         type,
         method,
         paymentDate,
@@ -738,9 +739,32 @@
         createdByName: currentUser?.profile?.fullName || currentUser?.email || 'Unknown'
       };
 
-      let persisted = false;
+      // A registration fee must unlock the member's ID card, so it goes through the dedicated function.
+      let feeRecorded = false;
+      if (type === 'registration_fee') {
+        if (!memberUid) {
+          UIModule.showAlert('Pick the member from the suggestions so the registration fee is linked to their account.', 'error');
+          return;
+        }
+        if (status === 'completed') {
+          const methodMap = { 'Cash': 'cash', 'Bank Transfer': 'bank_transfer', 'Card': 'bank_transfer', 'Mobile Money': 'mobile_money_manual' };
+          try {
+            await firebase.functions().httpsCallable('recordRegistrationFeePayment')({
+              memberUid,
+              method: methodMap[method] || 'cash',
+              reference: transactionId
+            });
+            feeRecorded = true;
+          } catch (error) {
+            UIModule.showAlert(error.message || 'Could not record the registration fee.', 'error');
+            return;
+          }
+        }
+      }
+
+      let persisted = feeRecorded;
       try {
-        if (window.APIModule && APIModule.Payments && typeof APIModule.Payments.create === 'function') {
+        if (!feeRecorded && window.APIModule && APIModule.Payments && typeof APIModule.Payments.create === 'function') {
           await APIModule.Payments.create(paymentRecord);
           persisted = true;
         }
@@ -786,8 +810,8 @@
       // Open modal with payment details
     }
 
-    function retryPayment(txnId) {
-      if (confirm(`Retry payment ${txnId}?`)) {
+    async function retryPayment(txnId) {
+      if (await AMCAGDialog.confirm(`Retry payment ${txnId}?`)) {
         UIModule.showLoader('Retrying payment...');
         setTimeout(() => {
           UIModule.hideLoader();
@@ -799,30 +823,114 @@
 
     async function loadPayments() {
       try {
-        // Load payments data from Firestore
         const db = firebase.firestore();
         const paymentsRef = db.collection('payments').orderBy('createdAt', 'desc').limit(50);
         const snapshot = await paymentsRef.get();
-        
-        // Process and render payments data
-        console.log('Payments loaded:', snapshot.size);
+        allPayments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderPaymentsTable(allPayments);
+        updatePaymentSummary(allPayments);
         initPaymentsPagination();
       } catch (error) {
         console.error('Error loading payments:', error);
         UIModule.showAlert('Error loading payments data', 'error');
+        setHTML('paymentsTableBody', '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Unable to load payment records.</td></tr>');
         initPaymentsPagination();
       }
     }
 
-    async function loadRevenueSummary() {
-      try {
-        const db = firebase.firestore();
-        // Load revenue summary and statistics
-        // This would typically aggregate data from the payments collection
-        console.log('Revenue summary loaded');
-      } catch (error) {
-        console.error('Error loading revenue summary:', error);
+    function getPaymentDate(payment) {
+      const value = payment.paymentDate || payment.createdAt || payment.updatedAt;
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function isPaidStatus(status) {
+      return ['paid', 'completed', 'approved', 'waived'].includes(String(status || '').toLowerCase());
+    }
+
+    function paymentTypeKey(payment) {
+      const type = String(payment.type || payment.paymentType || '').toLowerCase();
+      if (type.includes('registration')) return 'registration';
+      if (type.includes('dues') || type.includes('membership')) return 'dues';
+      if (type.includes('event') || type.includes('agm')) return 'event';
+      if (type.includes('donation')) return 'donation';
+      return 'other';
+    }
+
+    let activeMemberCountPromise = null;
+    function loadActiveMemberCount() {
+      if (!activeMemberCountPromise) {
+        activeMemberCountPromise = firebase.firestore().collection('users').where('status', '==', 'active').get()
+          .then((snap) => snap.size)
+          .catch(() => 0);
       }
+      return activeMemberCountPromise;
+    }
+
+    function updatePaymentSummary(payments) {
+      const paid = payments.filter(payment => isPaidStatus(payment.status));
+      const pending = payments.filter(payment => String(payment.status || '').toLowerCase() === 'pending');
+      const totalRevenue = paid.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      const now = new Date();
+      const monthRevenue = paid
+        .filter(payment => {
+          const date = getPaymentDate(payment);
+          return date && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        })
+        .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      const paidMemberIds = new Set(paid.map(payment => payment.uid || payment.memberId || payment.memberUid).filter(Boolean));
+
+      setText('payments-total-revenue', formatMoney(totalRevenue));
+      setText('payments-month-revenue', formatMoney(monthRevenue));
+      setText('payments-paid-members', paidMemberIds.size);
+      setText('payments-pending-dues', pending.length);
+      const pendingAmount = pending.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      setText('payments-pending-sub', pending.length ? formatMoney(pendingAmount) + ' awaiting approval' : 'Nothing awaiting approval');
+      setText('payments-total-sub', paid.length + ' completed payment' + (paid.length === 1 ? '' : 's'));
+      const pct = (part, whole) => (whole > 0 ? Math.round((part / whole) * 100) : 0) + '%';
+      ['registration', 'dues', 'event', 'donation'].forEach(type => {
+        const records = paid.filter(payment => paymentTypeKey(payment) === type);
+        const total = records.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+        setText('payments-' + type + '-total', formatMoney(total));
+        setText('payments-' + type + '-share', pct(total, totalRevenue) + ' of total revenue');
+      });
+      // Share of active members who have paid something (loaded once)
+      loadActiveMemberCount().then((activeCount) => {
+        setText('payments-paid-sub', activeCount ? pct(paidMemberIds.size, activeCount) + ' of ' + activeCount + ' active members' : 'of active members');
+      });
+    }
+
+    function renderPaymentsTable(payments) {
+      if (!payments.length) {
+        setHTML('paymentsTableBody', '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No payment records found.</td></tr>');
+        return;
+      }
+
+      const rows = payments.map(payment => {
+        const txnId = payment.transactionId || payment.reference || payment.id;
+        const statusMeta = getPaymentStatusMeta(payment.status);
+        const memberName = payment.memberName || payment.fullName || payment.name || payment.email || 'Unknown';
+        const memberId = payment.memberId || payment.uid || payment.memberUid || 'N/A';
+        return `
+          <tr>
+            <td><div style="font-family: monospace; font-size: var(--text-sm);">${escapeHtml(txnId)}</div></td>
+            <td>
+              <div style="font-weight: 600;">${escapeHtml(memberName)}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-secondary);">${escapeHtml(memberId)}</div>
+            </td>
+            <td>${escapeHtml(getPaymentTypeLabel(payment.type || payment.paymentType))}</td>
+            <td style="font-weight: 600;">${formatMoney(payment.amount)}</td>
+            <td>${escapeHtml(payment.paymentMethod || payment.method || '-')}</td>
+            <td>${escapeHtml(formatDisplayDate(getPaymentDate(payment)))}</td>
+            <td><span class="badge ${escapeHtml(statusMeta.className)}">${escapeHtml(statusMeta.label)}</span></td>
+            <td>${getActionButtonHtml(escapeHtml(txnId), payment.status)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      setHTML('paymentsTableBody', rows);
     }
 
     // Ensure pagination controls respond even if auth/data loading is delayed.
@@ -838,7 +946,6 @@
             window.location.href = '/member-dashboard.html';
           } else {
             loadPayments();
-            loadRevenueSummary();
             initPaymentsPagination();
           }
         }
@@ -847,6 +954,8 @@
       console.warn('AuthModule unavailable. Running local pagination fallback only.');
     }
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>
+
+

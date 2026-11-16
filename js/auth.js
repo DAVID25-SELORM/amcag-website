@@ -124,6 +124,26 @@ const AuthModule = (function() {
           console.log('[AuthModule] User status:', currentUser.profile.status);
           console.log('[AuthModule] Must reset password:', currentUser.profile.mustResetPassword);
 
+          const accountStatus = String(currentUser.profile.status || '').toLowerCase();
+          const isProfileRecoveryPage = currentPath.includes('complete-profile');
+          const isPendingPage = currentPath.includes('pending-approval');
+          if (!['approved', 'active'].includes(accountStatus) && !isProfileRecoveryPage && !isPendingPage &&
+              (accountStatus === 'pending' || accountStatus === 'rejected')) {
+            console.log('[AuthModule] Registration awaiting approval - showing status page:', accountStatus);
+            redirectTo('/pending-approval.html');
+            return;
+          }
+          if (!['approved', 'active'].includes(accountStatus) && !isProfileRecoveryPage && !isPendingPage) {
+            console.log('[AuthModule] Account is not approved - blocking dashboard access:', accountStatus);
+            if (typeof UIModule !== 'undefined' && UIModule.showAlert) {
+              UIModule.showAlert('Your account is pending approval. Please wait for an administrator to approve your registration.', 'warning');
+            }
+
+            await window.FirebaseModule.auth().signOut();
+            redirectTo('/membership.html?approval=pending');
+            return;
+          }
+
           // ===== FORCE PASSWORD CHANGE CHECK (CRITICAL SECURITY) =====
           // If user has temporary password, redirect to change password page
           if (currentUser.profile.mustResetPassword === true) {
@@ -148,12 +168,12 @@ const AuthModule = (function() {
           console.error('[AuthModule] ❌ User document NOT FOUND in Firestore for UID:', user.uid);
           console.error('[AuthModule] ⚠️ Auth exists but profile missing - showing error (NOT logging out)');
 
-          // Show error to user without logging out
-          if (typeof UIModule !== 'undefined' && UIModule.showAlert) {
-            UIModule.showAlert('Account setup incomplete. Please contact support.', 'error');
-          } else {
-            alert('Account setup incomplete. Please contact support.');
+          // The sign-in and profile-completion pages create the record themselves.
+          if (currentPath.includes('membership') || currentPath.includes('complete-profile')) {
+            return;
           }
+          // Anywhere else: send the verified user to finish registration instead of an error dead end.
+          redirectTo('/membership.html');
           return; // Stop execution but DON'T call signOut()
         }
 
@@ -164,6 +184,7 @@ const AuthModule = (function() {
         // 🔥 CRITICAL: Mark auth as fully ready
         authReady = true;
         console.log('[AuthModule] 🟢 Auth fully ready - profile loaded');
+        try { document.body.classList.add('auth-ready'); } catch (e) { /* page without body yet */ }
 
         // Handle role-based routing (only if user doesn't need to reset password)
         if (previewMode) {
@@ -450,11 +471,35 @@ const AuthModule = (function() {
   }
   
   // ===== SIGN OUT =====
+  // Stop phone/browser notifications for this person on this device when they log out.
+  async function releasePushToken() {
+    let token = '';
+    try { token = localStorage.getItem('amcagPushToken') || ''; } catch (e) { return; }
+    if (!token) return;
+    try {
+      if (!(window.firebase && typeof firebase.functions === 'function')) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js';
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      await Promise.race([
+        firebase.functions().httpsCallable('unregisterPushToken')({ token }),
+        new Promise((resolve) => setTimeout(resolve, 4000))
+      ]);
+    } catch (e) {
+      console.warn('[AuthModule] Could not release push token:', e && e.message);
+    }
+    try { localStorage.removeItem('amcagPushToken'); } catch (e) { /* ignore */ }
+  }
+
   async function signOut() {
-    console.log('[AuthModule] 🚨🚨🚨 SIGN OUT CALLED 🚨🚨🚨');
-    console.trace('[AuthModule] Sign out stack trace:');
+    console.log('[AuthModule] SIGN OUT CALLED');
     
     try {
+      await releasePushToken();
       const auth = window.FirebaseModule.auth();
       await auth.signOut();
       
@@ -671,7 +716,23 @@ const AuthModule = (function() {
     return routes.LOGIN || '/membership.html';
   }
 
+  // Pages call these guards while they load, before Firebase has confirmed who is signed in.
+  // Judging too early used to read as "signed out" and bounced signed-in users to login.
+  // So until the sign-in check has finished, wait for it, then decide.
+  function runWhenAuthReady(run) {
+    if (authReady) { run(); return; }
+    let waited = 0;
+    const timer = setInterval(() => {
+      waited += 100;
+      if (authReady || waited >= 15000) { clearInterval(timer); run(); }
+    }, 100);
+  }
+
   function requireAuth(redirectUrl = getLoginRoute()) {
+    if (!authReady) {
+      runWhenAuthReady(() => requireAuth(redirectUrl));
+      return true;
+    }
     if (!currentUser) {
       window.location.href = redirectUrl;
       return false;
@@ -681,29 +742,23 @@ const AuthModule = (function() {
   
   // ===== REQUIRE ROLE =====
   function requireRole(requiredRole, redirectUrl = getLoginRoute()) {
-    if (!requireAuth(redirectUrl)) {
-      return false;
-    }
-    
-    if (!hasRole(requiredRole)) {
-      window.location.href = redirectUrl;
-      return false;
-    }
-    
-    return true;
+    return requireAnyRole([requiredRole], redirectUrl);
   }
   
   // ===== REQUIRE ANY ROLE (Multiple Roles) =====
   function requireAnyRole(allowedRoles, redirectUrl = getLoginRoute()) {
-    if (!requireAuth(redirectUrl)) {
+    if (!authReady) {
+      runWhenAuthReady(() => requireAnyRole(allowedRoles, redirectUrl));
+      return true;
+    }
+    if (!currentUser) {
+      window.location.href = redirectUrl;
       return false;
     }
-    
     if (!hasAnyRole(allowedRoles)) {
       window.location.href = redirectUrl;
       return false;
     }
-    
     return true;
   }
   // ✅ NAVIGATION PATCH END
@@ -727,6 +782,7 @@ const AuthModule = (function() {
       '/payment-receipt.html',
       '/change-password.html',
       '/complete-profile.html',
+      '/pending-approval.html',
       '/member-dashboard/agm-registration.html',
       '/member-dashboard/donate.html',
       '/member-dashboard/dues-payment.html',
@@ -791,7 +847,7 @@ const AuthModule = (function() {
       '/certificate-verify.html',
       '/certificate-view.html'
     ];
-    if (publicPages.includes(currentPath)) {
+    if (publicPages.includes(currentPath) || publicPages.includes(`${currentPath}.html`)) {
       return;
     }
     
@@ -812,7 +868,8 @@ const AuthModule = (function() {
         }
         break;
       case 'regional_executive':
-        if (!currentPath.includes('/region-dashboard/')) {
+        // News management is shared with national pages; its own check allows regional executives.
+        if (!currentPath.includes('/region-dashboard/') && !currentPath.includes('/national/news-management') && !currentPath.includes('/national/campaigns')) {
           redirectTo('/region-dashboard/index.html');
         }
         break;

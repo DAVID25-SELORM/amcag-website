@@ -6,7 +6,7 @@
   <title>Campaign Management | National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
 </head>
 <body class="dashboard-layout">
   <nav class="navbar">
@@ -53,6 +53,12 @@
         </div>
       </div>
 
+      <!-- Awaiting approval -->
+      <div class="card mb-6" id="pendingCard" style="display: none; border-left: 4px solid #d4a017;">
+        <h3 class="card-title mb-4">⏳ Awaiting Approval</h3>
+        <div id="pendingCampaigns"></div>
+      </div>
+
       <!-- Active Campaigns -->
       <div class="card mb-6">
         <h3 class="card-title mb-4">🎯 Active Campaigns</h3>
@@ -71,6 +77,7 @@
             <option value="">All Status</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
+            <option value="rejected">Not approved</option>
           </select>
         </div>
         <div id="pastCampaigns">
@@ -114,8 +121,15 @@
           </div>
 
           <div class="form-group">
-            <label for="campaignImage" class="form-label">Campaign Image URL</label>
-            <input type="url" id="campaignImage" class="form-input" placeholder="https://example.com/image.jpg">
+            <label class="form-label">Campaign Image</label>
+            <div id="imgPreview" style="display:none; margin-bottom: .75rem;"><img id="imgPreviewTag" alt="Campaign image preview" style="max-width: 100%; max-height: 180px; border-radius: 10px; object-fit: cover;"></div>
+            <input type="file" id="campaignImageFile" accept="image/*" style="display:none">
+            <div style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;">
+              <button type="button" class="btn btn-outline btn-sm" id="chooseImageBtn">📁 Choose image from computer</button>
+              <button type="button" class="btn btn-outline btn-sm" id="removeImageBtn" style="display:none">Remove</button>
+              <small style="color: var(--text-secondary);">JPG or PNG, up to 5 MB</small>
+            </div>
+            <input type="url" id="campaignImage" class="form-input" style="margin-top:.75rem" placeholder="…or paste an image link (https://…)">
           </div>
 
           <div class="form-group">
@@ -137,14 +151,30 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     let allCampaigns = [];
     let currentUser = null;
     let editingCampaign = null;
+    let myAccess = { approver: false, region: null };
+    let pendingImageFile = null;
+
+    // Older campaigns used goal/raised/donationCount; newer ones use targetAmount/currentAmount/donorCount.
+    const goalOf = (c) => Number(c.targetAmount ?? c.goal ?? 0) || 0;
+    const raisedOf = (c) => Number(c.currentAmount ?? c.raised ?? 0) || 0;
+    const countOf = (c) => Number(c.donorCount ?? c.donationCount ?? 0) || 0;
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const callFn = (name, data) => firebase.functions().httpsCallable(name)(data).then((r) => r.data);
+    const normRegionKey = (r) => String(r || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
     function signOut() {
       AuthModule.signOut();
@@ -155,15 +185,18 @@
         UIModule.showLoader('Loading campaigns...');
         
         const db = firebase.firestore();
-        const snapshot = await db.collection('donation_campaigns')
-          .orderBy('createdAt', 'desc')
-          .get();
+        const snapshot = await db.collection('donation_campaigns').get();
 
         allCampaigns = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        // Regional executives only work with their own region's campaigns.
+        if (myAccess.region) {
+          allCampaigns = allCampaigns.filter((c) => normRegionKey(c.region) === normRegionKey(myAccess.region));
+        }
 
+        renderPendingCampaigns();
         renderActiveCampaigns();
         renderPastCampaigns();
 
@@ -192,7 +225,7 @@
       }
 
       container.innerHTML = active.map(campaign => {
-        const progress = campaign.goal ? (campaign.raised / campaign.goal) * 100 : 0;
+        const progress = goalOf(campaign) ? (raisedOf(campaign) / goalOf(campaign)) * 100 : 0;
         const hasEndDate = campaign.endDate;
         const daysLeft = hasEndDate ? Math.ceil((campaign.endDate.toDate() - new Date()) / (1000 * 60 * 60 * 24)) : null;
         
@@ -200,23 +233,24 @@
           <div class="card mb-4" style="border-left: 4px solid var(--color-primary);">
             <div style="display: flex; gap: 2rem; align-items: start;">
               ${campaign.imageUrl ? `
-                <img src="${campaign.imageUrl}" alt="${campaign.title}" style="width: 150px; height: 150px; object-fit: cover; border-radius: var(--radius-md);">
+                <img src="${esc(campaign.imageUrl)}" alt="${esc(campaign.title)}" style="width: 150px; height: 150px; object-fit: cover; border-radius: var(--radius-md);">
               ` : ''}
               
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                   <div>
-                    <h3 style="margin: 0 0 0.5rem 0;">${campaign.title}</h3>
-                    <p style="color: var(--text-secondary); margin: 0;">${campaign.description}</p>
+                    <h3 style="margin: 0 0 0.5rem 0;">${esc(campaign.title)}</h3>
+                    ${campaign.region ? '<div style="font-size:.8rem;color:var(--text-secondary);margin-bottom:.25rem;">Region: ' + esc(campaign.region) + '</div>' : ''}
+                    <p style="color: var(--text-secondary); margin: 0;">${esc(campaign.description)}</p>
                   </div>
                   ${campaign.featured ? '<span class="badge badge-primary">⭐ Featured</span>' : ''}
                 </div>
 
-                ${campaign.goal ? `
+                ${goalOf(campaign) ? `
                   <div style="margin-bottom: 1rem;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                      <span style="font-weight: 600;">GHS ${campaign.raised.toLocaleString()} raised</span>
-                      <span style="color: var(--text-secondary);">Goal: GHS ${campaign.goal.toLocaleString()}</span>
+                      <span style="font-weight: 600;">GHS ${raisedOf(campaign).toLocaleString()} raised</span>
+                      <span style="color: var(--text-secondary);">Goal: GHS ${goalOf(campaign).toLocaleString()}</span>
                     </div>
                     <div class="progress-bar" style="height: 10px;">
                       <div style="width: ${Math.min(progress, 100)}%; height: 100%; background: var(--color-primary); border-radius: inherit;"></div>
@@ -228,10 +262,10 @@
                 ` : `
                   <div style="margin-bottom: 1rem;">
                     <div style="font-size: 1.25rem; font-weight: 600; color: var(--color-primary);">
-                      GHS ${campaign.raised.toLocaleString()} raised
+                      GHS ${raisedOf(campaign).toLocaleString()} raised
                     </div>
                     <div style="font-size: 0.875rem; color: var(--text-secondary);">
-                      ${campaign.donationCount || 0} donation(s)
+                      ${countOf(campaign)} donation(s)
                     </div>
                   </div>
                 `}
@@ -243,11 +277,11 @@
                     </span>
                   ` : ''}
                   <span style="font-size: 0.875rem; color: var(--text-secondary);">
-                    ${campaign.donationCount || 0} donations
+                    ${countOf(campaign)} donations
                   </span>
                   
                   <div style="margin-left: auto; display: flex; gap: 0.5rem;">
-                    <button class="btn btn-sm btn-outline" onclick='editCampaign(${JSON.stringify(campaign).replace(/'/g, "\\'")})'>Edit</button>
+                    <button class="btn btn-sm btn-outline" onclick="editCampaignById('${campaign.id}')">Edit</button>
                     <button class="btn btn-sm btn-success" onclick="completeCampaign('${campaign.id}')">✅ Complete</button>
                     <button class="btn btn-sm btn-danger" onclick="cancelCampaign('${campaign.id}')">❌ Cancel</button>
                   </div>
@@ -261,7 +295,7 @@
 
     function renderPastCampaigns() {
       const statusFilter = document.getElementById('statusFilter').value;
-      let past = allCampaigns.filter(c => ['completed', 'cancelled'].includes(c.status));
+      let past = allCampaigns.filter(c => ['completed', 'cancelled', 'rejected'].includes(c.status));
       
       if (statusFilter) {
         past = past.filter(c => c.status === statusFilter);
@@ -296,7 +330,7 @@
               ${past.map(c => `
                 <tr>
                   <td>
-                    <strong>${c.title}</strong>
+                    <strong>${esc(c.title)}</strong>
                     ${c.featured ? '<span class="badge badge-primary ml-2">⭐</span>' : ''}
                   </td>
                   <td>
@@ -304,10 +338,10 @@
                       ${c.status}
                     </span>
                   </td>
-                  <td style="font-weight: 600;">GHS ${c.raised.toLocaleString()}</td>
-                  <td>${c.goal ? `GHS ${c.goal.toLocaleString()}` : '-'}</td>
-                  <td>${c.donationCount || 0}</td>
-                  <td>${new Date(c.createdAt.toDate()).toLocaleDateString()}</td>
+                  <td style="font-weight: 600;">GHS ${raisedOf(c).toLocaleString()}</td>
+                  <td>${goalOf(c) ? `GHS ${goalOf(c).toLocaleString()}` : '-'}</td>
+                  <td>${countOf(c)}</td>
+                  <td>${c.createdAt && c.createdAt.toDate ? new Date(c.createdAt.toDate()).toLocaleDateString() : '-'}</td>
                   <td>${c.endedAt ? new Date(c.endedAt.toDate()).toLocaleDateString() : '-'}</td>
                 </tr>
               `).join('')}
@@ -327,9 +361,39 @@
       document.getElementById('campaignGoal').value = '';
       document.getElementById('campaignEndDate').value = '';
       document.getElementById('campaignImage').value = '';
+      setImagePreview('');
       document.getElementById('campaignFeatured').checked = false;
       document.getElementById('campaignModal').style.display = 'flex';
     };
+
+    window.editCampaignById = (id) => {
+      const c = allCampaigns.find((x) => x.id === id);
+      if (c) window.editCampaign(c);
+    };
+
+    function setImagePreview(url) {
+      pendingImageFile = null;
+      document.getElementById('campaignImageFile').value = '';
+      const box = document.getElementById('imgPreview');
+      if (url) { document.getElementById('imgPreviewTag').src = url; box.style.display = 'block'; }
+      else { box.style.display = 'none'; }
+      document.getElementById('removeImageBtn').style.display = url ? 'inline-flex' : 'none';
+    }
+
+    document.getElementById('chooseImageBtn').addEventListener('click', () => document.getElementById('campaignImageFile').click());
+    document.getElementById('removeImageBtn').addEventListener('click', () => { document.getElementById('campaignImage').value = ''; setImagePreview(''); });
+    document.getElementById('campaignImageFile').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { UIModule.showAlert('Please choose an image file.', 'error'); e.target.value = ''; return; }
+      if (file.size > 5 * 1024 * 1024) { UIModule.showAlert('That image is larger than 5 MB. Please choose a smaller one.', 'error'); e.target.value = ''; return; }
+      pendingImageFile = file;
+      document.getElementById('campaignImage').value = '';
+      document.getElementById('imgPreviewTag').src = URL.createObjectURL(file);
+      document.getElementById('imgPreview').style.display = 'block';
+      document.getElementById('removeImageBtn').style.display = 'inline-flex';
+    });
+    document.getElementById('campaignImage').addEventListener('input', (e) => { if (e.target.value) { pendingImageFile = null; setImagePreview(''); document.getElementById('campaignImage').value = e.target.value; } });
 
     window.editCampaign = (campaign) => {
       editingCampaign = campaign;
@@ -338,9 +402,11 @@
       document.getElementById('campaignId').value = campaign.id;
       document.getElementById('campaignTitle').value = campaign.title;
       document.getElementById('campaignDescription').value = campaign.description;
-      document.getElementById('campaignGoal').value = campaign.goal || '';
+      document.getElementById('campaignGoal').value = goalOf(campaign) || '';
       document.getElementById('campaignEndDate').value = campaign.endDate ? 
         campaign.endDate.toDate().toISOString().split('T')[0] : '';
+      document.getElementById('campaignImage').value = '';
+      setImagePreview(campaign.imageUrl || '');
       document.getElementById('campaignImage').value = campaign.imageUrl || '';
       document.getElementById('campaignFeatured').checked = campaign.featured || false;
       document.getElementById('campaignModal').style.display = 'flex';
@@ -353,102 +419,101 @@
 
     window.submitCampaign = async (e) => {
       e.preventDefault();
-      
       try {
-        UIModule.showLoader(editingCampaign ? 'Updating campaign...' : 'Creating campaign...');
-        
-        const db = firebase.firestore();
-        const campaignData = {
+        UIModule.showLoader(editingCampaign ? 'Saving campaign...' : 'Creating campaign...');
+        let imageUrl = document.getElementById('campaignImage').value.trim();
+        if (pendingImageFile) {
+          const safe = pendingImageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const ref = firebase.storage().ref('campaign-images/' + currentUser.uid + '/' + Date.now() + '-' + safe);
+          await ref.put(pendingImageFile, { contentType: pendingImageFile.type });
+          imageUrl = await ref.getDownloadURL();
+        }
+        const result = await callFn('saveCampaign', {
+          id: editingCampaign ? editingCampaign.id : null,
           title: document.getElementById('campaignTitle').value,
           description: document.getElementById('campaignDescription').value,
-          goal: document.getElementById('campaignGoal').value ? 
-            parseFloat(document.getElementById('campaignGoal').value) : null,
-          endDate: document.getElementById('campaignEndDate').value ?
-            firebase.firestore.Timestamp.fromDate(new Date(document.getElementById('campaignEndDate').value)) : null,
-          imageUrl: document.getElementById('campaignImage').value || null,
-          featured: document.getElementById('campaignFeatured').checked,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedBy: currentUser.uid,
-          updatedByName: currentUser.displayName || currentUser.email
-        };
-
-        if (editingCampaign) {
-          // Update existing campaign
-          await db.collection('donation_campaigns').doc(editingCampaign.id).update(campaignData);
-          UIModule.showAlert('Campaign updated successfully!', 'success');
-        } else {
-          // Create new campaign
-          campaignData.status = 'active';
-          campaignData.raised = 0;
-          campaignData.donationCount = 0;
-          campaignData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-          campaignData.createdBy = currentUser.uid;
-          campaignData.createdByName = currentUser.displayName || currentUser.email;
-          
-          await db.collection('donation_campaigns').add(campaignData);
-          UIModule.showAlert('Campaign created successfully!', 'success');
-        }
-
+          targetAmount: document.getElementById('campaignGoal').value,
+          endDate: document.getElementById('campaignEndDate').value,
+          imageUrl,
+          featured: document.getElementById('campaignFeatured').checked
+        });
         UIModule.hideLoader();
+        UIModule.showAlert(result.status === 'pending_approval'
+          ? 'Campaign submitted. It will go live once the national president or PRO approves it.'
+          : (editingCampaign ? 'Campaign updated successfully!' : 'Campaign created successfully!'), 'success');
         closeCampaignModal();
         loadCampaigns();
       } catch (error) {
         UIModule.hideLoader();
         console.error('Error saving campaign:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + (error.message || 'Could not save the campaign'), 'error');
       }
     };
 
-    window.completeCampaign = async (campaignId) => {
-      if (!confirm('Mark this campaign as completed? This cannot be undone.')) {
-        return;
+    function renderPendingCampaigns() {
+      const pending = allCampaigns.filter((c) => c.status === 'pending_approval' || (c.status === 'rejected' && c.createdBy === currentUser.uid));
+      const card = document.getElementById('pendingCard');
+      if (!pending.length) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      document.getElementById('pendingCampaigns').innerHTML = pending.map((c) => `
+        <div style="padding: 1rem 0; border-bottom: 1px solid var(--color-neutral-90, #e5e5e5);">
+          <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+            <div style="min-width:0">
+              <strong>${esc(c.title)}</strong>
+              <span class="badge badge-${c.status === 'rejected' ? 'secondary' : 'warning'}" style="margin-left:.5rem">${c.status === 'rejected' ? 'Not approved' : 'Awaiting approval'}</span>
+              <div style="font-size:.85rem; color: var(--text-secondary);">${esc(c.region || 'National')} · by ${esc(c.createdByName || '')}${c.reviewNote ? ' · ' + esc(c.reviewNote) : ''}</div>
+              <p style="margin:.5rem 0 0; color: var(--text-secondary);">${esc(c.description)}</p>
+            </div>
+            <div style="display:flex; gap:.5rem; align-items:flex-start; flex-wrap:wrap;">
+              ${c.status === 'pending_approval' && myAccess.approver ? `
+                <button class="btn btn-sm btn-success" onclick="reviewCampaign('${c.id}', 'approve')">✅ Approve</button>
+                <button class="btn btn-sm btn-danger" onclick="reviewCampaign('${c.id}', 'reject')">Reject</button>` : ''}
+              <button class="btn btn-sm btn-outline" onclick="editCampaignById('${c.id}')">Edit</button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    window.reviewCampaign = async (id, decision) => {
+      let reason = '';
+      if (decision === 'reject') {
+        reason = await AMCAGDialog.prompt('Reason for not approving (optional):');
+        if (reason === null) return;
       }
-
       try {
-        UIModule.showLoader('Completing campaign...');
-        
-        const db = firebase.firestore();
-        await db.collection('donation_campaigns').doc(campaignId).update({
-          status: 'completed',
-          endedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          completedBy: currentUser.uid,
-          completedByName: currentUser.displayName || currentUser.email
-        });
-
+        UIModule.showLoader('Saving...');
+        await callFn('reviewCampaign', { id, decision, reason });
         UIModule.hideLoader();
-        UIModule.showAlert('Campaign marked as completed!', 'success');
+        UIModule.showAlert(decision === 'approve' ? 'Campaign approved and published.' : 'Campaign not approved.', 'success');
         loadCampaigns();
       } catch (error) {
         UIModule.hideLoader();
-        console.error('Error completing campaign:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
+        UIModule.showAlert('Error: ' + (error.message || 'Could not save'), 'error');
       }
+    };
+
+    async function closeCampaign(id, status, reason) {
+      try {
+        UIModule.showLoader('Saving...');
+        await callFn('setCampaignStatus', { id, status, reason });
+        UIModule.hideLoader();
+        UIModule.showAlert(status === 'completed' ? 'Campaign completed' : 'Campaign cancelled', 'success');
+        loadCampaigns();
+      } catch (error) {
+        UIModule.hideLoader();
+        UIModule.showAlert('Error: ' + (error.message || 'Could not update the campaign'), 'error');
+      }
+    }
+
+    window.completeCampaign = async (campaignId) => {
+      if (!await AMCAGDialog.confirm('Mark this campaign as completed? This cannot be undone.')) return;
+      closeCampaign(campaignId, 'completed');
     };
 
     window.cancelCampaign = async (campaignId) => {
-      const reason = prompt('Enter reason for cancellation (optional):');
-      if (reason === null) return; // User clicked cancel
-
-      try {
-        UIModule.showLoader('Cancelling campaign...');
-        
-        const db = firebase.firestore();
-        await db.collection('donation_campaigns').doc(campaignId).update({
-          status: 'cancelled',
-          endedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          cancelledBy: currentUser.uid,
-          cancelledByName: currentUser.displayName || currentUser.email,
-          cancellationReason: reason || 'No reason provided'
-        });
-
-        UIModule.hideLoader();
-        UIModule.showAlert('Campaign cancelled', 'success');
-        loadCampaigns();
-      } catch (error) {
-        UIModule.hideLoader();
-        console.error('Error cancelling campaign:', error);
-        UIModule.showAlert('Error: ' + error.message, 'error');
-      }
+      const reason = await AMCAGDialog.prompt('Enter reason for cancellation (optional):');
+      if (reason === null) return;
+      closeCampaign(campaignId, 'cancelled', reason);
     };
 
     document.getElementById('statusFilter').addEventListener('change', renderPastCampaigns);
@@ -465,15 +530,25 @@
       const userDoc = await db.collection('users').doc(user.uid).get();
       const userData = userDoc.data();
       
-      if (!['national_executive', 'super_admin'].includes(userData.role)) {
-        UIModule.showAlert('Access denied. National Executive or Super Admin role required.', 'error');
-        setTimeout(() => window.location.href = '/member-dashboard.html', 2000);
+      const role = userData.role;
+      const title = String(userData.executiveTitle || userData.title || '').toLowerCase();
+      const selected = role === 'super_admin' ||
+        (['national_executive', 'regional_executive'].includes(role) &&
+         /(^|[^a-z])(president|secretary|pro|public relations( officer)?)([^a-z]|$)/.test(title) &&
+         !/vice|assistant|deputy|organi[sz]er|treasurer/.test(title));
+      if (!selected) {
+        UIModule.showAlert('Access denied. Only selected executives can manage campaigns.', 'error');
+        setTimeout(() => window.location.href = role === 'regional_executive' ? '/region-dashboard/index.html' : (role === 'member' ? '/member-dashboard.html' : '/national/dashboard.html'), 2000);
         return;
       }
+      myAccess = {
+        region: role === 'regional_executive' ? userData.region : null,
+        approver: role === 'super_admin' || (role === 'national_executive' && /(^|[^a-z])(president|pro|public relations( officer)?)([^a-z]|$)/.test(title) && !/vice|assistant|deputy|organi[sz]er|treasurer|secretary/.test(title))
+      };
 
       loadCampaigns();
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

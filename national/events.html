@@ -6,7 +6,7 @@
   <title>Events Management | AMCAG National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link rel="icon" href="/images/logo.jpg" type="image/jpeg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -67,19 +67,19 @@
 
       <div class="grid grid-4 gap-4 mb-6">
         <div class="stat-card">
-          <div class="stat-value">127</div>
+          <div class="stat-value" id="events-total">0</div>
           <div class="stat-label">Total Events</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">12</div>
+          <div class="stat-value" id="events-upcoming">0</div>
           <div class="stat-label">Upcoming</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">89</div>
+          <div class="stat-value" id="events-completed">0</div>
           <div class="stat-label">Completed</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">8,456</div>
+          <div class="stat-value" id="events-attendees">0</div>
           <div class="stat-label">Total Attendees</div>
         </div>
       </div>
@@ -87,63 +87,16 @@
       <!-- Upcoming Events Highlight -->
       <div class="card mb-6">
         <h3 class="card-title mb-4">Upcoming Events</h3>
-        <div class="grid grid-3 gap-4">
-          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-primary-95) 0%, white 100%);">
-            <div style="display: inline-block; background: var(--color-primary); color: white; padding: 0.25rem 0.75rem; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: 0.75rem;">
-              Mar 15, 2026
-            </div>
-            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.5rem;">Annual General Meeting</h4>
-            <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: 0.75rem;">
-              📍 Accra International Conference Centre
-            </p>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: var(--text-sm); color: var(--text-secondary);">
-                🎫 456 registered
-              </span>
-              <button class="btn btn-sm btn-primary" onclick="viewEventDetails('EVT-2026-001')">Details</button>
-            </div>
-          </div>
-          
-          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg);">
-            <div style="display: inline-block; background: var(--color-secondary); color: white; padding: 0.25rem 0.75rem; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: 0.75rem;">
-              Mar 22, 2026
-            </div>
-            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.5rem;">Professional Development Workshop</h4>
-            <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: 0.75rem;">
-              📍 Virtual (Zoom)
-            </p>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: var(--text-sm); color: var(--text-secondary);">
-                🎫 234 registered
-              </span>
-              <button class="btn btn-sm btn-outline" onclick="viewEventDetails('EVT-2026-002')">Details</button>
-            </div>
-          </div>
-          
-          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg);">
-            <div style="display: inline-block; background: var(--color-success); color: white; padding: 0.25rem 0.75rem; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: 0.75rem;">
-              Apr 05, 2026
-            </div>
-            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.5rem;">Regional Coordinators Summit</h4>
-            <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: 0.75rem;">
-              📍 Kumasi Cultural Centre
-            </p>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: var(--text-sm); color: var(--text-secondary);">
-                🎫 78 registered
-              </span>
-              <button class="btn btn-sm btn-outline" onclick="viewEventDetails('EVT-2026-003')">Details</button>
-            </div>
-          </div>
-        </div>
+        <div class="grid grid-3 gap-4" id="upcoming-events-grid">
+          <div class="text-secondary">Loading upcoming events...</div></div>
       </div>
 
       <div class="card">
         <div class="flex-between mb-4">
           <h3 class="card-title">All Events</h3>
           <div class="flex gap-2">
-            <input type="text" class="form-input" placeholder="Search events..." style="width: 250px;">
-            <select class="form-input" style="width: auto;">
+            <input type="text" id="event-search" class="form-input" placeholder="Search events..." style="width: 250px;">
+            <select id="event-type-filter" class="form-input" style="width: auto;">
               <option value="">All Types</option>
               <option value="conference">Conference</option>
               <option value="workshop">Workshop</option>
@@ -151,7 +104,7 @@
               <option value="meeting">Meeting</option>
               <option value="social">Social</option>
             </select>
-            <select class="form-input" style="width: auto;">
+            <select id="event-status-filter" class="form-input" style="width: auto;">
               <option value="">All Status</option>
               <option value="upcoming">Upcoming</option>
               <option value="ongoing">Ongoing</option>
@@ -174,164 +127,19 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr data-event-id="EVT-2026-001">
-                <td>
-                  <div style="font-weight: 600;">Annual General Meeting 2026</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-001</div>
-                </td>
-                <td>Conference</td>
-                <td>
-                  <div>Mar 15, 2026</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">09:00 AM - 5:00 PM</div>
-                </td>
-                <td>
-                  <div>Accra ICC</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Greater Accra</div>
-                </td>
-                <td>456 / 500</td>
-                <td><span class="badge badge-success">Upcoming</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="manageEvent('EVT-2026-001')">Manage</button>
-                  <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-001')">Attendees</button>
-                </td>
-              </tr>
-              <tr data-event-id="EVT-2026-002">
-                <td>
-                  <div style="font-weight: 600;">Professional Development Workshop</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-002</div>
-                </td>
-                <td>Workshop</td>
-                <td>
-                  <div>Mar 22, 2026</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">2:00 PM - 6:00 PM</div>
-                </td>
-                <td>
-                  <div>Virtual</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Online</div>
-                </td>
-                <td>234 / 300</td>
-                <td><span class="badge badge-success">Upcoming</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="manageEvent('EVT-2026-002')">Manage</button>
-                  <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-002')">Attendees</button>
-                </td>
-              </tr>
-              <tr data-event-id="EVT-2026-003">
-                <td>
-                  <div style="font-weight: 600;">Regional Coordinators Summit</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-003</div>
-                </td>
-                <td>Meeting</td>
-                <td>
-                  <div>Apr 05, 2026</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">10:00 AM - 3:00 PM</div>
-                </td>
-                <td>
-                  <div>Kumasi Cultural Centre</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Ashanti</div>
-                </td>
-                <td>78 / 100</td>
-                <td><span class="badge badge-success">Upcoming</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" style="margin-right: 0.5rem;" onclick="manageEvent('EVT-2026-003')">Manage</button>
-                  <button class="btn btn-sm btn-outline" onclick="viewAttendees('EVT-2026-003')">Attendees</button>
-                </td>
-              </tr>
-              <tr data-event-id="EVT-2026-004">
-                <td>
-                  <div style="font-weight: 600;">Leadership Training Program</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-004</div>
-                </td>
-                <td>Training</td>
-                <td>
-                  <div>Feb 20, 2026</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">9:00 AM - 4:00 PM</div>
-                </td>
-                <td>
-                  <div>AMCAG Training Hall</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Greater Accra</div>
-                </td>
-                <td>120 / 120</td>
-                <td><span class="badge badge-info">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="viewEventReport('EVT-2026-004')">View Report</button>
-                </td>
-              </tr>
-              <tr data-event-id="EVT-2026-005">
-                <td>
-                  <div style="font-weight: 600;">Members Networking Social</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">EVT-2026-005</div>
-                </td>
-                <td>Social</td>
-                <td>
-                  <div>Feb 14, 2026</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">6:00 PM - 9:00 PM</div>
-                </td>
-                <td>
-                  <div>Labadi Beach Hotel</div>
-                  <div style="font-size: var(--text-sm); color: var(--text-secondary);">Greater Accra</div>
-                </td>
-                <td>89 / 150</td>
-                <td><span class="badge badge-info">Completed</span></td>
-                <td>
-                  <button class="btn btn-sm btn-outline" onclick="viewEventReport('EVT-2026-005')">View Report</button>
-                </td>
-              </tr>
+            <tbody id="events-table-body">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading events...</td></tr>
             </tbody>
           </table>
         </div>
 
-        <div class="pagination">
-          <button class="pagination-btn" disabled>Previous</button>
-          <button class="pagination-btn active">1</button>
-          <button class="pagination-btn">2</button>
-          <button class="pagination-btn">3</button>
-          <button class="pagination-btn">Next</button>
-        </div>
-      </div>
-
-      <!-- Event Analytics -->
+        <div class="pagination" id="events-pagination"></div>
+      </div>      <!-- Event Analytics -->
       <div class="grid grid-2 gap-4 mt-6">
         <div class="card">
           <h3 class="card-title mb-4">Event Categories Performance</h3>
           <div class="space-y-3">
-            <div>
-              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
-                <span>Conferences</span>
-                <span style="font-weight: 600;">45 events • 3,456 attendees</span>
-              </div>
-              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
-                <div style="width: 100%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
-                <span>Workshops</span>
-                <span style="font-weight: 600;">38 events • 2,234 attendees</span>
-              </div>
-              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
-                <div style="width: 65%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
-                <span>Training Programs</span>
-                <span style="font-weight: 600;">28 events • 1,890 attendees</span>
-              </div>
-              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
-                <div style="width: 55%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex-between mb-1" style="font-size: var(--text-sm);">
-                <span>Social Events</span>
-                <span style="font-weight: 600;">16 events • 876 attendees</span>
-              </div>
-              <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
-                <div style="width: 25%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
-              </div>
-            </div>
+            <div class="empty-state">No event category data found.</div>
           </div>
         </div>
 
@@ -341,28 +149,24 @@
             <div class="flex-between p-3" style="background: var(--color-primary-95); border-radius: var(--radius-md);">
               <div>
                 <div style="font-size: var(--text-sm); color: var(--text-secondary);">Avg. Attendance Rate</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">87%</div>
+                <div id="event-attendance-rate" style="font-weight: 600; font-size: var(--text-xl);">0%</div>
               </div>
-              <div style="font-size: var(--text-2xl);">👥</div>
             </div>
             <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
               <div>
                 <div style="font-size: var(--text-sm); color: var(--text-secondary);">Satisfaction Rating</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">4.6 / 5.0</div>
+                <div id="event-satisfaction-rating" style="font-weight: 600; font-size: var(--text-xl);">N/A</div>
               </div>
-              <div style="font-size: var(--text-2xl);">⭐</div>
             </div>
             <div class="flex-between p-3" style="background: var(--color-surface); border-radius: var(--radius-md);">
               <div>
                 <div style="font-size: var(--text-sm); color: var(--text-secondary);">Total Revenue</div>
-                <div style="font-weight: 600; font-size: var(--text-xl);">GH₵ 98,560</div>
+                <div id="event-total-revenue" style="font-weight: 600; font-size: var(--text-xl);">GHS 0</div>
               </div>
-              <div style="font-size: var(--text-2xl);">💰</div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+      </div>    </main>
   </div>
 
   <!-- Firebase SDK -->
@@ -373,12 +177,34 @@
   <!-- App Modules -->
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     let createEventModalId = null;
+
+    function setText(id, value, fallback = '0') {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.textContent = value ?? fallback;
+    }
+
+    function setHTML(id, value, fallback = '') {
+      const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`[AMCAG Admin] Missing element #${id}`);
+        return;
+      }
+      el.innerHTML = value ?? fallback;
+    }
 
     function signOut() {
       AuthModule.signOut();
@@ -386,32 +212,19 @@
 
     function exportEventCalendar() {
       try {
-        const events = [
-          {
-            uid: 'EVT-2026-001',
-            title: 'Annual General Meeting 2026',
-            start: '2026-03-15T09:00:00',
-            end: '2026-03-15T17:00:00',
-            location: 'Accra International Conference Centre',
-            description: 'National annual general meeting and strategic planning session.'
-          },
-          {
-            uid: 'EVT-2026-002',
-            title: 'Professional Development Workshop',
-            start: '2026-03-22T14:00:00',
-            end: '2026-03-22T18:00:00',
-            location: 'Virtual (Zoom)',
-            description: 'Professional skills and career development workshop.'
-          },
-          {
-            uid: 'EVT-2026-003',
-            title: 'Regional Coordinators Summit',
-            start: '2026-04-05T10:00:00',
-            end: '2026-04-05T15:00:00',
-            location: 'Kumasi Cultural Centre',
-            description: 'Summit for regional coordinators and program alignment.'
-          }
-        ];
+        const events = Object.values(eventActionData).map((eventItem) => ({
+          uid: eventItem.id,
+          title: eventItem.title,
+          start: eventItem.startIso || eventItem.date,
+          end: eventItem.endIso || eventItem.startIso || eventItem.date,
+          location: eventItem.location,
+          description: eventItem.description || ''
+        }));
+
+        if (!events.length) {
+          UIModule.showAlert('No events are available to export.', 'warning');
+          return;
+        }
 
         const icsRows = [
           'BEGIN:VCALENDAR',
@@ -510,9 +323,26 @@
         return;
       }
 
-      // Current page is still static demo data, so save as draft feedback for now.
-      UIModule.showAlert(`Draft created for "${title}".`, 'success');
-      closeCreateEventModal();
+      APIModule.Events.create({
+        title,
+        startDate: new Date(startDate),
+        endDate: formData.get('endDate') ? new Date(formData.get('endDate')) : new Date(startDate),
+        location: (formData.get('location') || '').toString().trim(),
+        description: (formData.get('description') || '').toString().trim(),
+        type: 'meeting',
+        status: 'upcoming',
+        registered: 0,
+        capacity: 0,
+        attendees: []
+      }).then(() => {
+        UIModule.showAlert(`Event created: "${title}".`, 'success');
+        closeCreateEventModal();
+        loadEvents();
+        loadUpcomingEvents();
+      }).catch((error) => {
+        console.error('Error creating event:', error);
+        UIModule.showAlert('Unable to create event: ' + error.message, 'error');
+      });
     }
 
     function escapeIcsText(value) {
@@ -528,96 +358,7 @@
       return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
     }
 
-    const eventActionData = {
-      'EVT-2026-001': {
-        id: 'EVT-2026-001',
-        title: 'Annual General Meeting 2026',
-        type: 'Conference',
-        date: 'Mar 15, 2026',
-        time: '09:00 AM - 5:00 PM',
-        location: 'Accra ICC',
-        region: 'Greater Accra',
-        registered: 456,
-        capacity: 500,
-        status: 'Upcoming',
-        attendees: [
-          { name: 'Abena Mensah', email: 'abena.mensah@amcag.org', region: 'Greater Accra', attendance: 'Confirmed' },
-          { name: 'Kwesi Adu', email: 'kwesi.adu@amcag.org', region: 'Ashanti', attendance: 'Confirmed' },
-          { name: 'Nana Ofori', email: 'nana.ofori@amcag.org', region: 'Eastern', attendance: 'Pending' },
-          { name: 'Esi Boateng', email: 'esi.boateng@amcag.org', region: 'Central', attendance: 'Confirmed' },
-          { name: 'Kojo Appiah', email: 'kojo.appiah@amcag.org', region: 'Volta', attendance: 'Pending' }
-        ]
-      },
-      'EVT-2026-002': {
-        id: 'EVT-2026-002',
-        title: 'Professional Development Workshop',
-        type: 'Workshop',
-        date: 'Mar 22, 2026',
-        time: '2:00 PM - 6:00 PM',
-        location: 'Virtual',
-        region: 'Online',
-        registered: 234,
-        capacity: 300,
-        status: 'Upcoming',
-        attendees: [
-          { name: 'Ama Serwaa', email: 'ama.serwaa@amcag.org', region: 'Western', attendance: 'Confirmed' },
-          { name: 'Yaw Owusu', email: 'yaw.owusu@amcag.org', region: 'Northern', attendance: 'Confirmed' },
-          { name: 'Ruth Addo', email: 'ruth.addo@amcag.org', region: 'Bono', attendance: 'Pending' },
-          { name: 'Francis Kumi', email: 'francis.kumi@amcag.org', region: 'Ahafo', attendance: 'Confirmed' }
-        ]
-      },
-      'EVT-2026-003': {
-        id: 'EVT-2026-003',
-        title: 'Regional Coordinators Summit',
-        type: 'Meeting',
-        date: 'Apr 05, 2026',
-        time: '10:00 AM - 3:00 PM',
-        location: 'Kumasi Cultural Centre',
-        region: 'Ashanti',
-        registered: 78,
-        capacity: 100,
-        status: 'Upcoming',
-        attendees: [
-          { name: 'Paulina Tetteh', email: 'paulina.tetteh@amcag.org', region: 'Greater Accra', attendance: 'Confirmed' },
-          { name: 'Samuel Badu', email: 'samuel.badu@amcag.org', region: 'Ashanti', attendance: 'Confirmed' },
-          { name: 'Daniela Owusu', email: 'daniela.owusu@amcag.org', region: 'Eastern', attendance: 'Pending' }
-        ]
-      },
-      'EVT-2026-004': {
-        id: 'EVT-2026-004',
-        title: 'Leadership Training Program',
-        type: 'Training',
-        date: 'Feb 20, 2026',
-        time: '9:00 AM - 4:00 PM',
-        location: 'AMCAG Training Hall',
-        region: 'Greater Accra',
-        registered: 120,
-        capacity: 120,
-        status: 'Completed',
-        attendees: [
-          { name: 'Mavis Asare', email: 'mavis.asare@amcag.org', region: 'Greater Accra', attendance: 'Attended' },
-          { name: 'Kofi Nartey', email: 'kofi.nartey@amcag.org', region: 'Ashanti', attendance: 'Attended' },
-          { name: 'Akua Bonsu', email: 'akua.bonsu@amcag.org', region: 'Western', attendance: 'Attended' }
-        ]
-      },
-      'EVT-2026-005': {
-        id: 'EVT-2026-005',
-        title: 'Members Networking Social',
-        type: 'Social',
-        date: 'Feb 14, 2026',
-        time: '6:00 PM - 9:00 PM',
-        location: 'Labadi Beach Hotel',
-        region: 'Greater Accra',
-        registered: 89,
-        capacity: 150,
-        status: 'Completed',
-        attendees: [
-          { name: 'Grace Osei', email: 'grace.osei@amcag.org', region: 'Central', attendance: 'Attended' },
-          { name: 'Nii Laryea', email: 'nii.laryea@amcag.org', region: 'Greater Accra', attendance: 'Attended' },
-          { name: 'Deborah Adusei', email: 'deborah.adusei@amcag.org', region: 'Bono East', attendance: 'Attended' }
-        ]
-      }
-    };
+    const eventActionData = {};
 
     let manageEventModalId = null;
     let attendeesModalId = null;
@@ -689,6 +430,7 @@
             ${!isLocked ? `<button class="btn btn-success" onclick="changeEventStatus('${eventId}', 'Completed')">Mark Completed</button>` : ''}
             ${!isLocked ? `<button class="btn btn-danger" onclick="changeEventStatus('${eventId}', 'Cancelled')">Cancel Event</button>` : ''}
           </div>
+          </template>
         </div>
       `;
 
@@ -749,7 +491,7 @@
       const modalContent = `
         <div>
           <div style="margin-bottom: 0.75rem; color: var(--text-secondary);">
-            ${eventData.title} • ${eventData.attendees.length} sample attendee records
+            ${eventData.title} • ${eventData.attendees.length} attendee records
           </div>
           <div class="table-container">
             <table class="table">
@@ -762,9 +504,12 @@
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
+            <tbody id="events-table-body">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading events...</td></tr>
+              <template id="old-events-table-demo">
                 ${rows || '<tr><td colspan="5" style="text-align:center;">No attendees found</td></tr>'}
-              </tbody>
+              </template>
+            </tbody>
             </table>
           </div>
         </div>
@@ -829,34 +574,234 @@
 
     async function loadEvents() {
       try {
-        // Load events data from Firestore
-        const db = firebase.firestore();
-        const eventsRef = db.collection('events').orderBy('startDate', 'desc').limit(50);
-        const snapshot = await eventsRef.get();
-        
-        // Process and render events data
-        console.log('Events loaded:', snapshot.size);
+        const events = await fetchEvents();
+        replaceEventActionData(events);
+        renderEventStats(events);
+        renderEventsTable(events);
+        renderEventAnalytics(events);
       } catch (error) {
         console.error('Error loading events:', error);
+        setHTML('events-table-body', '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Unable to load events.</td></tr>');
         UIModule.showAlert('Error loading events data', 'error');
       }
     }
 
     async function loadUpcomingEvents() {
+      const container = document.getElementById('upcoming-events-grid');
+      if (!container) {
+        console.warn('[Events] Missing #upcoming-events-grid');
+        return;
+      }
+
+      container.innerHTML = '<div class="text-secondary" style="grid-column: 1 / -1;">Loading upcoming events...</div>';
+
       try {
         const db = firebase.firestore();
-        const now = new Date();
-        const upcomingRef = db.collection('events')
-          .where('startDate', '>=', now)
-          .orderBy('startDate', 'asc')
-          .limit(10);
-        const snapshot = await upcomingRef.get();
-        
-        console.log('Upcoming events loaded:', snapshot.size);
+        const snapshot = await db.collection('events')
+          .orderBy('eventDate', 'asc')
+          .limit(5)
+          .get();
+
+        if (snapshot.empty) {
+          container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">No upcoming events found.</div>';
+          return;
+        }
+
+        const events = snapshot.docs.map(doc => normalizeEvent(doc.id, doc.data()));
+        renderUpcomingEvents(events);
       } catch (error) {
-        console.error('Error loading upcoming events:', error);
+        console.error('[Events] Failed to load upcoming events:', error);
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Unable to load upcoming events.</div>';
       }
     }
+
+    async function fetchEvents() {
+      const db = firebase.firestore();
+      let snapshot;
+      try {
+        snapshot = await db.collection('events').orderBy('startDate', 'desc').limit(100).get();
+      } catch (error) {
+        console.warn('Event startDate index/order unavailable; loading without order.', error);
+        snapshot = await db.collection('events').limit(100).get();
+      }
+      return snapshot.docs.map(doc => normalizeEvent(doc.id, doc.data()))
+        .sort((a, b) => getDateMs(b.rawDate) - getDateMs(a.rawDate));
+    }
+
+    function replaceEventActionData(events) {
+      Object.keys(eventActionData).forEach((key) => delete eventActionData[key]);
+      events.forEach((eventItem) => {
+        eventActionData[eventItem.id] = eventItem;
+      });
+    }
+
+    function normalizeEvent(id, data) {
+      const rawDate = data.startDate || data.eventDate || data.date || data.createdAt;
+      const startDate = normalizeDate(rawDate);
+      const endDate = normalizeDate(data.endDate) || startDate;
+      const registered = Number(data.registered || data.registrationCount || (Array.isArray(data.attendees) ? data.attendees.length : 0) || 0);
+      const capacity = Number(data.capacity || data.maxAttendees || 0);
+      const status = data.status || getComputedEventStatus(startDate, endDate);
+      return {
+        id,
+        title: data.title || data.name || 'Untitled Event',
+        type: data.type || data.category || 'Event',
+        date: startDate ? startDate.toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' }) : 'Date TBD',
+        time: formatEventTime(startDate, endDate),
+        location: data.location || data.venue || 'Location TBD',
+        region: data.region || data.scope || 'National',
+        registered,
+        capacity,
+        status,
+        attendees: Array.isArray(data.attendees) ? data.attendees : [],
+        description: data.description || '',
+        startIso: startDate ? startDate.toISOString() : '',
+        endIso: endDate ? endDate.toISOString() : '',
+        rawDate
+      };
+    }
+
+    function getComputedEventStatus(startDate, endDate) {
+      const now = new Date();
+      if (endDate && endDate < now) return 'completed';
+      if (startDate && startDate <= now && (!endDate || endDate >= now)) return 'ongoing';
+      return 'upcoming';
+    }
+
+    function normalizeDate(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function getDateMs(value) {
+      const date = normalizeDate(value);
+      return date ? date.getTime() : 0;
+    }
+
+    function formatEventTime(startDate, endDate) {
+      if (!startDate) return 'Time TBD';
+      const start = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const end = endDate ? endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return end && end !== start ? `${start} - ${end}` : start;
+    }
+
+    function renderEventStats(events) {
+      const upcoming = events.filter(event => String(event.status).toLowerCase() === 'upcoming').length;
+      const completed = events.filter(event => String(event.status).toLowerCase() === 'completed').length;
+      const attendees = events.reduce((sum, event) => sum + Number(event.registered || 0), 0);
+      setText('events-total', UIModule.formatNumber(events.length));
+      setText('events-upcoming', UIModule.formatNumber(upcoming));
+      setText('events-completed', UIModule.formatNumber(completed));
+      setText('events-attendees', UIModule.formatNumber(attendees));
+    }
+
+    function renderUpcomingEvents(events) {
+      const container = document.getElementById('upcoming-events-grid');
+      const upcoming = events
+        .filter(event => String(event.status).toLowerCase() !== 'completed' && String(event.status).toLowerCase() !== 'cancelled')
+        .sort((a, b) => getDateMs(a.rawDate) - getDateMs(b.rawDate))
+        .slice(0, 3);
+
+      if (!upcoming.length) {
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">No upcoming events found.</div>';
+        return;
+      }
+
+      container.innerHTML = upcoming.map((eventItem) => {
+        const date = normalizeDate(eventItem.rawDate);
+        return `
+          <div style="border: 1px solid var(--color-surface); padding: var(--space-4); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-primary-95) 0%, white 100%);">
+            <div style="display: inline-block; background: var(--color-primary); color: white; padding: 0.25rem 0.75rem; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: 0.75rem;">
+              ${date ? date.toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' }) : 'Date TBD'}
+            </div>
+            <h4 style="font-size: var(--text-lg); font-weight: 600; margin-bottom: 0.5rem;">${eventItem.title}</h4>
+            <p style="color: var(--text-secondary); font-size: var(--text-sm); margin-bottom: 0.75rem;">${eventItem.location}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;">
+              <span style="font-size: var(--text-sm); color: var(--text-secondary);">${UIModule.formatNumber(eventItem.registered)} registered</span>
+              <button class="btn btn-sm btn-primary" onclick="viewEventDetails('${eventItem.id}')">Details</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderEventsTable(events) {
+      const tbody = document.getElementById('events-table-body');
+      if (!events.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No events found.</td></tr>';
+        return;
+      }
+
+      const search = (document.getElementById('event-search')?.value || '').toLowerCase();
+      const type = document.getElementById('event-type-filter')?.value || '';
+      const status = document.getElementById('event-status-filter')?.value || '';
+      const filtered = events.filter((eventItem) => {
+        const haystack = `${eventItem.title} ${eventItem.type} ${eventItem.location} ${eventItem.region}`.toLowerCase();
+        return (!search || haystack.includes(search))
+          && (!type || String(eventItem.type).toLowerCase() === type)
+          && (!status || String(eventItem.status).toLowerCase() === status);
+      });
+
+      tbody.innerHTML = filtered.map((eventItem) => {
+        const statusMeta = getStatusMeta(eventItem.status);
+        return `
+          <tr data-event-id="${eventItem.id}">
+            <td><div style="font-weight: 600;">${eventItem.title}</div><div style="font-size: var(--text-sm); color: var(--text-secondary);">${eventItem.id}</div></td>
+            <td>${eventItem.type}</td>
+            <td><div>${eventItem.date}</div><div style="font-size: var(--text-sm); color: var(--text-secondary);">${eventItem.time}</div></td>
+            <td><div>${eventItem.location}</div><div style="font-size: var(--text-sm); color: var(--text-secondary);">${eventItem.region}</div></td>
+            <td>${UIModule.formatNumber(eventItem.registered)}${eventItem.capacity ? ` / ${UIModule.formatNumber(eventItem.capacity)}` : ''}</td>
+            <td><span class="badge ${statusMeta.badgeClass}">${statusMeta.label}</span></td>
+            <td><div class="table-actions"><button class="btn btn-sm btn-outline" onclick="manageEvent('${eventItem.id}')">Manage</button><button class="btn btn-sm btn-outline" onclick="viewAttendees('${eventItem.id}')">Attendees</button></div></td>
+          </tr>
+        `;
+      }).join('') || '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No events match the filters.</td></tr>';
+    }
+
+    function renderEventAnalytics(events) {
+      const categoryCard = document.querySelector('.space-y-3');
+      if (!categoryCard) return;
+      const totalCapacity = events.reduce((sum, eventItem) => sum + Number(eventItem.capacity || 0), 0);
+      const totalRegistered = events.reduce((sum, eventItem) => sum + Number(eventItem.registered || 0), 0);
+      const attendanceRate = totalCapacity ? Math.round((totalRegistered / totalCapacity) * 100) : 0;
+      const totalRevenue = events.reduce((sum, eventItem) => sum + Number(eventItem.revenue || eventItem.totalRevenue || 0), 0);
+
+      setText('event-attendance-rate', `${attendanceRate}%`);
+      setText('event-satisfaction-rating', 'N/A', 'N/A');
+      setText('event-total-revenue', `GHS ${UIModule.formatNumber(totalRevenue || 0)}`);
+
+      const byType = events.reduce((acc, eventItem) => {
+        const type = eventItem.type || 'Event';
+        if (!acc[type]) acc[type] = { events: 0, attendees: 0 };
+        acc[type].events += 1;
+        acc[type].attendees += Number(eventItem.registered || 0);
+        return acc;
+      }, {});
+      const rows = Object.entries(byType).sort((a, b) => b[1].events - a[1].events);
+      if (!rows.length) {
+        categoryCard.innerHTML = '<div class="empty-state">No event category data found.</div>';
+        return;
+      }
+      const max = rows[0][1].events || 1;
+      categoryCard.innerHTML = rows.map(([type, data]) => `
+        <div>
+          <div class="flex-between mb-1" style="font-size: var(--text-sm);">
+            <span>${type}</span>
+            <span style="font-weight: 600;">${data.events} events | ${UIModule.formatNumber(data.attendees)} attendees</span>
+          </div>
+          <div style="height: 8px; background: var(--color-surface); border-radius: var(--radius-full); overflow: hidden;">
+            <div style="width: ${Math.round((data.events / max) * 100)}%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('event-search')?.addEventListener('input', () => renderEventsTable(Object.values(eventActionData)));
+    document.getElementById('event-type-filter')?.addEventListener('change', () => renderEventsTable(Object.values(eventActionData)));
+    document.getElementById('event-status-filter')?.addEventListener('change', () => renderEventsTable(Object.values(eventActionData)));
 
     AuthModule.onAuthStateChanged((user) => {
       if (!user) {
@@ -872,6 +817,9 @@
       }
     });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>
+
+
+

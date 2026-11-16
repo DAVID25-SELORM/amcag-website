@@ -8,7 +8,7 @@ const RouterModule = (function() {
 
   // ✅ NAVIGATION PATCH START
   const ROUTES = window.AMCAG_ROUTES || {
-    PUBLIC_HOME: '/index.html',
+    PUBLIC_HOME: '/',
     LOGIN: '/membership.html',
     ADMIN_DASHBOARD: '/national/dashboard.html',
     REGIONAL_DASHBOARD: '/region-dashboard/index.html',
@@ -54,7 +54,12 @@ const RouterModule = (function() {
       '/member-dashboard/meetings.html',
       '/member-dashboard/regional-chat.html',
       '/member-dashboard/agm-registration.html',
-      '/member-dashboard/waiver-request.html'
+      '/member-dashboard/waiver-request.html',
+      '/member-dashboard/daily-question.html',
+      '/member-dashboard/id-card.html',
+      '/member-dashboard/member-cards.html',
+      '/member-dashboard/question-results.html',
+      '/member-dashboard/registration-fee.html'
     ],
     
     // Regional executive routes
@@ -79,7 +84,9 @@ const RouterModule = (function() {
       '/national/regions.html',
       '/national/regional-permissions.html',
       '/national/payments.html',
+      '/national/payment-approvals.html',
       '/national/dues-management.html',
+      '/national/fee-settings.html',
       '/national/donations-overview.html',
       '/national/campaigns.html',
       '/national/certificates.html',
@@ -118,6 +125,7 @@ const RouterModule = (function() {
     '/national/members.html': 'canManageMembers',
     '/national/member-approval.html': 'canApproveMembers',
     '/national/events.html': 'canCreateEvents',
+    '/national/payment-approvals.html': 'canManagePayments',
     '/region-dashboard/payment-approvals.html': 'canManagePayments',
     '/region-dashboard/dues-overview.html': 'canViewRegionalPayments',
     '/region-dashboard/member-approval.html': 'canApproveMembers',

@@ -8,7 +8,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link rel="stylesheet" href="/css/animations.css">
   <link rel="stylesheet" href="/css/dark-mode.css">
   
@@ -26,12 +26,17 @@
       
       <ul class="navbar-menu" style="margin-left: auto;">
         <li><a href="/region-dashboard/index.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/region-dashboard/member-approval.html" class="navbar-link">Members</a></li>
+        <li><a href="/region-dashboard/meetings.html" class="navbar-link">Events</a></li>
+        <li><a href="/region-dashboard/agm-registrations.html" class="navbar-link">AGM</a></li>
+        <li><a href="/region-dashboard/payment-approvals.html" class="navbar-link">Payments</a></li>
         <li><a href="/region-dashboard/media-upload.html" class="navbar-link active">Media</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
           <span class="theme-icon">🌙</span>
         </button></li>
-        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+        <li><a href="/membership.html" onclick="signOut(); return false;" class="navbar-link" data-nav-logout="true">Logout</a></li>
       </ul>
     </div>
   </nav>
@@ -176,11 +181,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
   <script>
     // Authentication check
-    window.AuthModule.requireAnyRole(['regional_executive', 'national_executive', 'super_admin']);
+    AuthModule.onAuthStateChanged((user) => { if (user && !user.profile) return; if (!user || !AuthModule.requireAnyRole(['regional_executive', 'national_executive', 'super_admin'])) { if (!user) window.location.href = '/membership.html'; } });
     
     let userRegion = '';
 
@@ -494,8 +503,8 @@
       icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
     }
     
-    function signOut() {
-      if (confirm('Are you sure you want to sign out?')) {
+    async function signOut() {
+      if (await AMCAGDialog.confirm('Are you sure you want to sign out?')) {
         AuthModule.signOut();
       }
     }
@@ -510,8 +519,8 @@
       }
     })();
     
-    window.addEventListener('load', loadRecentUploads);
+    AuthModule.onAuthStateChanged((user) => { if (user && user.profile) loadRecentUploads(); });
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

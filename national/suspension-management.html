@@ -6,7 +6,7 @@
   <title>Suspension Management | AMCAG National Dashboard</title>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -396,6 +396,10 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
     const GHANA_REGIONS = ['Greater Accra', 'Ashanti', 'Western', 'Central', 'Eastern', 'Volta', 'Northern', 'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo', 'Oti', 'Savannah', 'North East', 'Western North'];
@@ -886,7 +890,7 @@
         return;
       }
       
-      if (!confirm(`SUSPEND ${user.fullName}?\n\nType: ${suspensionType}\n${suspensionType === 'temporary' ? `Until: ${endDate}` : ''}\nReason: ${reason}\n\nThis action will immediately lock out the user.`)) {
+      if (!await AMCAGDialog.confirm(`SUSPEND ${user.fullName}?\n\nType: ${suspensionType}\n${suspensionType === 'temporary' ? `Until: ${endDate}` : ''}\nReason: ${reason}\n\nThis action will immediately lock out the user.`)) {
         return;
       }
 
@@ -940,7 +944,7 @@
 
       const memberCount = allUsers.filter(u => u.region === region).length;
       
-      if (!confirm(`SUSPEND ${region} REGION?\n\nType: ${suspensionType}\n${suspensionType === 'temporary' ? `Until: ${endDate}` : ''}\nReason: ${reason}\n\nThis will affect ${memberCount} member(s)!`)) {
+      if (!await AMCAGDialog.confirm(`SUSPEND ${region} REGION?\n\nType: ${suspensionType}\n${suspensionType === 'temporary' ? `Until: ${endDate}` : ''}\nReason: ${reason}\n\nThis will affect ${memberCount} member(s)!`)) {
         return;
       }
 
@@ -1130,6 +1134,6 @@
       display: block;
     }
   </style>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>

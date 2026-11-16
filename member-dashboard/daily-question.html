@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Question of the Day | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .q-card{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(11,93,59,.12);padding:24px;max-width:680px}
+    .q-topic{font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;color:#0b5d3b;font-weight:700}
+    .q-text{font-size:1.2rem;font-weight:600;margin:8px 0 18px;line-height:1.5}
+    .q-opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:#f8faf9;border:2px solid #dfe8e2;border-radius:10px;padding:13px 14px;margin-bottom:10px;font-size:1rem;cursor:pointer;font-family:inherit}
+    .q-opt:hover:not(:disabled){border-color:#0b5d3b}
+    .q-opt.sel{border-color:#0b5d3b;background:#eaf3ee}
+    .q-opt.right{border-color:#0b7a4a;background:#e3f4ea}
+    .q-opt.wrong{border-color:#b3261e;background:#fdeceb}
+    .q-opt:disabled{cursor:default}
+    .q-opt b{color:#0b5d3b;min-width:22px}
+    .q-result{margin-top:18px;padding:14px 16px;border-radius:10px;line-height:1.5}
+    .q-result.ok{background:#e3f4ea;color:#0b5d3b}
+    .q-result.no{background:#fdeceb;color:#8c1d18}
+    .q-note{font-size:.82rem;color:#5a6778;margin-top:16px}
+  </style>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo"><img src="/images/logo.jpg" alt="AMCAG Logo"><span>AMCAG Member</span></a>
+      <div class="navbar-actions"><button class="btn btn-sm" onclick="signOut()">Sign Out</button></div>
+    </div>
+  </nav>
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item"><span>📊</span> Dashboard</a>
+        <a href="/member-dashboard/daily-question.html" class="dashboard-nav-item" id="navQ"><span>❓</span> Question of the Day</a>
+        <a href="/member-dashboard/question-results.html" class="dashboard-nav-item" id="navR" style="display:none"><span>📈</span> Question Results</a>
+      </nav>
+    </aside>
+    <main class="dashboard-content">
+      <div class="dashboard-header"><div><h1 class="dashboard-title">Question of the Day</h1><p class="dashboard-subtitle">One question a day. Your answer is visible to your regional and national executives.</p></div></div>
+      <p id="resultsLink" style="display:none;margin:0 0 14px"><a href="/member-dashboard/question-results.html" style="color:#0b5d3b;font-weight:600">📈 View question results (executives)</a></p>
+      <div class="q-card" id="box">Loading today's question...</div>
+
+    </main>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script>
+    function signOut() { AuthModule.signOut(); }
+    function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+    var LETTERS=['A','B','C','D'];
+    function call(name,data){return firebase.functions().httpsCallable(name)(data||{}).then(function(r){return r.data;});}
+
+    var current=null;
+    function render(d){
+      current=d;
+      var html='<div class="q-topic">'+esc(d.topic)+'</div><div class="q-text">'+esc(d.question)+'</div>';
+      d.options.forEach(function(o,i){
+        var cls='q-opt';
+        if(d.answered){ if(i===d.correctIndex) cls+=' right'; else if(i===d.choice) cls+=' wrong'; }
+        html+='<button class="'+cls+'" '+(d.answered?'disabled':'')+' data-i="'+i+'"><b>'+LETTERS[i]+'.</b><span>'+esc(o)+'</span></button>';
+      });
+      if(d.answered){
+        html+='<div class="q-result '+(d.correct?'ok':'no')+'"><strong>'+(d.correct?'Correct!':'Not quite.')+'</strong> The answer is '+LETTERS[d.correctIndex]+'. '+esc(d.options[d.correctIndex])+'<br>'+esc(d.explanation)+'</div><p class="q-note">You have answered today\'s question. A new one arrives tomorrow morning.</p>';
+      } else {
+        html+='<p class="q-note">You can answer once, and the answer cannot be changed.</p>';
+      }
+      var box=document.getElementById('box');
+      box.innerHTML=html;
+      box.querySelectorAll('.q-opt').forEach(function(b){ if(!d.answered) b.addEventListener('click',function(){submit(Number(b.getAttribute('data-i')),b);}); });
+      var rl=document.getElementById('resultsLink'); if(rl&&d.canViewResults) rl.style.display='';
+    }
+    async function submit(i,btn){
+      if(!await AMCAGDialog.confirm('Submit answer '+LETTERS[i]+'? You cannot change it afterwards.')) return;
+      document.querySelectorAll('.q-opt').forEach(function(b){b.disabled=true;});
+      try{
+        var r=await call('submitDailyAnswer',{choice:i});
+        current.answered=true;current.choice=r.choice;current.correct=r.correct;current.correctIndex=r.correctIndex;current.explanation=r.explanation;
+        render(current);
+      }catch(e){
+        alert(e.code==='functions/already-exists'?'You have already answered today\'s question.':(e.message||'Could not submit your answer.'));
+        load();
+      }
+    }
+    async function load(){
+      try{ render(await call('getDailyQuestion')); }
+      catch(e){ document.getElementById('box').textContent=e.message||'Unable to load the question.'; }
+    }
+    AuthModule.onAuthStateChanged(function(user){
+      if(!user){ window.location.href='/membership.html'; return; }
+      load();
+    });
+  </script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
+</body>
+</html>

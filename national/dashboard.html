@@ -9,7 +9,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link rel="stylesheet" href="/css/animations.css">
   <link rel="stylesheet" href="/css/dark-mode.css">
   
@@ -29,12 +29,14 @@
         <li><a href="/national/dashboard.html" class="navbar-link active">Dashboard</a></li>
         <li><a href="/national/members.html" class="navbar-link">Members</a></li>
         <li><a href="/national/analytics.html" class="navbar-link">Analytics</a></li>
+        <li><a href="/national/agm-registrations.html" class="navbar-link">AGM</a></li>
         <li><a href="/national/security-command-center.html" class="navbar-link" style="color: #dc3545; font-weight: 600;">🛡️ Security</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><button onclick="toggleTheme()" class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
           <span class="theme-icon">🌙</span>
         </button></li>
-        <li><a href="#" onclick="signOut()" class="navbar-link">Sign Out</a></li>
+        <li><a href="/membership.html" onclick="signOut(); return false;" class="navbar-link" data-nav-logout="true">Logout</a></li>
       </ul>
     </div>
   </nav>
@@ -77,19 +79,19 @@
       <div class="stats-grid mb-8">
         <div class="stat-card animate-fade-in delay-100">
           <div class="stat-icon">👥</div>
-          <div class="stat-value" id="total-members">15,243</div>
+          <div class="stat-value" id="total-members">0</div>
           <div class="stat-label">Total Members</div>
         </div>
         
         <div class="stat-card animate-fade-in delay-200">
           <div class="stat-icon">🗺️</div>
-          <div class="stat-value" id="total-regions">16</div>
+          <div class="stat-value" id="total-regions">0</div>
           <div class="stat-label">Regional Chapters</div>
         </div>
         
         <div class="stat-card animate-fade-in delay-300">
           <div class="stat-icon">💰</div>
-          <div class="stat-value">GHS <span id="total-revenue">2.1M</span></div>
+          <div class="stat-value">GHS <span id="total-revenue">0</span></div>
           <div class="stat-label">Total Revenue</div>
         </div>
         
@@ -107,9 +109,24 @@
         
         <div class="stat-card animate-fade-in delay-600">
           <div class="stat-icon">📜</div>
-          <div class="stat-value" id="total-certificates">12,540</div>
+          <div class="stat-value" id="total-certificates">0</div>
           <div class="stat-label">Certificates Issued</div>
         </div>
+      </div>
+
+      <!-- AGM Banner -->
+      <div style="background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); border-radius: var(--radius-xl); padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; color: white;">
+        <div>
+          <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; margin-bottom: 0.25rem;">Upcoming Event</div>
+          <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.2rem;">AMCAG Annual General Meeting 2026</div>
+          <div style="font-size: 0.85rem; opacity: 0.9;">📅 10th – 11th July 2026 &nbsp;|&nbsp; 📍 PCG Hall, Koforidua &nbsp;|&nbsp; <span id="agm-countdown" style="font-weight:600;"></span></div>
+          <div style="margin-top: 0.5rem; font-size: 0.85rem;">
+            Total Registrations: <strong id="agm-total">—</strong> &nbsp;|&nbsp;
+            Paid: <strong id="agm-paid">—</strong> &nbsp;|&nbsp;
+            Pending: <strong id="agm-pending">—</strong>
+          </div>
+        </div>
+        <a href="/national/agm-registrations.html" style="background: white; color: #1a73e8; border-radius: var(--radius-md); padding: 0.5rem 1.25rem; font-weight: 700; font-size: 0.85rem; text-decoration: none; white-space: nowrap; flex-shrink: 0;">Manage Registrations →</a>
       </div>
 
       <!-- Main Grid -->
@@ -120,7 +137,7 @@
           <div class="card">
             <h3 class="card-title">National Actions</h3>
             <div class="grid grid-2 gap-2 mt-3">
-              <a href="/member-dashboard/regional-chat.html" class="btn btn-outline btn-sm">💬 Regional Chat</a>
+              <a href="/member-dashboard/regional-chat.html" class="btn btn-outline btn-sm">💬 Chat &amp; Announcements</a>
               <a href="/national/members.html" class="btn btn-outline btn-sm">👥 All Members</a>
               <a href="/national/analytics.html" class="btn btn-outline btn-sm">📊 Analytics</a>
               <a href="/national/donations-overview.html" class="btn btn-outline btn-sm">💰 Donations</a>
@@ -128,44 +145,18 @@
               <a href="/national/meetings.html" class="btn btn-outline btn-sm">📹 Meetings</a>
               <a href="/national/media-upload.html" class="btn btn-outline btn-sm">📸 Upload Media</a>
               <a href="/national/news-management.html" class="btn btn-outline btn-sm">📰 Manage News</a>
-              <a href="/region-dashboard/payment-approvals.html" class="btn btn-outline btn-sm">💳 Payment Approvals</a>
+              <a href="/national/payment-approvals.html" class="btn btn-outline btn-sm">💳 Payment Approvals</a>
+              <a href="/national/agm-registrations.html" class="btn btn-primary btn-sm">AGM Registrations</a>
               <a href="/national/security-command-center.html" class="btn btn-outline btn-sm">🔒 Security</a>
+              <button class="btn btn-outline btn-sm" onclick="rebuildRegionStatsNow()" id="rebuild-stats-btn">🔄 Rebuild Region Stats</button>
             </div>
           </div>
           
           <!-- Regional Performance -->
           <div class="card">
             <h3 class="card-title">Top Performing Regions</h3>
-            <div class="mt-3 flex-col gap-3">
-              <div>
-                <div class="flex-between mb-1">
-                  <span style="font-weight: var(--font-semibold);">Greater Accra</span>
-                  <span style="color: var(--text-secondary); font-size: var(--text-sm);">3,245 members</span>
-                </div>
-                <div style="height: 8px; background: var(--color-neutral-90); border-radius: 4px; overflow: hidden;">
-                  <div style="height: 100%; width: 95%; background: var(--color-primary-40);"></div>
-                </div>
-              </div>
-              
-              <div>
-                <div class="flex-between mb-1">
-                  <span style="font-weight: var(--font-semibold);">Ashanti</span>
-                  <span style="color: var(--text-secondary); font-size: var(--text-sm);">2,867 members</span>
-                </div>
-                <div style="height: 8px; background: var(--color-neutral-90); border-radius: 4px; overflow: hidden;">
-                  <div style="height: 100%; width: 84%; background: var(--color-secondary-50);"></div>
-                </div>
-              </div>
-              
-              <div>
-                <div class="flex-between mb-1">
-                  <span style="font-weight: var(--font-semibold);">Eastern</span>
-                  <span style="color: var(--text-secondary); font-size: var(--text-sm);">1,932 members</span>
-                </div>
-                <div style="height: 8px; background: var(--color-neutral-90); border-radius: 4px; overflow: hidden;">
-                  <div style="height: 100%; width: 72%; background: var(--color-success);"></div>
-                </div>
-              </div>
+            <div class="mt-3 flex-col gap-3" id="top-regions-list">
+              <div class="text-secondary">Loading regional membership counts...</div>
             </div>
             <a href="/national/regions.html" class="btn btn-outline btn-sm btn-block mt-3">View All Regions</a>
           </div>
@@ -176,19 +167,19 @@
             <div class="mt-3 flex-col gap-2">
               <div class="flex-between">
                 <span style="color: var(--text-secondary);">Dues Collected</span>
-                <span style="font-weight: var(--font-bold); color: var(--color-success);">GHS 1,850,000</span>
+                <span id="dues-collected" style="font-weight: var(--font-bold); color: var(--color-success);">GHS 0</span>
               </div>
               <div class="flex-between">
                 <span style="color: var(--text-secondary);">Contributions</span>
-                <span style="font-weight: var(--font-bold); color: var(--color-secondary-50);">GHS 245,000</span>
+                <span id="contributions-collected" style="font-weight: var(--font-bold); color: var(--color-secondary-50);">GHS 0</span>
               </div>
               <div class="flex-between">
                 <span style="color: var(--text-secondary);">Other Revenue</span>
-                <span style="font-weight: var(--font-bold);">GHS 105,000</span>
+                <span id="other-revenue" style="font-weight: var(--font-bold);">GHS 0</span>
               </div>
               <div class="flex-between mt-2" style="padding-top: var(--space-2); border-top: 2px solid var(--color-neutral-90);">
                 <span style="font-weight: var(--font-bold); font-size: var(--text-lg);">Total</span>
-                <span style="font-weight: var(--font-bold); font-size: var(--text-lg); color: var(--color-primary-40);">GHS 2,200,000</span>
+                <span id="financial-total" style="font-weight: var(--font-bold); font-size: var(--text-lg); color: var(--color-primary-40);">GHS 0</span>
               </div>
             </div>
           </div>
@@ -200,15 +191,15 @@
           <div class="card" style="border-left: 4px solid var(--color-warning);">
             <div class="flex-between mb-3">
               <h3 class="card-title" style="margin: 0;">Pending Approvals</h3>
-              <span class="badge badge-warning">5</span>
+              <span class="badge badge-warning" id="pending-total">0</span>
             </div>
-            <div class="flex-col gap-2">
+            <div class="flex-col gap-2" id="pending-approvals-list">
               <div style="padding: var(--space-2); background: var(--color-warning-bg); border-radius: var(--radius-md);">
                 <div style="font-weight: var(--font-semibold); margin-bottom: 4px; font-size: var(--text-sm);">
                   Certificate Approvals
                 </div>
                 <div style="font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: var(--space-2);">
-                  3 certificates awaiting approval
+                  <span id="pending-certificates">0</span> certificates awaiting approval
                 </div>
                 <a href="/national/certificates.html" class="btn btn-sm btn-outline" style="width: 100%;">Review</a>
               </div>
@@ -218,9 +209,9 @@
                   New Member Applications
                 </div>
                 <div style="font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: var(--space-2);">
-                  2 applications pending review
+                  <span id="pending-members">0</span> applications pending review
                 </div>
-                <a href="/national/members.html" class="btn btn-sm btn-outline" style="width: 100%;">Review</a>
+                <a href="/national/member-approval.html" class="btn btn-sm btn-outline" style="width: 100%;">Review</a>
               </div>
             </div>
           </div>
@@ -228,33 +219,8 @@
           <!-- Recent Activity -->
           <div class="card">
             <h3 class="card-title">Recent Activity</h3>
-            <div class="mt-3 flex-col gap-2">
-              <div style="padding: var(--space-2); border-left: 3px solid var(--color-primary-40); background: var(--color-primary-99);">
-                <div style="font-weight: var(--font-semibold); font-size: var(--text-sm); margin-bottom: 4px;">
-                  New Regional Event Created
-                </div>
-                <div style="font-size: var(--text-xs); color: var(--text-secondary);">
-                  Greater Accra • Workshop • 2 hours ago
-                </div>
-              </div>
-              
-              <div style="padding: var(--space-2); border-left: 3px solid var(--color-success); background: var(--color-success-bg);">
-                <div style="font-weight: var(--font-semibold); font-size: var(--text-sm); margin-bottom: 4px;">
-                  125 Members Paid Dues
-                </div>
-                <div style="font-size: var(--text-xs); color: var(--text-secondary);">
-                  Multiple Regions • Today
-                </div>
-              </div>
-              
-              <div style="padding: var(--space-2); border-left: 3px solid var(--color-secondary-50); background: var(--color-secondary-99);">
-                <div style="font-weight: var(--font-semibold); font-size: var(--text-sm); margin-bottom: 4px;">
-                  15 Certificates Issued
-                </div>
-                <div style="font-size: var(--text-xs); color: var(--text-secondary);">
-                  Ashanti Region • Yesterday
-                </div>
-              </div>
+            <div class="mt-3 flex-col gap-2" id="recent-activity-list">
+              <div class="text-secondary">Loading recent activity...</div>
             </div>
           </div>
           
@@ -264,7 +230,7 @@
               <h3 class="card-title" style="margin: 0;">National Events</h3>
               <a href="/national/events.html" class="btn btn-sm btn-primary">Add Event</a>
             </div>
-            <div class="flex-col gap-2">
+            <div class="flex-col gap-2" id="national-events-list">
               <div style="display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--color-primary-99); border-radius: var(--radius-md);">
                 <div style="background: var(--color-primary-40); color: white; padding: var(--space-2); border-radius: var(--radius-md); text-align: center; min-width: 60px;">
                   <div style="font-size: var(--text-2xl); font-weight: var(--font-bold);">15</div>
@@ -297,7 +263,7 @@
                 <span style="color: var(--color-success); font-size: var(--text-xl);">●</span>
                 <div style="flex: 1;">
                   <div style="font-weight: var(--font-semibold); font-size: var(--text-sm);">All Systems Operational</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-secondary);">Last updated: 5 minutes ago</div>
+                  <div id="system-status-time" style="font-size: var(--text-xs); color: var(--text-secondary);">Checking live services...</div>
                 </div>
               </div>
             </div>
@@ -312,17 +278,76 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
-  <script src="/js/api.js"></script>
+  <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
   
   <script>
     let dashboardLoaded = false;
     let currentUser = null;
     let userProfile = null;
-    
+
+    function setText(id, value, fallback = '0') {
+      const el = document.getElementById(id);
+
+      if (!el) {
+        console.warn(`[Dashboard] Missing element #${id}`);
+        return;
+      }
+
+      el.textContent = value ?? fallback;
+    }
+
+    function setHTML(id, value, fallback = '') {
+      const el = document.getElementById(id);
+
+      if (!el) {
+        console.warn(`[Dashboard] Missing element #${id}`);
+        return;
+      }
+
+      el.innerHTML = value ?? fallback;
+    }
+
+    function getCallableFunction(functionName) {
+      const functionsService = window.FirebaseModule?.functions?.() ||
+        (typeof firebase !== 'undefined' && typeof firebase.functions === 'function' ? firebase.functions() : null);
+
+      if (!functionsService || typeof functionsService.httpsCallable !== 'function') {
+        throw new Error('Firebase Functions SDK is not loaded');
+      }
+
+      return functionsService.httpsCallable(functionName);
+    }
+
+    async function autoSeedRegionStats(db) {
+      try {
+        const statsDoc = await db.collection('publicStats').doc('regionCounts').get();
+        const statsData = statsDoc.exists ? statsDoc.data() || {} : {};
+        if (statsDoc.exists &&
+          statsData.memberOnly === true &&
+          statsData.source === 'usersMembersMerged' &&
+          Object.keys(statsData.counts || {}).length > 0) {
+          return false;
+        }
+
+        const rebuildRegionStats = getCallableFunction('rebuildRegionStats');
+        await rebuildRegionStats({});
+        console.log('[Dashboard] Region stats seeded automatically.');
+        return true;
+      } catch (error) {
+        console.warn('[Dashboard] Auto-seed failed:', error.message || error);
+        return false;
+      }
+    }
+
     // Try to load profile from session storage first (set by login page)
     const cachedProfile = sessionStorage.getItem('userProfile');
     const cachedUid = sessionStorage.getItem('userUid');
@@ -465,7 +490,7 @@
         
         // Load nationwide statistics
         const memberStats = await APIModule.Members.getStats();
-        document.getElementById('total-members').textContent = UIModule.formatNumber(memberStats.total);
+        setText('total-members', UIModule.formatNumber(memberStats.total));
         
         // Load employment statistics
         const usersSnapshot = await db.collection('users')
@@ -484,29 +509,166 @@
           }
         });
         
-        document.getElementById('total-employed').textContent = UIModule.formatNumber(employedCount);
-        document.getElementById('total-unemployed').textContent = UIModule.formatNumber(unemployedCount);
+        setText('total-employed', UIModule.formatNumber(employedCount));
+        setText('total-unemployed', UIModule.formatNumber(unemployedCount));
+        await autoSeedRegionStats(db);
         
         // Load payment statistics
         const paymentStats = await APIModule.Payments.getStats();
-        const revenueInMillions = (paymentStats.totalAmount / 1000000).toFixed(1);
-        document.getElementById('total-revenue').textContent = revenueInMillions + 'M';
+        setText('total-revenue', formatCompactMoney(paymentStats.totalAmount));
+        setText('dues-collected', `GHS ${UIModule.formatNumber(paymentStats.totalAmount || 0)}`);
+        setText('contributions-collected', 'GHS 0');
+        setText('other-revenue', 'GHS 0');
+        setText('financial-total', `GHS ${UIModule.formatNumber(paymentStats.totalAmount || 0)}`);
         
         // Load regions
         const regions = await APIModule.Regions.getAll();
-        document.getElementById('total-regions').textContent = regions.length;
+        setText('total-regions', regions.length);
+
+        await Promise.all([
+          loadCertificateStats(db),
+          loadPendingStats(db),
+          loadTopRegions(usersSnapshot.docs.map(doc => doc.data())),
+          loadDashboardEvents(db),
+          loadRecentActivity(db)
+        ]);
+
+        setText('system-status-time', `Last checked: ${new Date().toLocaleString()}`, '');
         
         UIModule.hideLoader();
         
       } catch (error) {
         console.error('Error loading dashboard:', error);
         UIModule.hideLoader();
-        UIModule.showAlert('Error loading dashboard data. Using demo data.', 'warning');
+        UIModule.showAlert('Error loading dashboard data.', 'warning');
       }
     }
+
+    function formatCompactMoney(amount) {
+      const value = Number(amount || 0);
+      if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+      if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+      return UIModule.formatNumber(value);
+    }
+
+    async function loadCertificateStats(db) {
+      const snapshot = await db.collection('certificates').get();
+      setText('total-certificates', UIModule.formatNumber(snapshot.size));
+    }
+
+    async function loadPendingStats(db) {
+      const [certificates, users] = await Promise.all([
+        db.collection('certificates').where('status', '==', 'pending').get().catch(() => ({ size: 0 })),
+        db.collection('users').where('status', '==', 'pending').get().catch(() => ({ size: 0 }))
+      ]);
+      const pendingCertificates = certificates.size || 0;
+      const pendingMembers = users.size || 0;
+      setText('pending-certificates', pendingCertificates);
+      setText('pending-members', pendingMembers);
+      setText('pending-total', pendingCertificates + pendingMembers);
+    }
+
+    function loadTopRegions(memberProfiles) {
+      const counts = memberProfiles.reduce((acc, profile) => {
+        const region = profile.region || 'Unassigned';
+        acc[region] = (acc[region] || 0) + 1;
+        return acc;
+      }, {});
+      const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+      if (!rows.length) {
+        setHTML('top-regions-list', '<div class="empty-state">No member region data found.</div>');
+        return;
+      }
+
+      const max = rows[0][1] || 1;
+      setHTML('top-regions-list', rows.map(([region, count]) => `
+        <div>
+          <div class="flex-between mb-1">
+            <span style="font-weight: var(--font-semibold);">${region}</span>
+            <span style="color: var(--text-secondary); font-size: var(--text-sm);">${UIModule.formatNumber(count)} members</span>
+          </div>
+          <div style="height: 8px; background: var(--color-neutral-90); border-radius: 4px; overflow: hidden;">
+            <div style="height: 100%; width: ${Math.max(8, Math.round((count / max) * 100))}%; background: var(--color-primary-40);"></div>
+          </div>
+        </div>
+      `).join(''));
+    }
+
+    async function loadDashboardEvents(db) {
+      const now = new Date();
+      const snapshot = await db.collection('events').where('startDate', '>=', now).orderBy('startDate', 'asc').limit(3).get()
+        .catch(() => db.collection('events').limit(3).get());
+      const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      if (!events.length) {
+        setHTML('national-events-list', '<div class="empty-state">No upcoming events found.</div>');
+        return;
+      }
+
+      setHTML('national-events-list', events.map(event => {
+        const date = normalizeDate(event.startDate || event.eventDate || event.date);
+        return `
+          <a href="/national/events.html" style="display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--color-primary-99); border-radius: var(--radius-md); color: inherit;">
+            <div style="background: var(--color-primary-40); color: white; padding: var(--space-2); border-radius: var(--radius-md); text-align: center; min-width: 60px;">
+              <div style="font-size: var(--text-2xl); font-weight: var(--font-bold);">${date ? date.getDate() : '-'}</div>
+              <div style="font-size: var(--text-xs);">${date ? date.toLocaleString(undefined, { month: 'short' }).toUpperCase() : 'TBD'}</div>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-weight: var(--font-semibold); margin-bottom: 4px;">${event.title || event.name || 'Untitled Event'}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-secondary);">${event.location || event.venue || 'Location TBD'}</div>
+            </div>
+          </a>
+        `;
+      }).join(''));
+    }
+
+    async function loadRecentActivity(db) {
+      const snapshots = await Promise.all([
+        db.collection('payments').orderBy('createdAt', 'desc').limit(2).get().catch(() => ({ docs: [] })),
+        db.collection('certificates').orderBy('createdAt', 'desc').limit(2).get().catch(() => ({ docs: [] }))
+      ]);
+      const activities = snapshots.flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+        .sort((a, b) => getDateMs(b.createdAt || b.updatedAt) - getDateMs(a.createdAt || a.updatedAt))
+        .slice(0, 4);
+
+      if (!activities.length) {
+        setHTML('recent-activity-list', '<div class="empty-state">No recent activity found.</div>');
+        return;
+      }
+
+      setHTML('recent-activity-list', activities.map(item => `
+        <div style="padding: var(--space-2); border-left: 3px solid var(--color-primary-40); background: var(--color-primary-99);">
+          <div style="font-weight: var(--font-semibold); font-size: var(--text-sm); margin-bottom: 4px;">
+            ${item.memberName || item.certificateTitle || item.type || 'Record updated'}
+          </div>
+          <div style="font-size: var(--text-xs); color: var(--text-secondary);">
+            ${item.status || 'Updated'} | ${formatRelativeDate(item.createdAt || item.updatedAt)}
+          </div>
+        </div>
+      `).join(''));
+    }
+
+    function normalizeDate(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') return value.toDate();
+      if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function getDateMs(value) {
+      const date = normalizeDate(value);
+      return date ? date.getTime() : 0;
+    }
+
+    function formatRelativeDate(value) {
+      const date = normalizeDate(value);
+      return date ? date.toLocaleString() : 'date unavailable';
+    }
     
-    function signOut() {
-      if (confirm('Are you sure you want to sign out?')) {
+    async function signOut() {
+      if (await AMCAGDialog.confirm('Are you sure you want to sign out?')) {
         AuthModule.signOut();
       }
     }
@@ -539,6 +701,54 @@
   </script>
 
   <!-- Mobile Menu Handler -->
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
+  <script>
+    async function rebuildRegionStatsNow() {
+      const btn = document.getElementById('rebuild-stats-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Rebuilding...'; }
+      try {
+        const fn = getCallableFunction('rebuildRegionStats');
+        await fn({});
+        UIModule.showAlert('Region stats rebuilt successfully.', 'success');
+      } catch (e) {
+        UIModule.showAlert('Failed: ' + e.message, 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Rebuild Region Stats'; }
+      }
+    }
+
+    (function () {
+      const AGM_DATE = new Date('2026-07-10T09:00:00');
+      function updateCountdown() {
+        const el = document.getElementById('agm-countdown');
+        if (!el) return;
+        const diff = AGM_DATE - Date.now();
+        if (diff <= 0) { el.textContent = 'Event is live!'; return; }
+        el.textContent = Math.floor(diff / 86400000) + ' days to go';
+      }
+      updateCountdown();
+      setInterval(updateCountdown, 60000);
+
+      function loadAgmStats() {
+        const db = window.FirebaseModule?.db?.();
+        if (!db) return;
+        db.collection('agmRegistrations').where('eventId', '==', 'agm-2026').get()
+          .then((snap) => {
+            let paid = 0;
+            snap.forEach((d) => { if (d.data().paymentStatus === 'paid') paid++; });
+            const total = snap.size;
+            document.getElementById('agm-total').textContent = total;
+            document.getElementById('agm-paid').textContent = paid;
+            document.getElementById('agm-pending').textContent = total - paid;
+          }).catch(() => {});
+      }
+
+      let attempts = 0;
+      const iv = setInterval(() => {
+        if (window.FirebaseModule?.db?.()) { clearInterval(iv); loadAgmStats(); }
+        else if (++attempts > 30) clearInterval(iv);
+      }, 300);
+    })();
+  </script>
 </body>
 </html>

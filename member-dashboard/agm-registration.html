@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGM 2026 Registration | AMCAG</title>
+  <link rel="icon" type="image/png" href="/images/logo.jpg">
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/dark-mode.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo">
+        <img src="/images/logo.jpg" alt="AMCAG Logo">
+        <span>AMCAG</span>
+      </a>
+
+      <ul class="navbar-menu" style="margin-left: auto;">
+        <li><a href="/member-dashboard.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/member-dashboard/agm-registration.html" class="navbar-link active">AGM 2026</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
+        <li><a href="/membership.html" onclick="signOut(); return false;" class="navbar-link" data-nav-logout="true">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="section-sm" style="background: var(--gradient-primary); color: white;">
+    <div class="container">
+      <h1 style="font-family: var(--font-display); font-size: var(--text-5xl); font-weight: var(--font-bold); margin-bottom: var(--space-2);">
+        Register for AGM 2026
+      </h1>
+      <p style="font-size: var(--text-xl); max-width: 900px; opacity: 0.95;">
+        <span data-agm-theme></span>
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="grid grid-2" style="gap: var(--space-6); align-items: start;">
+        <div class="flex-col gap-4">
+          <div class="card">
+            <h2 class="card-title">Event Details</h2>
+            <div class="mt-3 flex-col gap-3">
+              <div>
+                <div style="color: var(--text-secondary); font-size: var(--text-sm);">Date and time</div>
+                <div style="font-weight: 700;"><span data-agm-date></span> at 9:00 AM</div>
+              </div>
+              <div>
+                <div style="color: var(--text-secondary); font-size: var(--text-sm);">Venue</div>
+                <div style="font-weight: 700;" data-agm-venue></div>
+              </div>
+              <div>
+                <div style="color: var(--text-secondary); font-size: var(--text-sm);">Registration fee</div>
+                <div style="font-weight: 700;" data-agm-fee></div>
+              </div>
+              <div>
+                <div style="color: var(--text-secondary); font-size: var(--text-sm);">Hubtel shortcode</div>
+                <div style="font-size: var(--text-2xl); font-weight: 800;" data-agm-shortcode></div>
+              </div>
+              <div style="padding: var(--space-3); background: var(--color-primary-99); border-radius: var(--radius-md);">
+                After submitting this form, your registration will be saved as pending. Use the Hubtel shortcode and your generated reference when making payment.
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="agm-existing-registration" style="display: none;"></div>
+          <div class="card" id="agm-registration-result" style="display: none;"></div>
+        </div>
+
+        <div class="card">
+          <h2 class="card-title">Confirm AGM Registration</h2>
+          <p style="color: var(--text-secondary); margin-top: var(--space-2);">
+            Your membership profile will be used for this registration.
+          </p>
+          <div id="agm-status" class="alert alert-info" style="display: none; margin-top: var(--space-3);"></div>
+
+          <form id="agm-registration-form" class="mt-4">
+            <div class="grid grid-2 gap-3" style="padding: var(--space-4); background: var(--color-neutral-99); border: 1px solid var(--color-neutral-90); border-radius: var(--radius-md);">
+              <div><div class="form-label">Full name</div><strong data-agm-member-field="fullName">Loading...</strong></div>
+              <div><div class="form-label">Member ID</div><strong data-agm-member-field="memberId">Loading...</strong></div>
+              <div><div class="form-label">Phone</div><strong data-agm-member-field="phone">Loading...</strong></div>
+              <div><div class="form-label">Email</div><strong data-agm-member-field="email">Loading...</strong></div>
+              <div><div class="form-label">Region</div><strong data-agm-member-field="region">Loading...</strong></div>
+            </div>
+
+            <input type="hidden" id="fullName" name="fullName">
+            <input type="hidden" id="phone" name="phone">
+            <input type="hidden" id="email" name="email">
+            <input type="hidden" id="region" name="region">
+            <input type="hidden" id="district" name="district">
+            <input type="hidden" id="memberId" name="memberId">
+            <input type="hidden" id="facilityName" name="facilityName">
+            <input type="hidden" id="position" name="position">
+            <input type="hidden" id="emergencyContact" name="emergencyContact">
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="agm-submit-button" style="margin-top: var(--space-4);">
+              Register for AGM 2026
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/payment-config.js"></script>
+  <script src="/js/agm.js?v=20260620-checkout1"></script>
+  <script>
+    function signOut() {
+      AuthModule.signOut();
+    }
+
+    function startAgmPage() {
+      if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+        AGMModule.initRegistrationPage();
+      } else {
+        setTimeout(startAgmPage, 50);
+      }
+    }
+
+    startAgmPage();
+  </script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
+</body>
+</html>

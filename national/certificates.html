@@ -276,6 +276,9 @@
   <script src="/js/api.js?v=20260526-uid-index"></script>
   <script src="/js/router.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
   <script src="/js/navbar-avatar.js"></script>
 
   <script>
@@ -365,7 +368,7 @@
     }
 
     async function issueCertificate(certId) {
-      if (confirm(`Issue certificate ${certId} now?`)) {
+      if (await AMCAGDialog.confirm(`Issue certificate ${certId} now?`)) {
         showLoader('Issuing certificate...');
 
         try {
@@ -487,7 +490,7 @@
           notes: notes || '',
           status: 'issued',
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          verificationUrl: `https://amcag-website.web.app/certificate-verify.html?id=${certId}`
+          verificationUrl: `https://amcag-af624.web.app/certificate-verify.html?id=${certId}`
         };
         
         await db.collection('certificates').doc(certId).set(certificateData);

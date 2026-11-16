@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="/images/logo.jpg">
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="stylesheet" href="/css/mobile.css">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260524-dropdown5">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
@@ -27,22 +27,22 @@
     <aside class="dashboard-sidebar">
       <nav class="dashboard-nav">
         <a href="/national/dashboard.html" class="dashboard-nav-item">
-          <span>📊</span> Dashboard
+          <span>ðŸ“Š</span> Dashboard
         </a>
         <a href="/national/members.html" class="dashboard-nav-item">
-          <span>👥</span> Members
+          <span>ðŸ‘¥</span> Members
         </a>
         <a href="/national/member-approval.html" class="dashboard-nav-item">
-          <span>✅</span> Approve Members
+          <span>âœ…</span> Approve Members
         </a>
         <a href="/national/dues-management.html" class="dashboard-nav-item active">
-          <span>💰</span> Dues Management
+          <span>ðŸ’°</span> Dues Management
         </a>
         <a href="/national/regional-permissions.html" class="dashboard-nav-item">
-          <span>🔐</span> Regional Permissions
+          <span>ðŸ”</span> Regional Permissions
         </a>
         <a href="/national/analytics.html" class="dashboard-nav-item">
-          <span>📈</span> Analytics
+          <span>ðŸ“ˆ</span> Analytics
         </a>
       </nav>
     </aside>
@@ -54,7 +54,8 @@
           <p class="dashboard-subtitle">Overview of all member payment status and collections</p>
         </div>
         <div>
-          <button class="btn btn-secondary" onclick="exportData()">📥 Export Report</button>
+          <a class="btn btn-primary" href="/national/fee-settings.html" style="margin-right: .5rem;">Fee Settings</a>
+          <button class="btn btn-secondary" onclick="exportData()">ðŸ“¥ Export Report</button>
         </div>
       </div>
 
@@ -218,9 +219,13 @@
   <script src="/js/firebase.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script src="/js/navbar-avatar.js"></script>
 
   <script>
-    const MONTHLY_DUES_AMOUNT = 50.00;
+    let MONTHLY_DUES_AMOUNT = 10.00;
     let currentUser = null;
     let allMembers = [];
     let allPayments = [];
@@ -513,9 +518,9 @@
 
         return `
           <tr>
-            <td><strong>${member.memberId || 'Pending'}</strong></td>
-            <td>${member.fullName || 'N/A'}</td>
-            <td>${member.region || 'N/A'}</td>
+            <td><strong>${member.memberId || 'N/A'}</strong></td>
+            <td>${member.fullName || member.name || member.displayName || 'N/A'}</td>
+            <td>${member.region || member.regionName || member.assignedRegion || 'N/A'}</td>
             <td>${lastPaymentText}</td>
             <td style="font-weight: 600; color: ${status.overdueMonths > 0 ? 'var(--color-error)' : 'inherit'};">
               ${status.overdueMonths}
@@ -538,9 +543,9 @@
     function viewMemberDetails(member) {
       const status = getMemberDuesStatus(member);
 
-      document.getElementById('modalMemberName').textContent = member.fullName || 'N/A';
-      document.getElementById('modalMemberId').textContent = member.memberId || 'Pending';
-      document.getElementById('modalRegion').textContent = member.region || 'N/A';
+      document.getElementById('modalMemberName').textContent = member.fullName || member.name || member.displayName || 'N/A';
+      document.getElementById('modalMemberId').textContent = member.memberId || 'N/A';
+      document.getElementById('modalRegion').textContent = member.region || member.regionName || member.assignedRegion || 'N/A';
       
       const regDate = member.registrationDate ? 
         new Date(member.registrationDate.toDate()).toLocaleDateString() : 
@@ -614,7 +619,7 @@
         
         const statusText = status.isCurrentlyOverdue ? 'Overdue' : 'Current';
 
-        csv += `"${member.memberId || 'Pending'}","${member.fullName || 'N/A'}","${member.region || 'N/A'}","${lastPayment}",${status.overdueMonths},${status.amountOwed.toFixed(2)},${status.totalPaid.toFixed(2)},"${statusText}"\n`;
+        csv += `"${member.memberId || 'N/A'}","${member.fullName || member.name || member.displayName || 'N/A'}","${member.region || member.regionName || member.assignedRegion || 'N/A'}","${lastPayment}",${status.overdueMonths},${status.amountOwed.toFixed(2)},${status.totalPaid.toFixed(2)},"${statusText}"\n`;
       });
 
       // Download
@@ -643,6 +648,11 @@
       currentUser = user;
       
       const db = firebase.firestore();
+      const feeDoc = await db.collection('system_settings').doc('fees').get();
+      const configuredDues = Number(feeDoc.data()?.monthlyDues);
+      if (feeDoc.exists && Number.isFinite(configuredDues) && configuredDues > 0) {
+        MONTHLY_DUES_AMOUNT = Number(configuredDues.toFixed(2));
+      }
       const userDoc = await db.collection('users').doc(user.uid).get();
       
       if (!userDoc.exists) {
@@ -670,6 +680,7 @@
       }
     };
   </script>
-  <script src="/js/mobile-menu.js"></script>
+  <script src="/js/mobile-menu.js?v=20260524-dropdown5"></script>
 </body>
 </html>
+
