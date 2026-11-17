@@ -27,23 +27,18 @@
 
     .idc-logo { position: absolute; left: 54px; top: 22px; width: 150px; height: 150px; border-radius: 50%;
       background: #fff url('/images/logo.jpg') center/cover no-repeat; border: 5px solid #0b6b3a; }
-    .idc-title { position: absolute; left: 225px; top: 22px; width: 420px; height: 150px; display: flex; flex-direction: column; justify-content: center; font-family: 'Poppins', Arial, sans-serif;
+    .idc-title { position: absolute; left: 225px; top: 22px; width: 410px; height: 150px; display: flex; flex-direction: column; justify-content: center; font-family: 'Poppins', Arial, sans-serif;
       font-weight: 800; font-size: 29px; line-height: 1.02; color: #0b5d3b; text-transform: uppercase; }
     .idc-title small { display: block; font-family: 'Inter', Arial, sans-serif; font-style: italic; font-weight: 600;
       font-size: 19px; text-transform: none; color: #12301f; margin-top: 8px; }
-    .idc-qr-box { position: absolute; z-index: 3; right: 26px; top: 20px; width: 170px; padding: 10px 0 12px; text-align: center; color: #fff; font-weight: 600;
-      font-size: 15px; line-height: 1.15; background: linear-gradient(160deg, #0c7a43, #0a5a31); border-radius: 18px; }
-    .idc-qr { background: #fff; border-radius: 12px; padding: 8px; width: 138px; height: 138px; margin: 0 auto 8px; box-sizing: content-box; }
-    .idc-qr svg { width: 100%; height: 100%; display: block; }
-
-    .idc-photo { position: absolute; left: 34px; top: 200px; width: 190px; height: 232px; border-radius: 16px;
+    .idc-photo { position: absolute; right: 30px; top: 26px; width: 176px; height: 244px; border-radius: 16px;
       border: 4px solid #0b6b3a; background: #e3ece7 center 12%/cover no-repeat; overflow: hidden;
       display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: 800; color: #0b6b3a; }
-    .idc-band { position: absolute; left: 255px; top: 196px; width: 390px; height: 40px; border-radius: 10px 10px 0 0;
+    .idc-band { position: absolute; left: 54px; top: 200px; width: 586px; height: 40px; border-radius: 10px 10px 0 0;
       background: #0b6b3a; color: #fff; font-weight: 800; font-size: 26px; letter-spacing: .5px; text-align: center; line-height: 40px; }
-    .idc-rows { position: absolute; left: 255px; top: 240px; width: 390px; }
+    .idc-rows { position: absolute; left: 54px; top: 244px; width: 586px; }
     .idc-row { display: flex; font-size: 16px; padding: 4px 0; border-bottom: 1px solid rgba(11,107,58,.12); }
-    .idc-row .k { width: 172px; white-space: nowrap; color: #0b6b3a; font-weight: 500; }
+    .idc-row .k { width: 230px; white-space: nowrap; color: #0b6b3a; font-weight: 500; }
     .idc-row .c { width: 14px; }
     .idc-row .v { font-weight: 700; flex: 1; letter-spacing: 0; word-break: break-word; }
 
@@ -134,10 +129,6 @@
               <div class="idc-curve"></div>
               <div class="idc-logo"></div>
               <div class="idc-title">Association of Medicine Counter Assistants of Ghana (AMCAG)<small>Better Health, Long Life</small></div>
-              <div class="idc-qr-box">
-                <div class="idc-qr" id="qrFront"></div>
-                Scan to Verify<br>Membership
-              </div>
               <div class="idc-photo" id="idPhoto"></div>
               <div class="idc-band">MEMBER ID CARD</div>
               <div class="idc-rows" id="idRows"></div>
@@ -311,7 +302,7 @@
         expEl.style.display = 'block';
       }
 
-      document.getElementById('qrFront').innerHTML = qrSvg(verifyUrl);
+      
       document.getElementById('qrBack').innerHTML = qrSvg(verifyUrl);
       document.getElementById('idbUrl').textContent = window.location.host + '/verify';
 
