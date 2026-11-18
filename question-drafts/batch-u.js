@@ -1,0 +1,44 @@
+// DRAFT questions - NOT reviewed. Import as "pending"; a pharmacist must approve each one.
+// Row: [topic, difficulty, question, [A,B,C,D], answerIndex(0-3), explanation]
+module.exports = [
+// ---- Staff safety ----
+["Staff safety","medium","What should you do if you get a needle-stick injury?",["Wash the area with soap and water, report it and seek medical advice promptly","Ignore it","Squeeze hard and apply alcohol only","Suck the wound"],0,"Quick action and medical review reduce infection risk."],
+["Staff safety","medium","Why should you wear gloves when cleaning up spilt body fluids?",["To protect yourself from infection","To look professional only","To save soap","It is not needed"],0,"Gloves provide a barrier."],
+["Staff safety","medium","How should heavy boxes be lifted safely?",["Bend the knees, keep the back straight and hold the load close","Bend at the waist with straight legs","Twist while lifting","Lift quickly with arms only"],0,"Correct lifting prevents back injuries."],
+["Staff safety","medium","Why should electrical sockets in the shop not be overloaded?",["Overloading can cause a fire","It saves electricity","It improves lighting","It is required"],0,"Fire risk is real."],
+["Staff safety","medium","What should you do if you smell gas in the shop?",["Do not use switches or flames, open windows and leave safely, and call for help","Light a match to check","Ignore it","Turn on all lights"],0,"Gas can explode."],
+["Staff safety","medium","How should a wet floor be handled?",["Put up a warning sign and dry it promptly","Leave it","Run across it","Cover it with boxes"],0,"Prevent slips."],
+["Staff safety","medium","What is a good habit to protect staff from infection at work?",["Hand hygiene, staying home when ill and keeping the premises clean","Sharing food","Working while very sick","Skipping handwashing"],0,"Staff and customers both benefit."],
+["Staff safety","medium","What should you do if a customer becomes aggressive?",["Stay calm, keep a safe distance, call for help if needed and do not argue","Shout back","Chase them","Hit them"],0,"Safety first."],
+["Staff safety","hard","A violent customer demands medicines and threatens you. What is the wisest action?",["Prioritise your safety, avoid resisting, and report to the police afterwards","Fight","Hide stock","Pursue them"],0,"Lives matter more than stock."],
+["Staff safety","medium","Why should chemicals such as cleaning fluids be stored away from medicines?",["Leaks or fumes could contaminate stock","They taste nice","They smell nice","They look nice"],0,"Separate storage prevents contamination."],
+
+// ---- Medicine information ----
+["Medicine information","medium","Which is the most reliable place to confirm medicine information?",["Official guidelines, the package insert or a pharmacist","A rumour online","A friend's opinion","A random advert"],0,"Use trusted sources."],
+["Medicine information","medium","What is a package insert (patient leaflet)?",["A paper in the pack with usage and safety information","A shop receipt","A flyer for another shop","A sticker with the price"],0,"Always read the leaflet."],
+["Medicine information","medium","Why should you be careful with health advice from social media?",["It may be wrong or sold to promote a product","It is always accurate","It is always free","It is always from doctors"],0,"Check sources."],
+["Medicine information","medium","What does the Ghana Standard Treatment Guidelines (STG) provide?",["Recommended treatments for common conditions in Ghana","A price list","A list of shops","Fashion advice"],0,"The STG guides health workers."],
+["Medicine information","medium","Why is it important to use up-to-date information?",["Guidelines and safety information change over time","Old information is always right","Old books are heavier","There is no reason"],0,"Practice must follow current evidence."],
+["Medicine information","medium","What should you do if you cannot find reliable information on a product?",["Do not sell or recommend it until confirmed with a pharmacist or the regulator","Sell it","Guess","Ask a friend"],0,"Unknown products can be risky."],
+
+// ---- Safeguarding and difficult situations ----
+["Safeguarding","medium","A child comes in with unexplained bruises and seems frightened. What should you do?",["Gently ask if they are safe and report concerns to the appropriate child protection authority","Ignore it","Sell the child a painkiller only","Argue with the parent"],0,"Suspected abuse should be reported."],
+["Safeguarding","medium","A woman asks for pain relief and mentions that her partner hits her. What is the best response?",["Listen kindly, tell her about support services such as the police domestic violence unit and encourage her to seek help","Say it is her fault","Ignore it","Tell her to be quiet"],0,"Support and referral can save lives."],
+["Safeguarding","medium","What is the name of the unit within the Ghana Police Service that handles domestic violence and child abuse?",["The Domestic Violence and Victim Support Unit (DOVVSU)","The Fire Service","The Immigration Service","The Customs Division"],0,"DOVVSU supports victims."],
+["Safeguarding","medium","What should you do if a very young girl asks for emergency contraception and seems frightened or pressured?",["Be kind, listen and refer to a health worker or support service rather than judge","Shame her","Tell her parents publicly","Ignore her"],0,"She may be at risk of abuse."],
+["Safeguarding","medium","Why is it important to show respect to people with disabilities in your shop?",["They have the same right to safe and respectful care","They need no care","They should wait outside","It is not important"],0,"Inclusion is basic ethics."],
+["Safeguarding","medium","How can you help a customer who is blind or has low vision to use a medicine safely?",["Read labels aloud, use different packs or tactile markers and give clear spoken instructions","Give them the leaflet only","Tell them to find help","Leave them"],0,"Adapt communication."],
+["Safeguarding","medium","A person who is deaf comes in for medicine. What helps?",["Face them, write key points and use gestures","Shout","Ignore them","Speak behind them"],0,"Clear visual cues help."],
+["Safeguarding","medium","What should you do if a person with a mental illness comes in and is behaving strangely but calmly?",["Be patient and respectful and refer to a health worker if needed","Mock them","Chase them away","Call them names"],0,"Stigma harms."],
+["Safeguarding","hard","A customer keeps asking for medicine for a person who may be locked away or controlled by them. What should you do?",["Be careful, ask openly about the patient and consider reporting concerns to the authorities","Sell everything","Sell nothing and say nothing","Argue with them"],0,"Control may signal abuse."],
+
+// ---- Newborn and baby health ----
+["Newborn health","medium","How can you keep a newborn warm and safe?",["Skin-to-skin contact with the mother and light blankets","Wrap tightly in many layers in heat","Leave them uncovered","Cold baths"],0,"Skin-to-skin helps temperature and bonding."],
+["Newborn health","medium","A newborn's skin and eyes look yellow in the first days. What is the best advice?",["See a health worker because jaundice may need assessment","Ignore it for a month","Apply herbs","Give water"],0,"Jaundice can become severe."],
+["Newborn health","medium","How should a baby sleep to lower the risk of sudden infant death?",["On the back on a firm surface without loose bedding","On the stomach on a pillow","Under heavy blankets","In a hot room"],0,"Back sleeping on firm surfaces is safest."],
+["Newborn health","medium","What should you advise about giving babies honey under 1 year?",["Avoid it because of a risk of infant botulism","Give daily","Mix with water","It is safe at any age"],0,"Honey is not recommended under 12 months."],
+["Newborn health","medium","A baby has a fever after being wrapped in many blankets on a hot day. What should you do first?",["Remove extra layers and check temperature, and seek care if the baby is unwell","Add more blankets","Give a cold bath","Ignore it"],0,"Overheating can raise temperature."],
+["Newborn health","medium","When should a mother seek care for a newborn?",["If the baby is not feeding, is very sleepy or hot or cold, or has trouble breathing","Never","Only once a year","When they choose"],0,"These are danger signs."],
+["Newborn health","medium","What is a safe way to bathe a young baby?",["With warm water in a safe place, always holding the baby","Leave them alone briefly","Use very hot water","Use strong soap"],0,"Never leave a baby alone in water."],
+["Newborn health","medium","Why should a baby's vaccination card be kept safe?",["It records vaccines and helps plan the next visit","It is a toy","It is a receipt for payment","It is useless"],0,"Records help continuity of care."],
+];
