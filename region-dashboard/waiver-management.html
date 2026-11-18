@@ -847,7 +847,7 @@
       }
 
       try {
-        await SuspensionCheckModule.initRegionalDashboardCheck();
+        SuspensionCheckModule.initRegionalDashboardCheck();
         currentUser = user;
 
         const db = firebase.firestore();

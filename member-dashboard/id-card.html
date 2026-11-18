@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Member ID Card | AMCAG Member Dashboard</title>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/css/material-you.css">
   <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
   <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
@@ -233,10 +235,37 @@
       container.appendChild(row);
     }
 
+    // Photo + detail rows (all from the membership record). Safe to call twice: it redraws from scratch.
+    function drawCard(u) {
+      var photoEl = document.getElementById('idPhoto');
+      var photoUrl = u.profilePictureUrl || u.photoURL || u.photoUrl || '';
+      if (/^https:\/\//i.test(photoUrl)) {
+        photoEl.style.backgroundImage = 'url("' + photoUrl.replace(/"/g, '%22') + '")';
+        photoEl.textContent = '';
+      } else {
+        photoEl.textContent = (u.fullName || '?').trim().charAt(0).toUpperCase();
+      }
+      var rows = document.getElementById('idRows');
+      rows.innerHTML = '';
+      var since = toDate(u.registrationDate) || toDate(u.approvedAt) || toDate(u.createdAt);
+      addRow(rows, 'Member Name', (u.fullName || '').toUpperCase());
+      addRow(rows, 'Membership No.', u.memberId);
+      if (u.pharmacyCouncilPin) addRow(rows, 'Pharmacy Council PIN', u.pharmacyCouncilPin);
+      var masked = maskGhanaCard(u.ghanaCard);
+      if (masked) addRow(rows, 'Ghana Card No.', masked);
+      addRow(rows, 'Region', u.region || '-');
+      addRow(rows, 'Member Since', since ? String(since.getFullYear()) : '-');
+    }
+
     async function loadCard(authUser) {
       var db = firebase.firestore();
       var params = new URLSearchParams(window.location.search);
       var targetUid = params.get('uid') || authUser.uid;
+
+      // Start the (slow, possibly cold-started) token call at the same time as the member read,
+      // instead of waiting for the read first.
+      var tokenPromise = firebase.functions().httpsCallable('issueIdCardToken')({ uid: targetUid });
+      tokenPromise.catch(function () {});
 
       var snap = await db.collection('users').doc(targetUid).get();
       if (!snap.exists) { showMessage('Member record not found.', 'warning'); return; }
@@ -254,8 +283,17 @@
       }
       var tokenRes;
       try {
-        tokenRes = await firebase.functions().httpsCallable('issueIdCardToken')({ uid: targetUid });
+        // Paid members: draw the card from the record right away, then add QR/expiry when the token arrives.
+        if (u.registrationFeePaid === true && u.memberId) {
+          drawCard(u);
+          document.getElementById('qrBack').innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:14px;color:#0b6b3a">Loading…</div>';
+          document.getElementById('cardSection').style.display = 'block';
+          fitCards();
+          document.getElementById('idMessage').style.display = 'none';
+        }
+        tokenRes = await tokenPromise;
       } catch (err) {
+        document.getElementById('cardSection').style.display = 'none';
         if (String(err && err.message).indexOf('REGISTRATION_FEE_UNPAID') >= 0) {
           var el = document.getElementById('idMessage');
           el.className = 'alert alert-warning';
@@ -271,25 +309,7 @@
       u.memberId = tokenRes.data.memberId || u.memberId;
       var verifyUrl = window.location.origin + '/verify?id=' + encodeURIComponent(u.memberId) + '&t=' + encodeURIComponent(token);
 
-      // Photo
-      var photoEl = document.getElementById('idPhoto');
-      var photoUrl = u.profilePictureUrl || u.photoURL || u.photoUrl || '';
-      if (/^https:\/\//i.test(photoUrl)) {
-        photoEl.style.backgroundImage = 'url("' + photoUrl.replace(/"/g, '%22') + '")';
-      } else {
-        photoEl.textContent = (u.fullName || '?').trim().charAt(0).toUpperCase();
-      }
-
-      // Details (all from the membership record; optional rows are hidden when empty)
-      var rows = document.getElementById('idRows');
-      var since = toDate(u.registrationDate) || toDate(u.approvedAt) || toDate(u.createdAt);
-      addRow(rows, 'Member Name', (u.fullName || '').toUpperCase());
-      addRow(rows, 'Membership No.', u.memberId);
-      if (u.pharmacyCouncilPin) addRow(rows, 'Pharmacy Council PIN', u.pharmacyCouncilPin);
-      var masked = maskGhanaCard(u.ghanaCard);
-      if (masked) addRow(rows, 'Ghana Card No.', masked);
-      addRow(rows, 'Region', u.region || '-');
-      addRow(rows, 'Member Since', since ? String(since.getFullYear()) : '-');
+      drawCard(u);
 
       var renewal = tokenRes.data.cardExpiresAt ? new Date(tokenRes.data.cardExpiresAt) : null;
       document.getElementById('idExpiry').textContent = renewal
@@ -312,9 +332,13 @@
 
     AuthModule.onAuthStateChanged(async function (user) {
       if (!user) { window.location.href = '/membership.html'; return; }
+      showMessage('Loading your ID card…', 'info');
       try {
-        await SuspensionCheckModule.initMemberDashboardCheck();
+        // Runs alongside the card load; it shows a full-screen block itself if the member is suspended.
+        SuspensionCheckModule.initMemberDashboardCheck();
         await loadCard(user);
+        var m = document.getElementById('idMessage');
+        if (m.textContent === 'Loading your ID card…') m.style.display = 'none';
       } catch (error) {
         console.error('ID card error:', error);
         showMessage(error.message || 'Unable to load your ID card.', 'error');

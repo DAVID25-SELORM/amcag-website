@@ -293,7 +293,7 @@
         
         if (currentUser && currentUser.profile) {
           dashboardLoaded = true;
-          await SuspensionCheckModule.initMemberDashboardCheck();
+          SuspensionCheckModule.initMemberDashboardCheck();
           await loadDashboardData(currentUser);
         } else if (attempts < maxAttempts) {
           attempts++;

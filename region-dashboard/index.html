@@ -277,7 +277,7 @@
           
           if (role === 'regional_executive' || role === 'national_executive' || role === 'super_admin') {
             dashboardLoaded = true;
-            await SuspensionCheckModule.initRegionalDashboardCheck();
+            SuspensionCheckModule.initRegionalDashboardCheck();
             await loadDashboardData(currentUser);
           } else {
             window.location.href = '/member-dashboard.html';
