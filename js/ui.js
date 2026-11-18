@@ -613,7 +613,7 @@ const UIModule = (function() {
     window.location.href = routes.LOGIN;
   }
 
-  const EXEC_SHARED_PAGE_LIST = ['/member-dashboard/question-results.html', '/member-dashboard/member-cards.html', '/national/campaigns.html', '/member-dashboard/regional-chat.html', '/member-dashboard/daily-question.html', '/member-dashboard/registration-fee.html', '/member-dashboard/id-card.html'];
+  const EXEC_SHARED_PAGE_LIST = ['/member-dashboard/question-bank.html', '/member-dashboard/question-results.html','/member-dashboard/member-cards.html', '/national/campaigns.html', '/member-dashboard/regional-chat.html', '/member-dashboard/daily-question.html', '/member-dashboard/registration-fee.html', '/member-dashboard/id-card.html'];
 
   function getDashboardNavItems(pathname) {
     const routes = getRoutes();
@@ -660,6 +660,7 @@ const UIModule = (function() {
         // Me
         ['/member-dashboard/regional-chat.html', 'Chat & Announcements'],
         ['/member-dashboard/question-results.html', 'Question Results'],
+        ['/member-dashboard/question-bank.html', 'Question Bank'],
         ['/member-dashboard/daily-question.html', 'Question of the Day'],
         ['/member-dashboard/registration-fee.html', 'Registration Fee'],
         ['/member-dashboard/id-card.html', 'My ID Card'],

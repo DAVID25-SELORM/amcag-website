@@ -98,4 +98,4 @@ function buildDailyQuestionEmail({ name, today, yesterday, unsubscribeUrl }) {
   return { subject: `Question of the Day: ${today.topic}`, html, text };
 }
 
-module.exports = { dayNumber, questionForDay, buildDailyQuestionEmail, escapeHtml };
+module.exports = { dayNumber, questionForDay, buildDailyQuestionEmail, escapeHtml, seededShuffle };

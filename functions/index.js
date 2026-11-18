@@ -4412,6 +4412,7 @@ exports.sendMeetingReminders = functions.scheduler.onSchedule('every 1 minutes',
 // DAILY QUESTION EMAILS
 // ============================================================================
 const dailyQuestions = require('./daily-questions');
+const questionStore = require('./question-store');
 
 const UNSUBSCRIBE_BASE_URL = 'https://us-central1-amcag-af624.cloudfunctions.net/unsubscribeDailyQuestions';
 
@@ -4448,9 +4449,9 @@ exports.sendDailyQuestions = onSchedule(
   async () => {
     const db = admin.firestore();
     const dayNo = dailyQuestions.dayNumber();
-    const today = dailyQuestions.questionForDay(dayNo);
-    const yesterday = dailyQuestions.questionForDay(dayNo - 1);
-    const cap = Number(process.env.DAILY_QUESTION_MAX || 400);
+    const today = await questionStore.getQuestionForDay(db, admin, dayNo);
+    const yesterday = await questionStore.getQuestionForDay(db, admin, dayNo - 1, {create: false});
+    const cap =Number(process.env.DAILY_QUESTION_MAX || 400);
     const transporter = createDailyQuestionTransporter();
     const from = `AMCAG Question of the Day <${process.env.EMAIL_USER || 'amcag2018@gmail.com'}>`;
 
@@ -4516,7 +4517,7 @@ exports.sendDailyQuestions = onSchedule(
       }));
     }
 
-    console.log(`Daily questions: question #${today.index + 1}, sent ${sent}, failed ${failed}, recipients ${recipients.length}`);
+    console.log(`Daily questions: question ${today.id || today.index}, sent ${sent}, failed ${failed}, recipients ${recipients.length}`);
   }
 );
 
@@ -4561,8 +4562,8 @@ exports.sendTestDailyQuestion = functions.https.onCall({
   const token = await ensureUnsubscribeToken(callerDoc);
   const mail = dailyQuestions.buildDailyQuestionEmail({
     name: callerDoc.data().fullName,
-    today: dailyQuestions.questionForDay(dayNo),
-    yesterday: dailyQuestions.questionForDay(dayNo - 1),
+    today: await questionStore.getQuestionForDay(db, admin, dayNo),
+    yesterday: await questionStore.getQuestionForDay(db, admin, dayNo - 1, {create: false}),
     unsubscribeUrl: `${UNSUBSCRIBE_BASE_URL}?uid=${encodeURIComponent(request.auth.uid)}&token=${token}`
   });
   await createDailyQuestionTransporter().sendMail({
@@ -4919,7 +4920,7 @@ async function requireActiveMember(request) {
 exports.getDailyQuestion = functions.https.onCall(async (request) => {
   const profile = await requireActiveMember(request);
   const dayNo = dailyQuestions.dayNumber();
-  const q = dailyQuestions.questionForDay(dayNo);
+  const q = await questionStore.getQuestionForDay(admin.firestore(), admin, dayNo);
   const answerRef = admin.firestore().collection('daily_question_answers').doc(`${dayNo}_${request.auth.uid}`);
   const answerSnap = await answerRef.get();
   const out = {dayNo, topic: q.topic, question: q.question, options: q.options, answered: false};
@@ -4931,6 +4932,7 @@ exports.getDailyQuestion = functions.https.onCall(async (request) => {
     out.explanation = q.explanation;
   }
   out.canViewResults = canViewQuestionAnswers({...profile}).allowed;
+  out.canManageBank = questionBankPermissions(profile).canManage;
   return out;
 });
 
@@ -4938,7 +4940,7 @@ exports.submitDailyAnswer = functions.https.onCall(async (request) => {
   const profile = await requireActiveMember(request);
   const choice = Number((request.data || {}).choice);
   const dayNo = dailyQuestions.dayNumber();
-  const q = dailyQuestions.questionForDay(dayNo);
+  const q = await questionStore.getQuestionForDay(admin.firestore(), admin, dayNo);
   if (!Number.isInteger(choice) || choice < 0 || choice >= q.options.length) {
     throw new functions.https.HttpsError('invalid-argument', 'Invalid answer choice');
   }
@@ -4956,6 +4958,7 @@ exports.submitDailyAnswer = functions.https.onCall(async (request) => {
       memberId: profile.memberId || '',
       region: profile.region || '',
       questionIndex: q.index,
+      questionId: q.id || null,
       questionText: q.question,
       topic: q.topic,
       choice,
@@ -4965,6 +4968,12 @@ exports.submitDailyAnswer = functions.https.onCall(async (request) => {
       answeredAt: admin.firestore.FieldValue.serverTimestamp()
     });
   });
+  if (q.id) {
+    const inc = admin.firestore.FieldValue.increment;
+    admin.firestore().collection('question_bank').doc(q.id)
+      .update({answeredCount: inc(1), correctCount: inc(correct ? 1 : 0)})
+      .catch(() => {});
+  }
   return {correct, correctIndex: q.answer, explanation: q.explanation, choice};
 });
 
@@ -5003,13 +5012,15 @@ exports.getQuestionResults = functions.https.onCall(async (request) => {
     }
   });
   answers.sort((x, y) => (y.answeredAt || 0) - (x.answeredAt || 0));
-  const q = dailyQuestions.questionForDay(dayNo);
+  const q = await questionStore.getQuestionForDay(admin.firestore(), admin, dayNo, {create: false});
   return {
     today,
     dayNo,
     region,
     lockedRegion: !!access.region,
-    question: {topic: q.topic, question: q.question, correctText: q.options[q.answer]},
+    question: q
+      ? {topic: q.topic, question: q.question, correctText: q.options[q.answer]}
+      : {topic: '-', question: 'No question was scheduled for this day.', correctText: '-'},
     days: Object.values(days).sort((x, y) => y.dayNo - x.dayNo),
     answers
   };
@@ -6044,4 +6055,269 @@ exports.getDonorRecognition = functions.https.onCall(async () => {
     },
     stories: stories.slice(0, 6)
   };
+});
+
+
+// ================================================================
+// QUESTION BANK: add, import, review and retire questions
+// Only approved questions are ever sent to members. Reviewers (super admin or members flagged
+// questionReviewer) approve. Executives with president / secretary / PRO titles can add and edit.
+// ================================================================
+function questionBankPermissions(profile) {
+  const p = profile || {};
+  const isSuper = p.role === 'super_admin';
+  const canReview = isSuper || p.questionReviewer === true;
+  const title = String(p.executiveTitle || p.title || '').toLowerCase().trim();
+  const titled = p.role === 'national_executive' && title && !QUESTION_VIEW_TITLE_EXCLUDE.test(title) &&
+    /(president|secretary|pro|public relations)/.test(title);
+  return {isSuper, canReview, canManage: canReview || !!titled};
+}
+
+async function requireQuestionBankActor(request, need) {
+  const profile = await requireActiveMember(request);
+  const perms = questionBankPermissions(profile);
+  const ok = need === 'review' ? perms.canReview : need === 'super' ? perms.isSuper : perms.canManage;
+  if (!ok) {
+    throw new functions.https.HttpsError('permission-denied', 'You do not have access to the question bank');
+  }
+  return {profile, perms, uid: request.auth.uid};
+}
+
+function questionBankDoc(id, d) {
+  return {
+    id,
+    topic: d.topic, question: d.question, options: d.options, answer: d.answer,
+    explanation: d.explanation, difficulty: d.difficulty || 'medium', source: d.source || '',
+    status: d.status, reviewNote: d.reviewNote || '', createdByName: d.createdByName || '',
+    reviewedByName: d.reviewedByName || '',
+    createdAt: d.createdAt ? d.createdAt.toMillis() : 0,
+    reviewedAt: d.reviewedAt ? d.reviewedAt.toMillis() : 0,
+    timesAsked: d.timesAsked || 0, lastAskedDay: d.lastAskedDay || 0,
+    answeredCount: d.answeredCount || 0, correctCount: d.correctCount || 0
+  };
+}
+
+async function writeQuestionAudit(actor, action, ids, note) {
+  await admin.firestore().collection('question_bank_audit').add({
+    action, count: ids.length, ids: ids.slice(0, 50), note: note || '',
+    byUid: actor.uid, byName: actor.profile.fullName || actor.profile.displayName || '',
+    at: admin.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+// Makes sure the original 42 built-in questions exist in the bank (as approved: they were already in use).
+async function ensureLegacyQuestionsInBank() {
+  const db = admin.firestore();
+  const {QUESTIONS} = require('./question-bank');
+  const refs = QUESTIONS.map((_, i) => db.collection('question_bank').doc('seed-' + String(i + 1).padStart(3, '0')));
+  const snaps = await db.getAll(...refs);
+  const batch = db.batch();
+  let added = 0;
+  snaps.forEach((s, i) => {
+    if (s.exists) return;
+    const q = QUESTIONS[i];
+    batch.set(refs[i], {
+      topic: q.topic, question: q.question, options: q.options, answer: q.answer, explanation: q.explanation,
+      difficulty: 'medium', source: q.source || 'seed', status: 'approved', legacy: true,
+      createdByName: 'AMCAG original list', timesAsked: 0, lastAskedDay: 0, answeredCount: 0, correctCount: 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    added++;
+  });
+  if (added) await batch.commit();
+  return added;
+}
+
+exports.listQuestionBank = functions.https.onCall({memory: '512MiB'}, async (request) => {
+  const actor = await requireQuestionBankActor(request, 'manage');
+  await ensureLegacyQuestionsInBank();
+  const data = request.data || {};
+  const snap = await admin.firestore().collection('question_bank').limit(8000).get();
+  const counts = {pending: 0, approved: 0, retired: 0, rejected: 0};
+  const topics = {};
+  let all = [];
+  snap.forEach((doc) => {
+    const d = doc.data();
+    counts[d.status] = (counts[d.status] || 0) + 1;
+    const t = topics[d.topic] || (topics[d.topic] = {topic: d.topic, approved: 0, pending: 0, total: 0});
+    t.total++;
+    if (d.status === 'approved') t.approved++;
+    if (d.status === 'pending') t.pending++;
+    all.push(questionBankDoc(doc.id, d));
+  });
+  const status = String(data.status || '');
+  const topic = String(data.topic || '');
+  const difficulty = String(data.difficulty || '');
+  const search = String(data.search || '').toLowerCase().trim();
+  if (status) all = all.filter((q) => q.status === status);
+  if (topic) all = all.filter((q) => q.topic === topic);
+  if (difficulty) all = all.filter((q) => q.difficulty === difficulty);
+  if (search) all = all.filter((q) => (q.question + ' ' + q.options.join(' ') + ' ' + q.explanation).toLowerCase().includes(search));
+  all.sort((a, b) => (b.createdAt - a.createdAt) || a.id.localeCompare(b.id));
+  const pageSize = Math.min(Math.max(Number(data.pageSize) || 25, 5), 100);
+  const page = Math.max(Number(data.page) || 1, 1);
+  return {
+    canReview: actor.perms.canReview, isSuper: actor.perms.isSuper,
+    counts, topics: Object.values(topics).sort((a, b) => a.topic.localeCompare(b.topic)),
+    total: all.length, page, pageSize,
+    items: all.slice((page - 1) * pageSize, page * pageSize)
+  };
+});
+
+exports.saveQuestion = functions.https.onCall(async (request) => {
+  const actor = await requireQuestionBankActor(request, 'manage');
+  const data = request.data || {};
+  const v = questionStore.validateQuestion(data);
+  if (!v.ok) throw new functions.https.HttpsError('invalid-argument', v.error);
+  const db = admin.firestore();
+  const FieldValue = admin.firestore.FieldValue;
+  const name = actor.profile.fullName || actor.profile.displayName || '';
+  const id = String(data.id || '').trim();
+  if (id) {
+    const ref = db.collection('question_bank').doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) throw new functions.https.HttpsError('not-found', 'Question not found');
+    const old = snap.data();
+    const changed = ['topic', 'question', 'explanation', 'answer'].some((k) => old[k] !== v.value[k]) ||
+      JSON.stringify(old.options) !== JSON.stringify(v.value.options);
+    const update = {...v.value, updatedAt: FieldValue.serverTimestamp()};
+    // Content changes by a non-reviewer send an approved question back for review.
+    if (changed && old.status === 'approved' && !actor.perms.canReview) {
+      update.status = 'pending';
+      update.reviewNote = 'Edited after approval; needs review again';
+    }
+    await ref.update(update);
+    await writeQuestionAudit(actor, 'edit', [id], '');
+    return {id, status: update.status || old.status};
+  }
+  const newId = questionStore.questionId(v.value.question);
+  const ref = db.collection('question_bank').doc(newId);
+  if ((await ref.get()).exists) {
+    throw new functions.https.HttpsError('already-exists', 'This question is already in the bank');
+  }
+  const status = actor.perms.canReview ? 'approved' : 'pending';
+  await ref.set({
+    ...v.value, source: v.value.source || 'manual', status,
+    createdByUid: actor.uid, createdByName: name,
+    ...(status === 'approved' ? {reviewedByName: name, reviewedAt: FieldValue.serverTimestamp()} : {}),
+    timesAsked: 0, lastAskedDay: 0, answeredCount: 0, correctCount: 0,
+    createdAt: FieldValue.serverTimestamp()
+  });
+  await writeQuestionAudit(actor, 'add', [newId], '');
+  return {id: newId, status};
+});
+
+// Bulk import: every row lands as "pending" until a reviewer approves it.
+exports.importQuestions = functions.https.onCall({memory: '512MiB', timeoutSeconds: 120}, async (request) => {
+  const actor = await requireQuestionBankActor(request, 'manage');
+  const rows = Array.isArray((request.data || {}).questions) ? request.data.questions : [];
+  if (!rows.length) throw new functions.https.HttpsError('invalid-argument', 'No questions supplied');
+  if (rows.length > 500) throw new functions.https.HttpsError('invalid-argument', 'Import at most 500 questions at a time');
+  const db = admin.firestore();
+  const FieldValue = admin.firestore.FieldValue;
+  const name = actor.profile.fullName || actor.profile.displayName || '';
+  const sourceLabel = String((request.data || {}).source || 'import').slice(0, 100);
+  const prepared = [];
+  const errors = [];
+  const seen = new Set();
+  rows.forEach((row, i) => {
+    const v = questionStore.validateQuestion(row);
+    if (!v.ok) { errors.push({row: i + 1, error: v.error}); return; }
+    const id = questionStore.questionId(v.value.question);
+    if (seen.has(id)) { errors.push({row: i + 1, error: 'Duplicate inside this file'}); return; }
+    seen.add(id);
+    prepared.push({id, value: v.value});
+  });
+  const refs = prepared.map((p) => db.collection('question_bank').doc(p.id));
+  const existing = refs.length ? await db.getAll(...refs) : [];
+  let added = 0;
+  let skipped = 0;
+  let batch = db.batch();
+  let inBatch = 0;
+  for (let i = 0; i < prepared.length; i++) {
+    if (existing[i].exists) { skipped++; continue; }
+    batch.set(refs[i], {
+      ...prepared[i].value, source: prepared[i].value.source || sourceLabel, status: 'pending',
+      createdByUid: actor.uid, createdByName: name,
+      timesAsked: 0, lastAskedDay: 0, answeredCount: 0, correctCount: 0,
+      createdAt: FieldValue.serverTimestamp()
+    });
+    added++;
+    if (++inBatch === 400) { await batch.commit(); batch = db.batch(); inBatch = 0; }
+  }
+  if (inBatch) await batch.commit();
+  await writeQuestionAudit(actor, 'import', prepared.map((p) => p.id), `${added} added, ${skipped} already existed, ${errors.length} invalid (${sourceLabel})`);
+  return {added, skipped, invalid: errors.length, errors: errors.slice(0, 25)};
+});
+
+exports.reviewQuestions = functions.https.onCall(async (request) => {
+  const actor = await requireQuestionBankActor(request, 'review');
+  const data = request.data || {};
+  const ids = Array.isArray(data.ids) ? [...new Set(data.ids.map(String))] : [];
+  const action = String(data.action || '');
+  const map = {approve: 'approved', reject: 'rejected', retire: 'retired', restore: 'pending'};
+  if (!map[action]) throw new functions.https.HttpsError('invalid-argument', 'Unknown action');
+  if (!ids.length || ids.length > 400) throw new functions.https.HttpsError('invalid-argument', 'Choose 1-400 questions');
+  const note = String(data.note || '').slice(0, 300);
+  const db = admin.firestore();
+  const refs = ids.map((id) => db.collection('question_bank').doc(id));
+  const snaps = await db.getAll(...refs);
+  const batch = db.batch();
+  let changed = 0;
+  const name = actor.profile.fullName || actor.profile.displayName || '';
+  snaps.forEach((s, i) => {
+    if (!s.exists) return;
+    batch.update(refs[i], {
+      status: map[action], reviewNote: note, reviewedByUid: actor.uid, reviewedByName: name,
+      reviewedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    changed++;
+  });
+  if (changed) await batch.commit();
+  await writeQuestionAudit(actor, action, ids, note);
+  return {changed};
+});
+
+exports.deleteQuestions = functions.https.onCall(async (request) => {
+  const actor = await requireQuestionBankActor(request, 'manage');
+  const ids = Array.isArray((request.data || {}).ids) ? [...new Set(request.data.ids.map(String))] : [];
+  if (!ids.length || ids.length > 400) throw new functions.https.HttpsError('invalid-argument', 'Choose 1-400 questions');
+  const db = admin.firestore();
+  const refs = ids.map((id) => db.collection('question_bank').doc(id));
+  const snaps = await db.getAll(...refs);
+  const batch = db.batch();
+  let deleted = 0;
+  snaps.forEach((s, i) => {
+    // Approved or already-asked questions are retired, never deleted, so history stays intact.
+    if (s.exists && s.get('status') !== 'approved' && !(s.get('timesAsked') > 0) && !s.get('legacy')) {
+      batch.delete(refs[i]);
+      deleted++;
+    }
+  });
+  if (deleted) await batch.commit();
+  await writeQuestionAudit(actor, 'delete', ids, `${deleted} deleted`);
+  return {deleted, kept: ids.length - deleted};
+});
+
+exports.setQuestionReviewer = functions.https.onCall(async (request) => {
+  const actor = await requireQuestionBankActor(request, 'super');
+  const data = request.data || {};
+  const value = data.value !== false;
+  const email = String(data.email || '').toLowerCase().trim();
+  const memberId = String(data.memberId || '').trim();
+  const db = admin.firestore();
+  let snap = null;
+  if (email) snap = await db.collection('users').where('email', '==', email).limit(1).get();
+  else if (memberId) snap = await db.collection('users').where('memberId', '==', memberId).limit(1).get();
+  if (!snap || snap.empty) throw new functions.https.HttpsError('not-found', 'No member found with that email or member ID');
+  const doc = snap.docs[0];
+  await doc.ref.update({questionReviewer: value});
+  await writeQuestionAudit(actor, value ? 'reviewer-added' : 'reviewer-removed', [doc.id], doc.get('fullName') || '');
+  return {name: doc.get('fullName') || '', value};
+});
+
+exports.listQuestionReviewers = functions.https.onCall(async (request) => {
+  await requireQuestionBankActor(request, 'super');
+  const snap = await admin.firestore().collection('users').where('questionReviewer', '==', true).get();
+  return {reviewers: snap.docs.map((d) => ({uid: d.id, name: d.get('fullName') || '', email: d.get('email') || '', memberId: d.get('memberId') || ''}))};
 });

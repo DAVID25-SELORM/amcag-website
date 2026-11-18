@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Question Bank | AMCAG</title>
+  <link rel="stylesheet" href="/css/material-you.css">
+  <link rel="stylesheet" href="/css/main.css?v=20260525-member1">
+  <link rel="stylesheet" href="/css/mobile.css?v=20260525-member1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .qb-card{background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(11,93,59,.12);padding:18px;margin-bottom:16px}
+    .qb-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px}
+    .qb-stat{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(11,93,59,.10);padding:14px;text-align:center;cursor:pointer;border:2px solid transparent}
+    .qb-stat.active{border-color:#0b5d3b}
+    .qb-stat b{display:block;font-size:1.7rem;color:#0b5d3b}
+    .qb-stat span{font-size:.78rem;color:#5a6778;text-transform:uppercase;letter-spacing:.4px}
+    .qb-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:14px}
+    .qb-controls label{display:block;font-size:.75rem;color:#5a6778;margin-bottom:3px}
+    .qb-controls select,.qb-controls input[type=text]{padding:8px 10px;border:1px solid #cfd8d2;border-radius:8px;font-family:inherit;font-size:.9rem;min-width:140px}
+    .qb-btn{border:0;border-radius:8px;padding:8px 14px;font-weight:600;font-family:inherit;cursor:pointer;font-size:.85rem;background:#0b5d3b;color:#fff}
+    .qb-btn.sec{background:#e8efeb;color:#0b5d3b}
+    .qb-btn.warn{background:#fdecea;color:#b3261e}
+    .qb-btn.ok{background:#0b7a4a}
+    .qb-btn:disabled{opacity:.5;cursor:not-allowed}
+    .qb-q{border:1px solid #e3ebe6;border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}
+    .qb-q .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+    .badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:.72rem;font-weight:700;text-transform:uppercase}
+    .b-topic{background:#e7f1ec;color:#0b5d3b}.b-pending{background:#fff4d6;color:#8a6100}.b-approved{background:#dff3e6;color:#0b6b3a}
+    .b-retired{background:#e9ecf1;color:#4a5568}.b-rejected{background:#fdecea;color:#b3261e}.b-diff{background:#eef1f6;color:#3a4a63}
+    .qb-q .qt{font-weight:600;margin:4px 0 8px;line-height:1.45}
+    .qb-opt{padding:4px 8px;border-radius:6px;font-size:.92rem}
+    .qb-opt.right{background:#e3f4ea;font-weight:600;color:#0b5d3b}
+    .qb-exp{font-size:.88rem;color:#33415c;margin-top:8px;background:#f5f8f6;padding:8px 10px;border-radius:8px}
+    .qb-foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+    .qb-small{font-size:.78rem;color:#6b7686}
+    .qb-sel{display:flex;gap:6px;align-items:center;margin-right:6px}
+    .qb-form label{display:block;font-size:.8rem;color:#5a6778;margin:10px 0 3px;font-weight:600}
+    .qb-form input,.qb-form textarea,.qb-form select{width:100%;padding:8px 10px;border:1px solid #cfd8d2;border-radius:8px;font-family:inherit;font-size:.92rem;box-sizing:border-box}
+    .qb-form textarea{min-height:70px;resize:vertical}
+    .qb-optrow{display:flex;gap:8px;align-items:center;margin-top:6px}
+    .qb-optrow input[type=text]{flex:1}
+    .qb-modal{position:fixed;inset:0;background:rgba(10,30,20,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px;z-index:2000}
+    .qb-modal.open{display:flex}
+    .qb-modal .box{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:640px;margin:auto}
+    .qb-bulk{position:sticky;top:0;z-index:5;background:#fff;border:1px solid #cfe3d7;border-radius:10px;padding:8px 12px;margin-bottom:12px;display:none;gap:8px;flex-wrap:wrap;align-items:center}
+    .qb-bulk.show{display:flex}
+    .qb-tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+    .qb-tbl th,.qb-tbl td{padding:7px 9px;border-bottom:1px solid #edf1ee;text-align:left}
+    .qb-warn{background:#fff8e1;border-left:4px solid #d4a017;padding:10px 14px;border-radius:6px;font-size:.88rem;margin-bottom:14px}
+    @media(max-width:600px){.qb-controls select,.qb-controls input[type=text]{min-width:0;width:100%}.qb-controls>div{flex:1 1 45%}}
+  </style>
+</head>
+<body class="dashboard-layout">
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/member-dashboard.html" class="navbar-logo"><img src="/images/logo.jpg" alt="AMCAG Logo"><span>AMCAG Member</span></a>
+      <div class="navbar-actions"><button class="btn btn-sm" onclick="signOut()">Sign Out</button></div>
+    </div>
+  </nav>
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a href="/member-dashboard.html" class="dashboard-nav-item"><span>📊</span> Dashboard</a>
+        <a href="/member-dashboard/daily-question.html" class="dashboard-nav-item"><span>❓</span> Question of the Day</a>
+        <a href="/member-dashboard/question-bank.html" class="dashboard-nav-item"><span>🗂️</span> Question Bank</a>
+      </nav>
+    </aside>
+    <main class="dashboard-content">
+      <div class="dashboard-header"><div><h1 class="dashboard-title">Question Bank</h1><p class="dashboard-subtitle" id="sub">Loading...</p></div></div>
+      <div id="err" style="display:none" class="qb-card"></div>
+      <div id="content" style="display:none">
+        <div class="qb-warn" id="warnBox"></div>
+        <div class="qb-stats" id="stats"></div>
+
+        <div class="qb-card">
+          <div class="qb-controls">
+            <div><label>Topic</label><select id="fTopic"><option value="">All topics</option></select></div>
+            <div><label>Difficulty</label><select id="fDiff"><option value="">All</option><option>easy</option><option>medium</option><option>hard</option></select></div>
+            <div style="flex:1 1 200px"><label>Search</label><input type="text" id="fSearch" placeholder="Search question text"></div>
+            <button class="qb-btn" id="btnAdd">+ Add question</button>
+            <button class="qb-btn sec" id="btnImport">Import</button>
+            <button class="qb-btn sec" id="btnTopics">Topic balance</button>
+            <button class="qb-btn sec" id="btnReviewers" style="display:none">Reviewers</button>
+          </div>
+          <div class="qb-bulk" id="bulk">
+            <span id="bulkCount" style="font-weight:700"></span>
+            <button class="qb-btn ok" data-bulk="approve" id="bApprove">Approve</button>
+            <button class="qb-btn warn" data-bulk="reject" id="bReject">Reject</button>
+            <button class="qb-btn sec" data-bulk="retire" id="bRetire">Retire</button>
+            <button class="qb-btn sec" data-bulk="restore" id="bRestore">Back to pending</button>
+            <button class="qb-btn warn" id="bDelete">Delete</button>
+          </div>
+          <label class="qb-small"><input type="checkbox" id="selAll"> Select all on this page</label>
+          <div id="list" style="margin-top:10px"></div>
+          <div id="pager" class="qb-controls" style="justify-content:center;margin-top:10px"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add / edit modal -->
+  <div class="qb-modal" id="mEdit"><div class="box qb-form">
+    <h3 id="eTitle" style="margin-top:0">Add question</h3>
+    <label>Topic</label><input type="text" id="eTopic" list="topicList" maxlength="60"><datalist id="topicList"></datalist>
+    <label>Question</label><textarea id="eQuestion" maxlength="500"></textarea>
+    <label>Options (tick the correct one)</label>
+    <div id="eOpts"></div>
+    <label>Explanation (shown after answering)</label><textarea id="eExp" maxlength="800"></textarea>
+    <label>Difficulty</label><select id="eDiff"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
+    <label>Source / reference (optional)</label><input type="text" id="eSource" maxlength="200" placeholder="e.g. Ghana STG 2017, Pharmacy Council guidelines">
+    <div id="eMsg" style="color:#b3261e;margin-top:8px;font-size:.88rem"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="qb-btn sec" data-close="mEdit">Cancel</button><button class="qb-btn" id="eSave">Save</button>
+    </div>
+  </div></div>
+
+  <!-- Import modal -->
+  <div class="qb-modal" id="mImport"><div class="box qb-form">
+    <h3 style="margin-top:0">Import questions</h3>
+    <p class="qb-small">Everything you import arrives as <b>pending</b>. A reviewer must approve each question before members see it. Up to 500 per upload. Duplicates are skipped.</p>
+    <label>Upload a CSV or JSON file</label><input type="file" id="iFile" accept=".csv,.json,.txt">
+    <label>…or paste CSV / JSON here</label><textarea id="iText" style="min-height:140px" placeholder="topic,difficulty,question,optionA,optionB,optionC,optionD,answer,explanation,source"></textarea>
+    <p class="qb-small"><a href="#" id="iTemplate">Download CSV template</a> &middot; answer is a letter A-D. JSON: an array of objects with topic, question, options (4), answer (A-D or 0-3), explanation.</p>
+    <div id="iMsg" style="margin-top:8px;font-size:.88rem"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="qb-btn sec" data-close="mImport">Close</button><button class="qb-btn" id="iGo">Import as pending</button>
+    </div>
+  </div></div>
+
+  <!-- Topics modal -->
+  <div class="qb-modal" id="mTopics"><div class="box">
+    <h3 style="margin-top:0">Topic balance</h3>
+    <p class="qb-small">Approved questions are what members actually get. Aim for a healthy spread.</p>
+    <table class="qb-tbl"><thead><tr><th>Topic</th><th>Approved</th><th>Pending</th><th>Total</th></tr></thead><tbody id="tRows"></tbody></table>
+    <div style="text-align:right;margin-top:12px"><button class="qb-btn sec" data-close="mTopics">Close</button></div>
+  </div></div>
+
+  <!-- Reviewers modal -->
+  <div class="qb-modal" id="mRev"><div class="box qb-form">
+    <h3 style="margin-top:0">Question reviewers</h3>
+    <p class="qb-small">Reviewers (for example a licensed pharmacist) can approve, reject and retire questions. Only super admins manage this list.</p>
+    <div id="revList" style="margin:10px 0"></div>
+    <label>Add a reviewer by member email</label>
+    <div style="display:flex;gap:8px"><input type="text" id="revEmail" placeholder="pharmacist@example.com"><button class="qb-btn" id="revAdd">Add</button></div>
+    <div id="revMsg" style="margin-top:8px;font-size:.88rem"></div>
+    <div style="text-align:right;margin-top:12px"><button class="qb-btn sec" data-close="mRev">Close</button></div>
+  </div></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-functions-compat.js"></script>
+  <script src="/js/firebase.js"></script>
+  <script src="/js/auth.js?v=20260530-memberportal1"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/dialogs.js"></script>
+  <script src="/js/layout-fix.js"></script>
+  <script src="/js/notification-bell.js"></script>
+  <script>
+    function signOut() { AuthModule.signOut(); }
+    function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+    function $(id){return document.getElementById(id);}
+    var LETTERS=['A','B','C','D'];
+    function call(name,data){return firebase.functions().httpsCallable(name)(data||{}).then(function(r){return r.data;});}
+    function errText(e){return (e&&e.message)||'Something went wrong';}
+
+    var S={status:'',topic:'',difficulty:'',search:'',page:1,pageSize:25,data:null,selected:{},editing:null,items:{}};
+
+    function load(){
+      return call('listQuestionBank',{status:S.status,topic:S.topic,difficulty:S.difficulty,search:S.search,page:S.page,pageSize:S.pageSize}).then(function(d){
+        S.data=d;render();
+      }).catch(function(e){
+        var box=$('err');box.style.display='';$('content').style.display='none';
+        box.textContent=e.code==='functions/permission-denied'?'You do not have access to the question bank.':errText(e);
+        $('sub').textContent='';
+      });
+    }
+
+    function render(){
+      var d=S.data;$('err').style.display='none';$('content').style.display='';
+      $('sub').textContent=d.canReview?'Add, review and retire questions. You can approve questions.':'Add and edit questions. A reviewer approves them before members see them.';
+      $('warnBox').innerHTML='<b>Medicine-safety content.</b> Only <b>approved</b> questions are sent to members. Have a licensed pharmacist check each one against the current Ghana Standard Treatment Guidelines, Pharmacy Council rules and FDA directives before approving.';
+      $('btnReviewers').style.display=d.isSuper?'':'none';
+      ['bApprove','bReject','bRetire','bRestore'].forEach(function(id){$(id).style.display=d.canReview?'':'none';});
+
+      var c=d.counts;
+      var cards=[['','All',(c.pending||0)+(c.approved||0)+(c.retired||0)+(c.rejected||0)],['pending','Pending review',c.pending||0],['approved','Approved (live)',c.approved||0],['retired','Retired',c.retired||0],['rejected','Rejected',c.rejected||0]];
+      $('stats').innerHTML=cards.map(function(x){return '<div class="qb-stat'+(S.status===x[0]?' active':'')+'" data-status="'+x[0]+'"><b>'+x[2]+'</b><span>'+x[1]+'</span></div>';}).join('');
+
+      var ts=$('fTopic');var cur=S.topic;
+      ts.innerHTML='<option value="">All topics</option>'+d.topics.map(function(t){return '<option value="'+esc(t.topic)+'">'+esc(t.topic)+' ('+t.total+')</option>';}).join('');
+      ts.value=cur;
+      $('topicList').innerHTML=d.topics.map(function(t){return '<option value="'+esc(t.topic)+'">';}).join('');
+
+      S.items={};
+      $('list').innerHTML=d.items.length?d.items.map(function(q){S.items[q.id]=q;return qHtml(q,d);}).join(''):'<p style="color:#5a6778">No questions match.</p>';
+      $('selAll').checked=false;updateBulk();
+
+      var pages=Math.max(1,Math.ceil(d.total/d.pageSize));
+      $('pager').innerHTML='<button class="qb-btn sec" id="pPrev"'+(d.page<=1?' disabled':'')+'>Previous</button><span class="qb-small">Page '+d.page+' of '+pages+' &middot; '+d.total+' questions</span><button class="qb-btn sec" id="pNext"'+(d.page>=pages?' disabled':'')+'>Next</button>';
+      $('pPrev').onclick=function(){S.page--;load();};$('pNext').onclick=function(){S.page++;load();};
+    }
+
+    function qHtml(q,d){
+      var opts=q.options.map(function(o,i){return '<div class="qb-opt'+(i===q.answer?' right':'')+'">'+LETTERS[i]+'. '+esc(o)+(i===q.answer?' &#10003;':'')+'</div>';}).join('');
+      var pct=q.answeredCount?Math.round(q.correctCount*100/q.answeredCount)+'% correct of '+q.answeredCount:'';
+      var stats=q.timesAsked?('Asked '+q.timesAsked+'x'+(pct?' &middot; '+pct:'')):'Not asked yet';
+      var acts='<button class="qb-btn sec" data-act="edit" data-id="'+esc(q.id)+'">Edit</button>';
+      if(d.canReview){
+        if(q.status!=='approved')acts+='<button class="qb-btn ok" data-act="approve" data-id="'+esc(q.id)+'">Approve</button>';
+        if(q.status==='pending')acts+='<button class="qb-btn warn" data-act="reject" data-id="'+esc(q.id)+'">Reject</button>';
+        if(q.status==='approved')acts+='<button class="qb-btn sec" data-act="retire" data-id="'+esc(q.id)+'">Retire</button>';
+        if(q.status==='retired'||q.status==='rejected')acts+='<button class="qb-btn sec" data-act="restore" data-id="'+esc(q.id)+'">Back to pending</button>';
+      }
+      var note=q.reviewNote?'<div class="qb-small">Note: '+esc(q.reviewNote)+'</div>':'';
+      var who=q.reviewedByName?(' &middot; reviewed by '+esc(q.reviewedByName)):'';
+      return '<div class="qb-q"><div class="meta"><label class="qb-sel"><input type="checkbox" class="selOne" data-id="'+esc(q.id)+'"'+(S.selected[q.id]?' checked':'')+'></label>'+
+        '<span class="badge b-topic">'+esc(q.topic)+'</span><span class="badge b-diff">'+esc(q.difficulty)+'</span><span class="badge b-'+esc(q.status)+'">'+esc(q.status)+'</span></div>'+
+        '<div class="qt">'+esc(q.question)+'</div>'+opts+'<div class="qb-exp">'+esc(q.explanation)+'</div>'+note+
+        '<div class="qb-foot">'+acts+'<span class="qb-small">'+stats+(q.source?' &middot; source: '+esc(q.source):'')+who+'</span></div></div>';
+    }
+
+    function selectedIds(){return Object.keys(S.selected).filter(function(k){return S.selected[k];});}
+    function updateBulk(){
+      var n=selectedIds().length;$('bulk').className='qb-bulk'+(n?' show':'');$('bulkCount').textContent=n+' selected';
+    }
+
+    function openM(id){$(id).classList.add('open');}
+    function closeM(id){$(id).classList.remove('open');}
+
+    function optRows(opts,answer){
+      var h='';for(var i=0;i<4;i++){h+='<div class="qb-optrow"><input type="radio" name="eAns" value="'+i+'"'+(answer===i?' checked':'')+'><b>'+LETTERS[i]+'</b><input type="text" class="eOpt" maxlength="200" value="'+esc(opts[i]||'')+'"></div>';}
+      $('eOpts').innerHTML=h;
+    }
+    function openEdit(q){
+      S.editing=q?q.id:null;
+      $('eTitle').textContent=q?'Edit question':'Add question';
+      $('eTopic').value=q?q.topic:'';$('eQuestion').value=q?q.question:'';$('eExp').value=q?q.explanation:'';
+      $('eDiff').value=q?q.difficulty:'medium';$('eSource').value=q?q.source:'';$('eMsg').textContent='';
+      optRows(q?q.options:[],q?q.answer:0);openM('mEdit');
+    }
+    function saveEdit(){
+      var opts=Array.prototype.map.call(document.querySelectorAll('.eOpt'),function(i){return i.value;});
+      var ans=document.querySelector('input[name=eAns]:checked');
+      $('eSave').disabled=true;$('eMsg').textContent='';
+      call('saveQuestion',{id:S.editing,topic:$('eTopic').value,question:$('eQuestion').value,options:opts,answer:ans?Number(ans.value):-1,explanation:$('eExp').value,difficulty:$('eDiff').value,source:$('eSource').value})
+        .then(function(r){closeM('mEdit');return load();})
+        .catch(function(e){$('eMsg').textContent=errText(e);})
+        .then(function(){$('eSave').disabled=false;});
+    }
+
+    function review(ids,action,note){
+      return call('reviewQuestions',{ids:ids,action:action,note:note||''}).then(function(r){S.selected={};return load();}).catch(function(e){alert(errText(e));});
+    }
+
+    // ---- CSV / JSON parsing ----
+    function parseCsv(text){
+      var rows=[],row=[],cur='',q=false;
+      for(var i=0;i<text.length;i++){
+        var ch=text[i];
+        if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+        else if(ch==='"')q=true;
+        else if(ch===','){row.push(cur);cur='';}
+        else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.length>1||row[0]!=='')rows.push(row);row=[];}
+        else cur+=ch;
+      }
+      row.push(cur);if(row.length>1||row[0]!=='')rows.push(row);
+      return rows;
+    }
+    function letterToIndex(a){
+      var s=String(a==null?'':a).trim().toUpperCase();
+      if(/^[A-D]$/.test(s))return s.charCodeAt(0)-65;
+      if(/^[0-3]$/.test(s))return Number(s);
+      return -1;
+    }
+    function parseImport(text){
+      text=String(text||'').replace(/^﻿/,'').trim();
+      if(!text)return [];
+      if(text[0]==='['||text[0]==='{'){
+        var arr=JSON.parse(text);if(!Array.isArray(arr))arr=[arr];
+        return arr.map(function(o){return {topic:o.topic,difficulty:o.difficulty,question:o.question,options:o.options,answer:letterToIndex(o.answer),explanation:o.explanation,source:o.source};});
+      }
+      var rows=parseCsv(text);
+      var head=rows[0].map(function(h){return h.trim().toLowerCase();});
+      var hasHead=head.indexOf('question')>-1;
+      var idx=function(n){return head.indexOf(n);};
+      return rows.slice(hasHead?1:0).map(function(r){
+        if(hasHead){
+          return {topic:r[idx('topic')],difficulty:r[idx('difficulty')],question:r[idx('question')],options:[r[idx('optiona')],r[idx('optionb')],r[idx('optionc')],r[idx('optiond')]],answer:letterToIndex(r[idx('answer')]),explanation:r[idx('explanation')],source:r[idx('source')]};
+        }
+        return {topic:r[0],difficulty:r[1],question:r[2],options:[r[3],r[4],r[5],r[6]],answer:letterToIndex(r[7]),explanation:r[8],source:r[9]};
+      });
+    }
+    async function doImport(){
+      var msg=$('iMsg');msg.style.color='#33415c';
+      var rows;
+      try{rows=parseImport($('iText').value);}catch(e){msg.style.color='#b3261e';msg.textContent='Could not read the data: '+e.message;return;}
+      if(!rows.length){msg.style.color='#b3261e';msg.textContent='Nothing to import.';return;}
+      $('iGo').disabled=true;
+      var added=0,skipped=0,invalid=0,errors=[];
+      try{
+        for(var i=0;i<rows.length;i+=200){
+          msg.textContent='Importing '+Math.min(i+200,rows.length)+' of '+rows.length+'...';
+          var r=await call('importQuestions',{questions:rows.slice(i,i+200),source:'import'});
+          added+=r.added;skipped+=r.skipped;invalid+=r.invalid;
+          (r.errors||[]).forEach(function(x){errors.push('Row '+(x.row+i)+': '+x.error);});
+        }
+        msg.style.color='#0b6b3a';
+        msg.innerHTML='Done. <b>'+added+'</b> added as pending, '+skipped+' already existed, '+invalid+' invalid.'+(errors.length?'<br>'+errors.slice(0,10).map(esc).join('<br>'):'');
+        S.status='pending';S.page=1;await load();
+      }catch(e){msg.style.color='#b3261e';msg.textContent=errText(e);}
+      $('iGo').disabled=false;
+    }
+
+    // ---- events ----
+    document.addEventListener('click',function(ev){
+      var t=ev.target;
+      var st=t.closest&&t.closest('.qb-stat');
+      if(st){S.status=st.getAttribute('data-status');S.page=1;load();return;}
+      var cl=t.getAttribute&&t.getAttribute('data-close');if(cl){closeM(cl);return;}
+      var act=t.getAttribute&&t.getAttribute('data-act');
+      if(act){
+        var id=t.getAttribute('data-id');
+        if(act==='edit')openEdit(S.items[id]);
+        else if(act==='reject'){var n=prompt('Reason for rejecting (optional):','');if(n!==null)review([id],'reject',n);}
+        else review([id],act,'');
+        return;
+      }
+      var bulk=t.getAttribute&&t.getAttribute('data-bulk');
+      if(bulk){
+        var ids=selectedIds();if(!ids.length)return;
+        var note='';
+        if(bulk==='reject'){note=prompt('Reason for rejecting (optional):','');if(note===null)return;}
+        if(bulk==='approve'&&!confirm('Approve '+ids.length+' question(s)? Members will start receiving them. Have they been checked by a pharmacist?'))return;
+        review(ids,bulk,note);return;
+      }
+    });
+    document.addEventListener('change',function(ev){
+      var t=ev.target;
+      if(t.classList&&t.classList.contains('selOne')){S.selected[t.getAttribute('data-id')]=t.checked;updateBulk();}
+    });
+    $('selAll').addEventListener('change',function(e){
+      document.querySelectorAll('.selOne').forEach(function(c){c.checked=e.target.checked;S.selected[c.getAttribute('data-id')]=e.target.checked;});updateBulk();
+    });
+    $('bDelete').addEventListener('click',function(){
+      var ids=selectedIds();if(!ids.length)return;
+      if(!confirm('Delete '+ids.length+' question(s)? Approved or already-asked questions are kept (retire them instead).'))return;
+      call('deleteQuestions',{ids:ids}).then(function(r){S.selected={};alert(r.deleted+' deleted'+(r.kept?(', '+r.kept+' kept (approved or already used)'):''));return load();}).catch(function(e){alert(errText(e));});
+    });
+    $('fTopic').addEventListener('change',function(e){S.topic=e.target.value;S.page=1;load();});
+    $('fDiff').addEventListener('change',function(e){S.difficulty=e.target.value;S.page=1;load();});
+    var searchTimer=null;
+    $('fSearch').addEventListener('input',function(e){clearTimeout(searchTimer);var v=e.target.value;searchTimer=setTimeout(function(){S.search=v;S.page=1;load();},350);});
+    $('btnAdd').addEventListener('click',function(){openEdit(null);});
+    $('eSave').addEventListener('click',saveEdit);
+    $('btnImport').addEventListener('click',function(){$('iMsg').textContent='';openM('mImport');});
+    $('iGo').addEventListener('click',doImport);
+    $('iFile').addEventListener('change',function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){$('iText').value=r.result;};r.readAsText(f);});
+    $('iTemplate').addEventListener('click',function(e){
+      e.preventDefault();
+      var csv='topic,difficulty,question,optionA,optionB,optionC,optionD,answer,explanation,source\n"Counselling","easy","Example question text goes here?","Option one","Option two","Option three","Option four","B","Why the answer is correct.","Reference or guideline"\n';
+      var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='amcag-question-template.csv';a.click();
+    });
+    $('btnTopics').addEventListener('click',function(){
+      $('tRows').innerHTML=S.data.topics.map(function(t){return '<tr><td>'+esc(t.topic)+'</td><td>'+t.approved+'</td><td>'+t.pending+'</td><td>'+t.total+'</td></tr>';}).join('');openM('mTopics');
+    });
+    function loadReviewers(){
+      return call('listQuestionReviewers',{}).then(function(r){
+        $('revList').innerHTML=r.reviewers.length?r.reviewers.map(function(x){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #edf1ee"><span>'+esc(x.name)+' <span class="qb-small">'+esc(x.email)+'</span></span><button class="qb-btn warn" data-rem="'+esc(x.email)+'">Remove</button></div>';}).join(''):'<p class="qb-small">No extra reviewers yet. Super admins can always review.</p>';
+        document.querySelectorAll('[data-rem]').forEach(function(b){b.onclick=function(){call('setQuestionReviewer',{email:b.getAttribute('data-rem'),value:false}).then(loadReviewers);};});
+      });
+    }
+    $('btnReviewers').addEventListener('click',function(){$('revMsg').textContent='';openM('mRev');loadReviewers();});
+    $('revAdd').addEventListener('click',function(){
+      var email=$('revEmail').value.trim();if(!email)return;
+      call('setQuestionReviewer',{email:email,value:true}).then(function(r){$('revMsg').style.color='#0b6b3a';$('revMsg').textContent=r.name+' can now review questions.';$('revEmail').value='';return loadReviewers();}).catch(function(e){$('revMsg').style.color='#b3261e';$('revMsg').textContent=errText(e);});
+    });
+
+    AuthModule.onAuthStateChanged(function(user){
+      if(!user){ window.location.href='/membership.html'; return; }
+      load();
+    });
+  </script>
+  <script src="/js/mobile-menu.js?v=20260525-member1"></script>
+</body>
+</html>

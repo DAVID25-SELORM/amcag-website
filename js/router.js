@@ -59,6 +59,7 @@ const RouterModule = (function() {
       '/member-dashboard/id-card.html',
       '/member-dashboard/member-cards.html',
       '/member-dashboard/question-results.html',
+      '/member-dashboard/question-bank.html',
       '/member-dashboard/registration-fee.html'
     ],
     

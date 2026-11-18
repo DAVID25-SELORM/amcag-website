@@ -42,6 +42,7 @@
     </aside>
     <main class="dashboard-content">
       <div class="dashboard-header"><div><h1 class="dashboard-title">Question of the Day</h1><p class="dashboard-subtitle">One question a day. Your answer is visible to your regional and national executives.</p></div></div>
+      <p id="bankLink" style="display:none;margin:0 0 14px"><a href="/member-dashboard/question-bank.html" style="color:#0b5d3b;font-weight:600">🗂️ Manage the question bank</a></p>
       <p id="resultsLink" style="display:none;margin:0 0 14px"><a href="/member-dashboard/question-results.html" style="color:#0b5d3b;font-weight:600">📈 View question results (executives)</a></p>
       <div class="q-card" id="box">Loading today's question...</div>
 
@@ -80,7 +81,7 @@
       var box=document.getElementById('box');
       box.innerHTML=html;
       box.querySelectorAll('.q-opt').forEach(function(b){ if(!d.answered) b.addEventListener('click',function(){submit(Number(b.getAttribute('data-i')),b);}); });
-      var rl=document.getElementById('resultsLink'); if(rl&&d.canViewResults) rl.style.display='';
+      var rl=document.getElementById('resultsLink'); if(rl&&d.canViewResults) rl.style.display=''; var bl=document.getElementById('bankLink'); if(bl&&d.canManageBank) bl.style.display='';
     }
     async function submit(i,btn){
       if(!await AMCAGDialog.confirm('Submit answer '+LETTERS[i]+'? You cannot change it afterwards.')) return;
