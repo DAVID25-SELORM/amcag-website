@@ -11,6 +11,7 @@
     '.nb-count{position:absolute;top:0;right:0;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#b3261e;color:#fff;font:700 .7rem/18px Inter,Arial,sans-serif;text-align:center;display:none}' +
     '.nb-panel{position:absolute;right:0;top:calc(100% + 8px);width:360px;max-width:calc(100vw - 24px);background:#fff;color:#1a2433;border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.25);z-index:99990;display:none;overflow:hidden;font-family:Inter,Segoe UI,Arial,sans-serif;text-align:left}' +
     '.nb-panel.open{display:block}' +
+    '@media(max-width:640px){.nb-panel{position:fixed;left:12px;right:12px;top:72px;width:auto;max-width:none;max-height:calc(100vh - 96px);overflow-y:auto}}' +
     '.nb-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0b5d3b;color:#fff;font-weight:700}' +
     '.nb-head button{background:transparent;border:0;color:#fff;font:600 .78rem Inter,Arial,sans-serif;cursor:pointer;text-decoration:underline}' +
     '.nb-list{max-height:420px;overflow:auto}' +
