@@ -11,7 +11,7 @@ service firebase.storage {
     
     // Profile pictures (new users uploading during registration)
     match /profile-pictures/{allPaths=**} {
-      allow read: if true; // Public read for profile pictures
+      allow read: if signedIn(); // signed-in only; stored download links keep working
       allow write: if signedIn() &&
                       request.resource.size < 5 * 1024 * 1024 && // 5MB limit
                       request.resource.contentType.matches('image/.*'); // Only images
@@ -49,7 +49,7 @@ service firebase.storage {
 
     // Profile pictures (legacy path)
     match /profiles/{userId}/{allPaths=**} {
-      allow read: if true;
+      allow read: if signedIn(); // signed-in only; stored download links keep working
       allow write: if signedIn() &&
                        (request.auth.uid == userId || isExecutive()) &&
                        request.resource.size < 5 * 1024 * 1024 &&
@@ -58,7 +58,7 @@ service firebase.storage {
     
     // Certificates (restricted write, public read for verification)
     match /certificates/{allPaths=**} {
-      allow read: if true;
+      allow read: if signedIn(); // signed-in only; stored download links keep working
       allow write: if signedIn() && userRole() in ['super_admin', 'national_executive'];
     }
     

@@ -36,3 +36,9 @@ logs/
 # Temporary files
 *.tmp
 .cache/
+
+# Logs and local output (may contain emails, tokens, PII)
+*.log
+deployment-*.log
+tmp/
+output/

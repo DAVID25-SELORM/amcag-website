@@ -4385,9 +4385,9 @@ exports.sendMeetingReminders = functions.scheduler.onSchedule('every 1 minutes',
 
         try {
           await transporter.sendMail(mailOptions);
-          console.log(`Reminder sent to ${user.email}`);
+          console.log('Meeting reminder email sent');
         } catch (error) {
-          console.error(`Failed to send to ${user.email}:`, error);
+          console.error('Failed to send meeting reminder email:', error && error.message);
         }
       });
 

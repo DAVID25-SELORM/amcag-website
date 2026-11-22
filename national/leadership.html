@@ -1293,7 +1293,13 @@
           : record;
         const batch = db.batch();
 
-        batch.set(db.collection('leadership').doc(leader.id), payload, { merge: true });
+        // 'leadership' is publicly readable, so personal/sensitive fields are kept out of it
+        // (and deleted if an older save put them there). The full record lives in 'leaders'.
+        const publicPayload = { ...payload };
+        ['nationalId', 'emergencyContact', 'residentialArea', 'digitalSignature'].forEach((key) => {
+          publicPayload[key] = fieldValue.delete();
+        });
+        batch.set(db.collection('leadership').doc(leader.id), publicPayload, { merge: true });
         batch.set(db.collection('leaders').doc(leader.executiveId || leader.id), {
           ...payload,
           roleTitle: payload.title,
@@ -2056,9 +2062,30 @@
           };
         }
 
+        // Sensitive fields are stored only in the access-controlled 'leaders' records.
+        const privateById = {};
+        try {
+          const privSnap = await db.collection('leaders').get();
+          privSnap.docs.forEach((d) => {
+            const p = d.data() || {};
+            privateById[d.id] = {
+              nationalId: p.nationalId || '',
+              emergencyContact: p.emergencyContact || '',
+              residentialArea: p.residentialArea || '',
+              digitalSignature: p.digitalSignature || ''
+            };
+          });
+        } catch (privError) {
+          console.warn('Could not load private leader details:', privError);
+        }
+
         Object.keys(leaderDirectory).forEach((id) => delete leaderDirectory[id]);
         snapshot.docs.forEach((doc) => {
           const leader = normalizeLeadershipDoc(doc);
+          const priv = privateById[leader.id] || privateById[leader.executiveId];
+          if (priv) {
+            Object.keys(priv).forEach((k) => { if (priv[k] && !leader[k]) leader[k] = priv[k]; });
+          }
           if (leader.name) {
             leaderDirectory[leader.id] = leader;
           }

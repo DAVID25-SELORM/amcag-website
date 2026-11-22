@@ -265,11 +265,12 @@ service cloud.firestore {
                       request.resource.data.uid == request.auth.uid &&
                       request.resource.data.email == request.auth.token.email &&
                       request.resource.data.role == 'member' &&
+                      !request.resource.data.keys().hasAny(['ghanaCard', 'nationalId']) &&
                       !request.resource.data.keys().hasAny(['duesStartMonth', 'registrationFeePaid', 'registrationFeePaidAt', 'registrationFeeReference', 'registrationFeeAmount', 'registrationFeeMethod', 'cardToken']) &&
                       request.resource.data.status == 'pending';
       
       // Allow updates by user themselves (own profile) or admins.
-      allow update: if (
+      allow update: if !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ghanaCard', 'nationalId']) && (
                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['duesStartMonth']) ||
                       hasAnyRole(['super_admin', 'national_executive'])
                     ) && (
@@ -587,21 +588,27 @@ service cloud.firestore {
     // Leadership (public read)
     match /leadership/{leaderId} {
       allow read: if true;
-      allow create: if hasRole('super_admin') ||
+      // Publicly readable, so personal/sensitive fields must never be stored here
+      // (they live in the access-controlled /leaders records).
+      allow create: if !request.resource.data.keys().hasAny(['nationalId', 'ghanaCard', 'emergencyContact', 'residentialArea', 'digitalSignature']) && (
+        hasRole('super_admin') ||
         isNationalPresident() ||
         (
           isRegionalPresident() &&
           request.resource.data.region == userRegion() &&
           request.resource.data.status == 'pending_national_approval'
         ) ||
-        hasPermission('canManageExecutives');
-      allow update: if hasRole('super_admin') ||
+        hasPermission('canManageExecutives')
+      );
+      allow update: if !request.resource.data.keys().hasAny(['nationalId', 'ghanaCard', 'emergencyContact', 'residentialArea', 'digitalSignature']) && (
+        hasRole('super_admin') ||
         isNationalPresident() ||
         (
           isRegionalPresident() &&
           sameExecutiveRegion(resource.data) &&
           request.resource.data.status in ['pending_national_approval', 'pending_approval', 'inactive']
-        );
+        )
+      );
       allow delete: if hasRole('super_admin');
     }
 

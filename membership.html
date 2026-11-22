@@ -276,6 +276,13 @@
                 <input type="password" class="form-input" id="register-confirm-password" required placeholder="••••••••">
               </div>
               
+              <div class="form-group">
+                <label style="display:flex;gap:10px;align-items:flex-start;font-size:.9rem;line-height:1.5;cursor:pointer">
+                  <input type="checkbox" id="register-privacy-consent" style="margin-top:4px;flex:none">
+                  <span>I have read the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Notice</a> and agree that AMCAG may collect and use my personal data as described.</span>
+                </label>
+              </div>
+
               <button type="submit" class="btn btn-primary btn-block btn-lg">Register</button>
             </form>
             
@@ -1046,6 +1053,12 @@
         return;
       }
       
+      if (!document.getElementById('register-privacy-consent').checked) {
+        UIModule.showAlert('Please read and accept the Privacy Notice to register', 'error');
+        document.getElementById('register-privacy-consent').focus();
+        return;
+      }
+
       if (!maritalStatus) {
         UIModule.showAlert('Please select your marital status', 'error');
         document.getElementById('register-marital-status').focus();
@@ -1146,7 +1159,8 @@
           name: nextOfKinName,
           contact: nextOfKinContact
         },
-        region: region
+        region: region,
+        privacyConsentAt: new Date().toISOString()
       };
       
       // Add optional pharmacy PIN if provided
