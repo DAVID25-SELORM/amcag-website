@@ -32,7 +32,7 @@
         <li><a href="/national/analytics.html" class="navbar-link">Analytics</a></li>
         <li><a href="/national/agm-registrations.html" class="navbar-link">AGM</a></li>
         <li><a href="/national/news-management.html" class="navbar-link active">News</a></li>
-        <li><a href="/national/security-command-center.html" class="navbar-link" style="color: #dc3545; font-weight: 600;">🛡️ Security</a></li>
+        <li><a href="/national/security-command-center.html" class="navbar-link" style="color: var(--color-error-text); font-weight: 600;">🛡️ Security</a></li>
         <li><a href="/profile.html" class="navbar-link">Profile</a></li>
         <li><a href="/index.html" class="navbar-link">Home</a></li>
         <li><button onclick="toggleTheme()" class="theme-toggle" title="Toggle dark mode">
@@ -393,7 +393,7 @@
                   </div>
                   <div style="display: flex; gap: var(--space-2);">
                     <button onclick="editNews('${article.id}')" class="btn btn-sm btn-outline">✏️ Edit</button>
-                    <button onclick='deleteNews("${article.id}", ${JSON.stringify(article.title || "")})' class="btn btn-sm btn-outline" style="color: var(--color-error);">Delete</button>
+                    <button onclick='deleteNews("${article.id}", ${JSON.stringify(article.title || "")})' class="btn btn-sm btn-outline" style="color: var(--color-error-text);">Delete</button>
                   </div>
                 </div>
               </div>
@@ -403,7 +403,7 @@
         
       } catch (error) {
         console.error('Error loading news:', error);
-        container.innerHTML = '<p style="text-align: center; color: var(--color-error); padding: var(--space-4);">Error loading articles</p>';
+        container.innerHTML = '<p style="text-align: center; color: var(--color-error-text); padding: var(--space-4);">Error loading articles</p>';
       }
     }
     

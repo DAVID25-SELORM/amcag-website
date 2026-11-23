@@ -447,8 +447,8 @@
             <td>${regionMembers.length}</td>
             <td>${paidThisMonth}</td>
             <td>${overdueCount}</td>
-            <td style="font-weight: 600; color: var(--color-success);">GHS ${totalCollected.toFixed(2)}</td>
-            <td style="font-weight: 600; color: var(--color-error);">GHS ${totalOutstanding.toFixed(2)}</td>
+            <td style="font-weight: 600; color: var(--color-success-text);">GHS ${totalCollected.toFixed(2)}</td>
+            <td style="font-weight: 600; color: var(--color-error-text);">GHS ${totalOutstanding.toFixed(2)}</td>
           </tr>
         `;
       }).join('');
@@ -527,7 +527,7 @@
             <td style="font-weight: 600; color: ${status.overdueMonths > 0 ? 'var(--color-error)' : 'inherit'};">
               ${status.overdueMonths}
             </td>
-            <td style="font-weight: 600; color: var(--color-error);">
+            <td style="font-weight: 600; color: var(--color-error-text);">
               GHS ${status.amountOwed.toFixed(2)}
             </td>
             <td>${statusBadge}</td>

@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
-  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-30) 0%, var(--color-primary-20) 100%);">
     <div class="navbar-container">
       <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
         <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
@@ -209,7 +209,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <strong style="display: block; margin-bottom: 0.25rem;">Generated Password:</strong>
-              <code id="generatedPasswordText" style="font-size: var(--text-lg); color: var(--color-success);"></code>
+              <code id="generatedPasswordText" style="font-size: var(--text-lg); color: var(--color-success-text);"></code>
             </div>
             <button class="btn btn-sm btn-outline" onclick="copyPassword()" type="button">Copy</button>
           </div>
@@ -564,7 +564,7 @@
           setHTML('membersTableBody', `
             <tr>
               <td colspan="7" style="text-align: center; padding: 3rem;">
-                <div style="color: var(--color-error);">
+                <div style="color: var(--color-error-text);">
                   <div style="font-size: 2rem; margin-bottom: 1rem;">⚠️</div>
                   <div style="font-weight: 600; margin-bottom: 0.5rem;">Failed to load members</div>
                   <div style="font-size: var(--text-sm); color: var(--text-secondary);">${error.message}</div>

@@ -38,7 +38,7 @@
   --color-neutral-20: #2f3033;
   --color-neutral-30: #46474a;
   --color-neutral-40: #5e5e62;
-  --color-neutral-50: #76777a;
+  --color-neutral-50: #6b6c70; /* darkened so it reads as text (>= 4.5:1 on white) */
   --color-neutral-60: #909094;
   --color-neutral-70: #aaabae;
   --color-neutral-80: #c6c6ca;
@@ -57,6 +57,12 @@
   --color-error-bg: #f8d7da;
   --color-info: #0dcaf0;
   --color-info-bg: #cff4fc;
+  --color-success-text: #0f5132;
+  --color-warning-text: #8a4b00;
+  --color-error-text: #a71d2a;
+  --color-info-text: #055160;
+  --color-primary: #176f31;   /* was referenced across pages but never defined */
+  --color-secondary: #00647f; /* was referenced across pages but never defined */
   
   /* ===== SURFACE COLORS ===== */
   --surface-background: var(--color-neutral-95);
@@ -66,7 +72,8 @@
   /* ===== TEXT COLORS ===== */
   --text-primary: var(--color-neutral-10);
   --text-secondary: var(--color-neutral-40);
-  --text-tertiary: var(--color-neutral-60);
+  --text-brand: #176f31; /* brand green for TEXT on light backgrounds (6.3:1 on white) */
+  --text-tertiary: #67686c; /* >= 4.5:1 on white and light surfaces */
   --text-on-primary: var(--color-neutral-100);
   --text-on-secondary: var(--color-neutral-100);
   
@@ -123,8 +130,8 @@
   --radius-full: 9999px;
   
   /* ===== MODERN GRADIENTS ===== */
-  --gradient-primary: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-60) 100%);
-  --gradient-secondary: linear-gradient(135deg, var(--color-secondary-40) 0%, var(--color-secondary-60) 100%);
+  --gradient-primary: linear-gradient(135deg, #176f31 0%, #1d8239 100%); /* white text stays >= 4.5:1 */
+  --gradient-secondary: linear-gradient(135deg, var(--color-secondary-40) 0%, var(--color-secondary-50) 100%); /* white text >= 4.5:1 */
   --gradient-accent: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-secondary-50) 100%);
   --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
   --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
@@ -189,7 +196,7 @@
 .text-secondary { color: var(--text-secondary); }
 .text-tertiary { color: var(--text-tertiary); }
 .text-on-primary { color: var(--text-on-primary); }
-.text-brand-primary { color: var(--color-primary-40); }
+.text-brand-primary { color: var(--text-brand); }
 .text-brand-secondary { color: var(--color-secondary-50); }
 .text-success { color: var(--color-success); }
 .text-warning { color: var(--color-warning); }

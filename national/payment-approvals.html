@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
-  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-40) 0%, var(--color-primary-30) 100%);">
+  <nav class="navbar" style="background: linear-gradient(135deg, var(--color-primary-30) 0%, var(--color-primary-20) 100%);">
     <div class="navbar-container">
       <a href="/national/dashboard.html" class="navbar-logo" style="color: white;">
         <img src="/images/logo.jpg" alt="AMCAG Logo" style="background: white; padding: 4px; border-radius: 8px;">
@@ -49,11 +49,11 @@
       <!-- Stats -->
       <div class="grid grid-3 gap-4 mb-6">
         <div class="card">
-          <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-warning);" id="pendingCount">0</div>
+          <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-warning-text);" id="pendingCount">0</div>
           <div style="color: var(--text-secondary); margin-top: var(--space-1);">Pending Approval</div>
         </div>
         <div class="card">
-          <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-success);" id="approvedCount">0</div>
+          <div style="font-size: var(--text-3xl); font-weight: var(--font-bold); color: var(--color-success-text);" id="approvedCount">0</div>
           <div style="color: var(--text-secondary); margin-top: var(--space-1);">Approved This Month</div>
         </div>
         <div class="card">
@@ -451,7 +451,7 @@
               <button data-payment-action="approve" data-payment-id="${escapeHtml(payment.id)}" class="btn btn-sm btn-primary" style="margin-right: 8px;" ${actionInProgress ? 'disabled' : ''}>
                 ✅ Approve
               </button>
-              <button data-payment-action="reject" data-payment-id="${escapeHtml(payment.id)}" class="btn btn-sm btn-outline" style="color: var(--color-error);" ${actionInProgress ? 'disabled' : ''}>
+              <button data-payment-action="reject" data-payment-id="${escapeHtml(payment.id)}" class="btn btn-sm btn-outline" style="color: var(--color-error-text);" ${actionInProgress ? 'disabled' : ''}>
                 ❌ Reject
               </button>
             </td>

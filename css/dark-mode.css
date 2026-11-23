@@ -4,6 +4,11 @@
 
 /* Dark mode color tokens */
 :root[data-theme="dark"] {
+  --text-brand: #7acb8f; /* brand green for text on dark surfaces */
+  --color-success-text: #75b798;
+  --color-warning-text: #ffda6a;
+  --color-error-text: #ea868f;
+  --color-info-text: #6edff6;
   /* Backgrounds */
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;

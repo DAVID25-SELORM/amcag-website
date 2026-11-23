@@ -60,11 +60,11 @@
           <div class="stat-label">Pending Requests</div>
         </div>
         <div class="stat-card" style="background: var(--color-success-container);">
-          <div class="stat-value" style="color: var(--color-success);" id="approvedCount">0</div>
+          <div class="stat-value" style="color: var(--color-success-text);" id="approvedCount">0</div>
           <div class="stat-label">Approved This Month</div>
         </div>
         <div class="stat-card" style="background: var(--color-error-container);">
-          <div class="stat-value" style="color: var(--color-error);" id="rejectedCount">0</div>
+          <div class="stat-value" style="color: var(--color-error-text);" id="rejectedCount">0</div>
           <div class="stat-label">Rejected This Month</div>
         </div>
         <div class="stat-card">
@@ -197,14 +197,14 @@
               <label style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer;">
                 <input type="radio" name="decision" value="approve" id="decisionApprove">
                 <div>
-                  <div style="font-weight: 600; color: var(--color-success);">✅ Approve</div>
+                  <div style="font-weight: 600; color: var(--color-success-text);">✅ Approve</div>
                   <div style="font-size: 0.85rem; color: var(--text-secondary);">Grant the waiver</div>
                 </div>
               </label>
               <label style="flex: 1; display: flex; align-items: center; gap: 0.5rem; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer;">
                 <input type="radio" name="decision" value="reject" id="decisionReject">
                 <div>
-                  <div style="font-weight: 600; color: var(--color-error);">❌ Reject</div>
+                  <div style="font-weight: 600; color: var(--color-error-text);">❌ Reject</div>
                   <div style="font-size: 0.85rem; color: var(--text-secondary);">Deny the request</div>
                 </div>
               </label>
