@@ -359,6 +359,29 @@
     }
 
     async function loadCertificate() {
+      const sampleType = new URLSearchParams(window.location.search).get('sample');
+      if (sampleType) {
+        const t = ['membership', 'training', 'achievement', 'leadership'].includes(sampleType) ? sampleType : 'membership';
+        const sampleDesc = {
+          membership: 'has successfully completed all requirements and is hereby recognized as a member in good standing of the Association of Medicine Counter Assistants Ghana.',
+          training: 'has successfully completed the required training program and demonstrated proficiency in all assessed areas.',
+          achievement: 'is hereby recognized for outstanding contribution and exceptional service to the Association of Medicine Counter Assistants Ghana.',
+          leadership: 'is hereby recognized for service and leadership within the Association of Medicine Counter Assistants Ghana.'
+        };
+        const fmt = (d) => d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const now = new Date();
+        document.getElementById('recipientName').textContent = 'Sample Recipient Name';
+        document.getElementById('certificateType').textContent = 'SAMPLE - ' + t.charAt(0).toUpperCase() + t.slice(1) + ' Certificate';
+        document.getElementById('certId').textContent = 'SAMPLE-0000';
+        document.getElementById('certIdFooter').textContent = 'SAMPLE-0000';
+        document.getElementById('memberId').textContent = 'AMCAG-SAMPLE';
+        document.getElementById('issueDate').textContent = fmt(now);
+        document.getElementById('expiryDate').textContent = 'No Expiry';
+        document.getElementById('certificateDescription').textContent = sampleDesc[t];
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('certificateContainer').style.display = 'block';
+        return;
+      }
       if (!certId) {
         showError();
         return;
