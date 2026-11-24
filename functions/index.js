@@ -4436,11 +4436,11 @@ async function ensureUnsubscribeToken(userDoc) {
   return token;
 }
 
-// Every morning at 07:00 (Africa/Accra): today's question plus yesterday's answer.
+// Every Monday and Thursday at 07:00 (Africa/Accra): the new question plus yesterday's answer.
 // Needs the EMAIL_PASS secret (Gmail app password for EMAIL_USER).
 exports.sendDailyQuestions = onSchedule(
   {
-    schedule: '0 7 * * *',
+    schedule: '0 7 * * 1,4',
     timeZone: 'Africa/Accra',
     memory: '512MiB',
     timeoutSeconds: 540,
@@ -4450,7 +4450,7 @@ exports.sendDailyQuestions = onSchedule(
     const db = admin.firestore();
     const dayNo = dailyQuestions.dayNumber();
     const today = await questionStore.getQuestionForDay(db, admin, dayNo);
-    const yesterday = await questionStore.getQuestionForDay(db, admin, dayNo - 1, {create: false});
+    const yesterday = await questionStore.getQuestionForDay(db, admin, dailyQuestions.previousDayNumber(dayNo), {create: false});
     const cap =Number(process.env.DAILY_QUESTION_MAX || 400);
     const transporter = createDailyQuestionTransporter();
     const from = `AMCAG Question of the Day <${process.env.EMAIL_USER || 'amcag2018@gmail.com'}>`;
@@ -4563,7 +4563,7 @@ exports.sendTestDailyQuestion = functions.https.onCall({
   const mail = dailyQuestions.buildDailyQuestionEmail({
     name: callerDoc.data().fullName,
     today: await questionStore.getQuestionForDay(db, admin, dayNo),
-    yesterday: await questionStore.getQuestionForDay(db, admin, dayNo - 1, {create: false}),
+    yesterday: await questionStore.getQuestionForDay(db, admin, dailyQuestions.previousDayNumber(dayNo), {create: false}),
     unsubscribeUrl: `${UNSUBSCRIBE_BASE_URL}?uid=${encodeURIComponent(request.auth.uid)}&token=${token}`
   });
   await createDailyQuestionTransporter().sendMail({

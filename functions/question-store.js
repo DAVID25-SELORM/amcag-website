@@ -107,7 +107,7 @@ async function getQuestionForDay(db, admin, dayNo, { create = true } = {}) {
   const approved = await db.collection('question_bank').where('status', '==', 'approved')
     .select('topic', 'timesAsked', 'lastAskedDay').get();
   let yesterdayTopic = '';
-  const ySnap = await db.collection('daily_question_schedule').doc(String(dayNo - 1)).get();
+  const ySnap = await db.collection('daily_question_schedule').doc(String(dailyQuestions.previousDayNumber(dayNo))).get();
   if (ySnap.exists) yesterdayTopic = ySnap.get('topic') || '';
 
   const pick = chooseCandidate(approved.docs, yesterdayTopic);

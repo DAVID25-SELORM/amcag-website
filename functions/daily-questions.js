@@ -11,8 +11,18 @@ function escapeHtml(value) {
 }
 
 // Day number in Africa/Accra (UTC+0 all year, so UTC days work).
+// Questions change twice a week (Monday and Thursday). The "day number" is the
+// day number of the most recent Monday/Thursday, so every day in between maps to
+// the same question. Epoch day 0 was a Thursday: d%7 === 0 Thu, d%7 === 4 Mon.
 function dayNumber(date = new Date()) {
-  return Math.floor(date.getTime() / 86400000);
+  const d = Math.floor(date.getTime() / 86400000);
+  const r = d % 7;
+  return r >= 4 ? d - (r - 4) : d - r;
+}
+
+// The question slot before the given one (Mon -> previous Thu, Thu -> previous Mon).
+function previousDayNumber(dayNo) {
+  return dayNo % 7 === 4 ? dayNo - 4 : dayNo - 3;
 }
 
 // Deterministic shuffle so the correct answer is not always the same letter,
@@ -54,7 +64,7 @@ function buildDailyQuestionEmail({ name, today, yesterday, unsubscribeUrl }) {
 
   const yesterdayBlock = yesterday
     ? `<div style="background:#eaf3ee;border-left:4px solid #0b5d3b;padding:12px 16px;margin:24px 0;border-radius:4px">
-         <div style="font-size:12px;color:#5a6778;text-transform:uppercase;letter-spacing:.5px">Yesterday's answer</div>
+         <div style="font-size:12px;color:#5a6778;text-transform:uppercase;letter-spacing:.5px">Previous question's answer</div>
          <div style="margin:6px 0 4px"><strong>${escapeHtml(yesterday.question)}</strong></div>
          <div><strong style="color:#0b5d3b">${LETTERS[yesterday.answer]}. ${escapeHtml(yesterday.options[yesterday.answer])}</strong></div>
          <div style="margin-top:6px;color:#33415c">${escapeHtml(yesterday.explanation)}</div>
@@ -90,7 +100,7 @@ function buildDailyQuestionEmail({ name, today, yesterday, unsubscribeUrl }) {
     ...today.options.map((o, i) => `${LETTERS[i]}. ${o}`),
     '',
     `Answer online: ${SITE}/member-dashboard/daily-question.html`,
-    yesterday ? `\nYesterday's answer: ${LETTERS[yesterday.answer]}. ${yesterday.options[yesterday.answer]}\n${yesterday.explanation}` : '',
+    yesterday ? `\nPrevious question's answer: ${LETTERS[yesterday.answer]}. ${yesterday.options[yesterday.answer]}\n${yesterday.explanation}` : '',
     '',
     `Unsubscribe: ${unsubscribeUrl}`
   ].join('\n');
@@ -98,4 +108,4 @@ function buildDailyQuestionEmail({ name, today, yesterday, unsubscribeUrl }) {
   return { subject: `Question of the Day: ${today.topic}`, html, text };
 }
 
-module.exports = { dayNumber, questionForDay, buildDailyQuestionEmail, escapeHtml, seededShuffle };
+module.exports = { dayNumber, previousDayNumber, questionForDay, buildDailyQuestionEmail, escapeHtml, seededShuffle };
